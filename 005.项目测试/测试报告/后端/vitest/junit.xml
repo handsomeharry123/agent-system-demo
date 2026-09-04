@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="7" failures="0" errors="0" time="0.34">
+    <testsuite name="tests/unit/agent-access-compatibility.test.ts" timestamp="2026-09-03T08:31:38.955Z" hostname="MacBook-Pro.local" tests="6" failures="0" errors="0" skipped="0" time="0.004726">
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; normalizes DeepSeek root Base URL" time="0.00243325">
+        </testcase>
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; normalizes Zhipu nested Base URL" time="0.000352625">
+        </testcase>
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; normalizes full endpoint" time="0.000187959">
+        </testcase>
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; discovers a model from a MiniMax-style Base URL" time="0.000631708">
+        </testcase>
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; corrects a provider name mistakenly entered as the MiniMax model ID" time="0.000366917">
+        </testcase>
+        <testcase classname="tests/unit/agent-access-compatibility.test.ts" name="OpenAI-compatible agent access &gt; falls back to X-API-Key for compatible private gateways" time="0.000277041">
+        </testcase>
+    </testsuite>
+    <testsuite name="tests/unit/framework.test.ts" timestamp="2026-09-03T08:31:38.956Z" hostname="MacBook-Pro.local" tests="1" failures="0" errors="0" skipped="0" time="0.001225666">
+        <testcase classname="tests/unit/framework.test.ts" name="后端测试工程 &gt; 阻止集成测试误用非测试数据库" time="0.00081825">
+        </testcase>
+    </testsuite>
+</testsuites>

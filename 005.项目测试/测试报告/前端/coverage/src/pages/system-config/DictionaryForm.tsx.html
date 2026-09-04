@@ -1,0 +1,139 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/pages/system-config/DictionaryForm.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/pages/system-config</a> DictionaryForm.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/18</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/18</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import {useEffect,useState} from 'react';</span></span></span>
+<span class="cstat-no" title="statement not covered" >import {Button,Card,Form,Input,Select,Space,Spin,Upload,message} from 'antd';</span>
+<span class="cstat-no" title="statement not covered" >import type {UploadFile} from 'antd';</span>
+<span class="cstat-no" title="statement not covered" >import {InboxOutlined} from '@ant-design/icons';</span>
+<span class="cstat-no" title="statement not covered" >import {useNavigate,useParams,useLocation} from 'react-router-dom';</span>
+<span class="cstat-no" title="statement not covered" >import PageHeader from '../../components/PageHeader';</span>
+<span class="cstat-no" title="statement not covered" >import {dictionaryApi,type DictionaryPayload} from '../../services/dictionaryApi';</span>
+<span class="cstat-no" title="statement not covered" >import type {Dictionary} from './data';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >interface FormValues{code:string;name:string;valueType?:Dictionary['valueType'];remark?:string;source?:string;sortNo?:number}</span>
+<span class="cstat-no" title="statement not covered" >export default function DictionaryForm(){</span>
+<span class="cstat-no" title="statement not covered" > const nav=useNavigate(),loc=useLocation();const {code,id}=useParams();const [form]=Form.useForm&lt;FormValues&gt;();const [loading,setLoading]=useState(false);const [saving,setSaving]=useState(false);const [files,setFiles]=useState&lt;UploadFile[]&gt;([]);</span>
+<span class="cstat-no" title="statement not covered" > const isItem=loc.pathname.includes('/items/');const importing=loc.pathname.endsWith('/import');const editing=loc.pathname.endsWith('/edit');const back=isItem?`/app/system-config/dictionaries/${code}/items`:'/app/system-config/dictionaries';const title=`${importing?'导入':editing?'编辑':'创建'}${isItem?'字典项':'字典'}`;</span>
+<span class="cstat-no" title="statement not covered" > useEffect(()=&gt;{if(!editing||!code)return;let active=true;setLoading(true);const detail=isItem&amp;&amp;id?dictionaryApi.itemDetail(code,id):dictionaryApi.detail(code);detail.then(data=&gt;{if(active)form.setFieldsValue({code:data.code,name:data.name,remark:data.remark,...('valueType' in data?{valueType:data.valueType}:{sortNo:'sortNo' in data?data.sortNo:0})})}).catch(e=&gt;message.error(e instanceof Error?e.message:'详情加载失败')).finally(()=&gt;{if(active)setLoading(false)});return()=&gt;{active=false}},[code,editing,form,id,isItem]);</span>
+<span class="cstat-no" title="statement not covered" > const save=async(values:FormValues)=&gt;{if(!code&amp;&amp;isItem)return;setSaving(true);try{if(isItem&amp;&amp;code){const payload={code:values.code,name:values.name,remark:values.remark,sortNo:values.sortNo??0};if(editing&amp;&amp;id)await dictionaryApi.updateItem(code,id,payload);else await dictionaryApi.createItem(code,payload)}else{const payload=values as DictionaryPayload;if(editing&amp;&amp;code)await dictionaryApi.update(code,{...payload,code});else await dictionaryApi.create(payload)}message.success('保存成功');nav(back)}catch(e){message.error(e instanceof Error?e.message:'保存失败')}finally{setSaving(false)}};</span>
+<span class="cstat-no" title="statement not covered" > const importFile=async()=&gt;{const file=files[0]?.originFileObj;if(!file)return void message.warning('请选择要导入的文件');if(!isItem||!code)return void message.warning('当前导入功能暂不可用');setSaving(true);try{const result=await dictionaryApi.importItems(code,file);message.success(`成功导入 ${result.imported} 个字典项`);nav(back)}catch(e){message.error(e instanceof Error?e.message:'导入失败')}finally{setSaving(false)}};</span>
+<span class="cstat-no" title="statement not covered" > return &lt;div style={{padding:24,background:'#f5f7fa',minHeight:'100%'}}&gt;&lt;PageHeader title={title} showBack onBack={()=&gt;nav(back)} breadcrumb={[{path:'/app/system-config/dictionaries',breadcrumbName:'数据字典'},{path:'',breadcrumbName:title}]}/&gt;&lt;Card style={{marginTop:16}}&gt;{importing?&lt;Form layout="vertical" style={{maxWidth:720}}&gt;&lt;Form.Item label="上传文件" required extra="支持 xlsx、xls、csv 格式，单个文件不超过 30MB"&gt;&lt;Upload.Dragger accept=".xlsx,.xls,.csv" maxCount={1} beforeUpload={()=&gt;false} fileList={files} onChange={({fileList})=&gt;setFiles(fileList)}&gt;&lt;p&gt;&lt;InboxOutlined style={{fontSize:38,color:'#1677ff'}}/&gt;&lt;/p&gt;&lt;p&gt;点击或将文件拖拽到此区域上传&lt;/p&gt;&lt;p style={{color:'#999'}}&gt;请确保编码唯一且必填字段完整&lt;/p&gt;&lt;/Upload.Dragger&gt;&lt;/Form.Item&gt;&lt;Space&gt;&lt;Button type="primary" loading={saving} onClick={()=&gt;void importFile()}&gt;保存&lt;/Button&gt;&lt;Button onClick={()=&gt;nav(back)}&gt;取消&lt;/Button&gt;&lt;/Space&gt;&lt;/Form&gt;:&lt;Spin spinning={loading}&gt;&lt;Form form={form} layout="vertical" style={{maxWidth:720}} initialValues={isItem?{sortNo:0}:{source:'自定义',valueType:'字符串'}} onFinish={save}&gt;&lt;Form.Item name="code" label={isItem?'字典项编码':'字典编码'} rules={[{required:true,message:'请输入编码'},{pattern:/^[a-z][a-z0-9_]*$/,message:'请输入小写英文字母、数字或下划线'}]}&gt;&lt;Input placeholder={isItem?'例如：follow_up':'例如：clinical_priority'} disabled={editing}/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="name" label={isItem?'字典项名称':'字典名称'} rules={[{required:true,message:'请输入名称'}]}&gt;&lt;Input placeholder="请输入中文名称"/&gt;&lt;/Form.Item&gt;{!isItem&amp;&amp;&lt;&gt;{!editing&amp;&amp;&lt;Form.Item name="source" label="字典来源"&gt;&lt;Input disabled/&gt;&lt;/Form.Item&gt;}&lt;Form.Item name="valueType" label="字典值类型" rules={[{required:true}]}&gt;&lt;Select options={['字符串','整数','小数','日期'].map(value=&gt;({value,label:value}))}/&gt;&lt;/Form.Item&gt;&lt;/&gt;}&lt;Form.Item name="remark" label="其他说明"&gt;&lt;Input.TextArea rows={5} maxLength={500} showCount placeholder="请输入补充说明"/&gt;&lt;/Form.Item&gt;&lt;Space&gt;&lt;Button type="primary" htmlType="submit" loading={saving}&gt;保存&lt;/Button&gt;&lt;Button onClick={()=&gt;nav(back)}&gt;取消&lt;/Button&gt;&lt;/Space&gt;&lt;/Form&gt;&lt;/Spin&gt;}&lt;/Card&gt;&lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-02T07:27:24.911Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    
