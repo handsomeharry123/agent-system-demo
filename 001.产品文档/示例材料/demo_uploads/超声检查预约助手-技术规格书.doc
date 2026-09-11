@@ -1,0 +1,71 @@
+超声检查预约助手 技术规格书
+
+一、接口地址
+https://api.hospital.local/agent/access/v1
+
+二、接入方式
+API 接入
+
+三、认证方式
+请求 Header 中携带 API key。
+字段名：Authorization
+示例：Authorization: Bearer ********
+说明：API key 全程密文保存，不在页面明文回显。
+
+四、请求方法
+POST
+
+五、数据格式
+请求格式：application/json
+返回格式：application/json
+
+六、请求参数
+1. patientId：患者唯一标识，字符串，必填。
+2. orderId：医嘱编号，字符串，必填。
+3. examItemCode：检查项目编码，字符串，必填。
+4. departmentCode：科室编码，字符串，必填。
+5. preferredDate：期望预约日期，字符串，非必填。
+6. contactPhone：患者联系方式，字符串，非必填。
+
+七、返回参数
+1. code：返回码，字符串。
+2. message：返回信息，字符串。
+3. appointmentTime：预约时间，字符串。
+4. appointmentLocation：检查地点，字符串。
+5. preparationNotes：检查注意事项，字符串数组。
+6. rescheduleTips：改约提醒，字符串。
+
+八、请求示例
+{
+  "patientId": "P202607130001",
+  "orderId": "ORD202607130001",
+  "examItemCode": "US-ABDOMEN",
+  "departmentCode": "0601",
+  "preferredDate": "2026-07-14",
+  "contactPhone": "13800138000"
+}
+
+九、返回示例
+{
+  "code": "0",
+  "message": "success",
+  "appointmentTime": "2026-07-14 09:30",
+  "appointmentLocation": "门诊楼 3 层超声医学科 2 诊室",
+  "preparationNotes": [
+    "检查前 8 小时禁食",
+    "请携带医保卡和检查申请单"
+  ],
+  "rescheduleTips": "如需改约，请至少提前 2 小时办理。"
+}
+
+十、错误码说明
+1. 40001：缺少必要请求参数。
+2. 40101：API key 无效或已过期。
+3. 40401：未找到对应检查项目。
+4. 40901：当前时段已满，请重新选择。
+5. 50001：预约系统内部异常。
+
+十一、联通测试信息
+测试方式：使用接口地址和 API key 进行连通性探测。
+预期结果：接口响应 200，平均耗时约 320ms。
+

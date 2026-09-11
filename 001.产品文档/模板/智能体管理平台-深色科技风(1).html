@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>医疗智能体管理平台 · 注册管理</title>
+<style>
+  :root{
+    --bg-0:#070b16;
+    --bg-1:#0b1224;
+    --bg-2:#0f1830;
+    --panel:rgba(17,26,50,.72);
+    --panel-solid:#111a32;
+    --line:rgba(56,189,248,.14);
+    --line-strong:rgba(56,189,248,.35);
+    --cyan:#22d3ee;
+    --blue:#3b82f6;
+    --violet:#818cf8;
+    --text-0:#e8f1ff;
+    --text-1:#9fb3d1;
+    --text-2:#5b6f92;
+    --green:#34d399;
+    --amber:#fbbf24;
+    --red:#f87171;
+    --glow:0 0 18px rgba(34,211,238,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;}
+  .num{font-family:"JetBrains Mono","Consolas",monospace;}
+  body{
+    background:var(--bg-0);
+    color:var(--text-0);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  /* ---- 背景层：网格 + 光晕 ---- */
+  body::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(56,189,248,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(56,189,248,.045) 1px,transparent 1px);
+    background-size:42px 42px;
+    mask-image:radial-gradient(ellipse 90% 70% at 55% 0%,#000 0%,transparent 78%);
+    animation:gridpan 80s linear infinite;
+  }
+  @keyframes gridpan{0%{background-position:0 0}100%{background-position:420px 420px}}
+  body::after{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(600px 320px at 15% -5%,rgba(59,130,246,.18),transparent 65%),
+      radial-gradient(700px 380px at 85% -10%,rgba(34,211,238,.13),transparent 65%),
+      radial-gradient(500px 500px at 100% 100%,rgba(129,140,248,.08),transparent 65%);
+  }
+  /* ---- 动态背景：极光色块 + 上升粒子 ---- */
+  .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .blob{position:absolute;border-radius:50%;filter:blur(90px);will-change:transform;}
+  .b1{width:620px;height:620px;left:-12%;top:-18%;
+    background:radial-gradient(circle,rgba(59,130,246,.32),transparent 70%);
+    animation:drift1 24s ease-in-out infinite;}
+  .b2{width:540px;height:540px;right:-10%;top:-14%;
+    background:radial-gradient(circle,rgba(34,211,238,.22),transparent 70%);
+    animation:drift2 30s ease-in-out infinite;}
+  .b3{width:600px;height:600px;right:-8%;bottom:-25%;
+    background:radial-gradient(circle,rgba(129,140,248,.18),transparent 70%);
+    animation:drift3 36s ease-in-out infinite;}
+  @keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(110px,70px) scale(1.18)}}
+  @keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-90px,90px) scale(.85)}}
+  @keyframes drift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,-100px) scale(1.12)}}
+  .particle{
+    position:absolute;bottom:-6px;border-radius:50%;background:var(--cyan);
+    box-shadow:0 0 8px rgba(34,211,238,.8);opacity:0;animation:rise linear infinite;
+  }
+  @keyframes rise{
+    0%{transform:translateY(0);opacity:0}
+    12%{opacity:.7}
+    85%{opacity:.35}
+    100%{transform:translateY(-105vh);opacity:0}
+  }
+  .app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;}
+
+  /* ---- 顶栏 ---- */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;height:60px;flex:none;
+    background:linear-gradient(180deg,rgba(15,24,48,.9),rgba(11,18,36,.75));
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(12px);
+    position:relative;
+  }
+  header::after{ /* 扫描光线 */
+    content:"";position:absolute;left:0;bottom:-1px;height:1px;width:100%;
+    background:linear-gradient(90deg,transparent,var(--cyan) 30%,var(--blue) 60%,transparent);
+    opacity:.7;animation:scan 6s linear infinite;background-size:200% 100%;
+  }
+  @keyframes scan{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand .logo{
+    width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--blue),var(--cyan));
+    box-shadow:var(--glow);font-size:18px;
+  }
+  .brand h1{font-size:17px;font-weight:600;letter-spacing:1px;}
+  .brand .en{font-size:10px;color:var(--text-2);letter-spacing:3px;text-transform:uppercase;}
+  .userbox{display:flex;align-items:center;gap:12px;}
+  .userbox .chip{
+    display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:99px;
+    border:1px solid var(--line-strong);background:rgba(34,211,238,.06);
+    font-size:13px;color:var(--text-1);
+  }
+  .userbox .chip b{color:var(--text-0);font-weight:600;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:600;
+    background:linear-gradient(135deg,#1d4ed8,#0891b2);border:1px solid var(--line-strong);
+    box-shadow:var(--glow);
+  }
+  .dot-live{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{50%{opacity:.4}}
+
+  /* ---- 主体布局 ---- */
+  .layout{display:flex;flex:1;min-height:0;}
+  aside{
+    width:224px;flex:none;padding:16px 12px;overflow-y:auto;
+    background:linear-gradient(180deg,rgba(13,20,40,.85),rgba(9,14,28,.85));
+    border-right:1px solid var(--line);backdrop-filter:blur(10px);
+  }
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:11px 14px;margin-bottom:4px;
+    border-radius:10px;font-size:14px;color:var(--text-1);cursor:pointer;
+    border:1px solid transparent;transition:.2s;position:relative;
+  }
+  .nav-item .ic{width:18px;text-align:center;opacity:.85;}
+  .nav-item .arrow{margin-left:auto;font-size:10px;color:var(--text-2);transition:.2s;}
+  .nav-item:hover{color:var(--text-0);background:rgba(56,189,248,.07);}
+  .nav-item.active{
+    color:#fff;background:linear-gradient(90deg,rgba(59,130,246,.28),rgba(34,211,238,.10));
+    border-color:var(--line-strong);box-shadow:inset 0 0 20px rgba(34,211,238,.06),var(--glow);
+  }
+  .nav-item.active::before{
+    content:"";position:absolute;left:-12px;top:20%;height:60%;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 10px var(--cyan);
+  }
+
+  main{flex:1;min-width:0;overflow-y:auto;padding:22px 26px 90px;}
+
+  /* ---- 页面标题 ---- */
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;}
+  .page-head h2{
+    font-size:22px;font-weight:600;letter-spacing:1px;display:flex;align-items:center;gap:10px;
+  }
+  .page-head h2::before{
+    content:"";width:4px;height:20px;border-radius:2px;
+    background:linear-gradient(180deg,var(--cyan),var(--blue));box-shadow:0 0 12px var(--cyan);
+  }
+  .page-head p{margin-top:6px;font-size:13px;color:var(--text-2);}
+  .btn-primary{
+    display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border:none;border-radius:10px;
+    font-size:14px;font-weight:600;color:#04121f;cursor:pointer;letter-spacing:1px;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    box-shadow:0 0 22px rgba(34,211,238,.4);transition:.2s;
+  }
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 32px rgba(34,211,238,.6);}
+
+  /* ---- 统计条 ---- */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
+  .stat{
+    padding:14px 18px;border-radius:12px;border:1px solid var(--line);
+    background:var(--panel);backdrop-filter:blur(8px);position:relative;overflow:hidden;
+  }
+  .stat::after{content:"";position:absolute;right:-20px;top:-20px;width:80px;height:80px;border-radius:50%;
+    background:radial-gradient(circle,rgba(34,211,238,.12),transparent 70%);}
+  .stat .lb{font-size:12px;color:var(--text-2);letter-spacing:1px;}
+  .stat .vl{font-size:26px;font-weight:700;margin-top:4px;}
+  .stat .vl small{font-size:12px;color:var(--text-2);font-weight:400;margin-left:4px;}
+  .stat.c1 .vl{color:var(--blue);text-shadow:0 0 14px rgba(59,130,246,.5);}
+  .stat.c2 .vl{color:var(--amber);text-shadow:0 0 14px rgba(251,191,36,.4);}
+  .stat.c3 .vl{color:var(--cyan);text-shadow:0 0 14px rgba(34,211,238,.5);}
+  .stat.c4 .vl{color:var(--green);text-shadow:0 0 14px rgba(52,211,153,.4);}
+  .stat.c5 .vl{color:var(--red);text-shadow:0 0 14px rgba(248,113,113,.4);}
+
+  /* ---- 面板 ---- */
+  .panel{
+    border:1px solid var(--line);border-radius:14px;background:var(--panel);
+    backdrop-filter:blur(10px);overflow:hidden;position:relative;
+  }
+  .panel + .panel{margin-top:16px;}
+  .panel::before{ /* 四角装饰 */
+    content:"";position:absolute;inset:0;pointer-events:none;border-radius:14px;
+    background:
+      linear-gradient(var(--line-strong),var(--line-strong)) left top/14px 1px,
+      linear-gradient(var(--line-strong),var(--line-strong)) left top/1px 14px,
+      linear-gradient(var(--line-strong),var(--line-strong)) right bottom/14px 1px,
+      linear-gradient(var(--line-strong),var(--line-strong)) right bottom/1px 14px;
+    background-repeat:no-repeat;
+  }
+
+  /* ---- 筛选区 ---- */
+  .filters{display:flex;flex-wrap:wrap;gap:10px;padding:16px 18px;}
+  .f-input,.f-select{
+    height:38px;padding:0 14px;border-radius:9px;font-size:13px;color:var(--text-0);
+    background:rgba(7,11,22,.6);border:1px solid var(--line);outline:none;transition:.2s;
+  }
+  .f-input::placeholder{color:var(--text-2);}
+  .f-input:focus,.f-select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(34,211,238,.12);}
+  .f-search{flex:1;min-width:200px;background:rgba(7,11,22,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%235b6f92' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") 12px center no-repeat;padding-left:34px;}
+  .f-select{min-width:130px;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='none' stroke='%235b6f92' stroke-width='2.5' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;}
+  .f-select option{background:var(--panel-solid);}
+  .btn-ghost{
+    height:38px;padding:0 18px;border-radius:9px;font-size:13px;cursor:pointer;transition:.2s;
+    color:var(--cyan);background:rgba(34,211,238,.06);border:1px solid var(--line-strong);
+  }
+  .btn-ghost:hover{background:rgba(34,211,238,.14);box-shadow:var(--glow);}
+
+  /* ---- Tabs ---- */
+  .tabs{display:flex;gap:4px;padding:0 18px;border-bottom:1px solid var(--line);overflow-x:auto;}
+  .tab{
+    display:flex;align-items:center;gap:7px;padding:13px 16px;font-size:14px;cursor:pointer;
+    color:var(--text-1);border-bottom:2px solid transparent;white-space:nowrap;transition:.2s;
+  }
+  .tab .cnt{
+    min-width:20px;height:20px;padding:0 6px;border-radius:99px;display:grid;place-items:center;
+    font-size:11px;background:rgba(91,111,146,.18);color:var(--text-1);
+  }
+  .tab:hover{color:var(--text-0);}
+  .tab.active{color:var(--cyan);border-bottom-color:var(--cyan);text-shadow:0 0 12px rgba(34,211,238,.55);}
+  .tab.active .cnt{background:rgba(34,211,238,.16);color:var(--cyan);box-shadow:0 0 10px rgba(34,211,238,.25);}
+
+  /* ---- 表格 ---- */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;padding:13px 16px;font-size:12px;font-weight:600;letter-spacing:1.5px;
+    color:var(--text-2);background:rgba(7,11,22,.5);border-bottom:1px solid var(--line);
+  }
+  tbody td{padding:15px 16px;border-bottom:1px solid rgba(56,189,248,.07);color:var(--text-1);}
+  tbody tr{transition:.18s;}
+  tbody tr:hover{background:linear-gradient(90deg,rgba(34,211,238,.05),rgba(59,130,246,.04));}
+  tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--cyan);}
+  .aid{color:var(--cyan);font-weight:500;letter-spacing:.5px;}
+  .aname{color:var(--text-0);font-weight:500;cursor:pointer;}
+  .aname:hover{color:var(--cyan);text-decoration:underline;text-underline-offset:3px;}
+  .tag{
+    display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:12px;
+    background:rgba(91,111,146,.14);border:1px solid rgba(91,111,146,.25);
+  }
+  .src{display:inline-flex;align-items:center;gap:6px;}
+  .src::before{content:"";width:6px;height:6px;border-radius:2px;background:var(--violet);box-shadow:0 0 6px var(--violet);}
+  .status{
+    display:inline-flex;align-items:center;gap:7px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:500;
+  }
+  .status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor;}
+  .st-pass{color:var(--green);background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.3);}
+  .st-draft{color:var(--text-1);background:rgba(91,111,146,.12);border:1px solid rgba(91,111,146,.3);}
+  .st-wait{color:var(--amber);background:rgba(251,191,36,.09);border:1px solid rgba(251,191,36,.3);}
+  .st-ing{color:var(--cyan);background:rgba(34,211,238,.09);border:1px solid rgba(34,211,238,.3);}
+  .st-ing::before{animation:pulse 1.4s ease-in-out infinite;}
+  .st-back{color:var(--red);background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.3);}
+  .st-revoke{color:var(--violet);background:rgba(129,140,248,.1);border:1px solid rgba(129,140,248,.3);}
+  .ops a{color:var(--cyan);font-size:13px;cursor:pointer;text-decoration:none;margin-right:14px;transition:.15s;}
+  .ops a:hover{text-shadow:0 0 10px rgba(34,211,238,.7);}
+  .ops a.more{color:var(--text-2);}
+  .ops a.more:hover{color:var(--text-1);}
+  .empty{padding:48px;text-align:center;color:var(--text-2);font-size:13px;display:none;}
+
+  /* ---- 表尾 ---- */
+  .table-foot{
+    display:flex;align-items:center;justify-content:space-between;padding:13px 18px;
+    font-size:12px;color:var(--text-2);border-top:1px solid var(--line);
+  }
+  .pager{display:flex;gap:6px;}
+  .pager button{
+    width:28px;height:28px;border-radius:7px;border:1px solid var(--line);cursor:pointer;
+    background:transparent;color:var(--text-1);font-size:12px;transition:.15s;
+  }
+  .pager button.on{border-color:var(--cyan);color:var(--cyan);box-shadow:var(--glow);}
+  .pager button:hover{border-color:var(--line-strong);}
+
+  /* ---- 医小管助手（保持原版形象与位置：右下角白色气泡卡片 + 机器人吉祥物） ---- */
+  .assistant{
+    position:fixed;right:96px;bottom:64px;z-index:50;width:380px;
+    border-radius:12px;background:#fff;color:#333;
+    box-shadow:0 8px 32px rgba(0,0,0,.35);
+    overflow:hidden;transition:.25s;
+  }
+  .as-head{display:flex;align-items:center;padding:14px 16px 4px;}
+  .as-head b{font-size:15px;color:#1677ff;font-weight:600;}
+  .as-close{margin-left:auto;cursor:pointer;color:#999;font-size:15px;line-height:1;padding:4px;}
+  .as-close:hover{color:#333;}
+  .as-body{padding:4px 16px 12px;font-size:13px;line-height:1.8;color:#444;}
+  .as-chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 12px;}
+  .as-chip{
+    padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:.15s;border:1px solid;
+  }
+  .as-chip:hover{filter:brightness(.96);}
+  /* 与统计卡数字、表格状态徽章同色系：待审核=琥珀 / 审核中=青 / 退回=红 / 已通过=绿 */
+  .ch-wait{color:#b45309;border-color:#fcd34d;background:#fffbeb;}
+  .ch-ing{color:#0e7490;border-color:#67e8f9;background:#ecfeff;}
+  .ch-back{color:#dc2626;border-color:#fca5a5;background:#fef2f2;}
+  .ch-pass{color:#059669;border-color:#6ee7b7;background:#ecfdf5;}
+  .as-links{display:flex;gap:20px;padding:6px 16px 14px;}
+  .as-links a{font-size:13px;color:#1677ff;text-decoration:none;cursor:pointer;}
+  .as-links a:hover{text-decoration:underline;}
+  .as-mascot{
+    position:fixed;right:14px;bottom:34px;z-index:51;width:88px;height:88px;
+    cursor:pointer;border:none;background:none;
+  }
+  .as-mascot svg{width:100%;height:100%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(56,189,248,.2);border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+<div class="bg-fx" id="bgfx">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+</div>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">⊕</div>
+      <div>
+        <h1>医疗智能体管理平台</h1>
+        <div class="en">Medical Agent Management Platform</div>
+      </div>
+    </div>
+    <div class="userbox">
+      <div class="chip"><span class="dot-live"></span>系统运行正常</div>
+      <div class="chip"><b>李秀英</b>· 科室管理员</div>
+      <div class="avatar">李</div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div class="nav-item active"><span class="ic">◧</span>智能体接入中心</div>
+      <div class="nav-item"><span class="ic">▤</span>统一台账中心<span class="arrow">▾</span></div>
+      <div class="nav-item"><span class="ic">⛨</span>医院资源管理中心<span class="arrow">▾</span></div>
+      <div class="nav-item"><span class="ic">⚗</span>统一准入评测沙盒<span class="arrow">▾</span></div>
+      <div class="nav-item"><span class="ic">◎</span>统一运行监控中心<span class="arrow">▾</span></div>
+      <div class="nav-item"><span class="ic">✎</span>审计中心</div>
+    </aside>
+
+    <main>
+      <div class="page-head">
+        <div>
+          <h2>注册管理</h2>
+          <p>按注册状态分页管理全部注册记录 · REGISTRY MANAGEMENT</p>
+        </div>
+        <button class="btn-primary">⚡ 新建注册</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat c1"><div class="lb">接入智能体总数 TOTAL</div><div class="vl num">6<small>个</small></div></div>
+        <div class="stat c2"><div class="lb">待审核 PENDING</div><div class="vl num">1<small>个</small></div></div>
+        <div class="stat c3"><div class="lb">审核中 REVIEWING</div><div class="vl num">1<small>个</small></div></div>
+        <div class="stat c4"><div class="lb">审核通过 APPROVED</div><div class="vl num">1<small>个</small></div></div>
+        <div class="stat c5"><div class="lb">退回修改 RETURNED</div><div class="vl num">1<small>个</small></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="filters">
+          <input id="q" class="f-input f-search" placeholder="搜索智能体名称 / 编号" oninput="render()">
+          <select class="f-select"><option>所属科室</option><option>信息中心</option><option>门诊部</option><option>住院部</option></select>
+          <select class="f-select"><option>诊疗环节</option><option>预问诊</option><option>导诊分诊</option><option>住院</option><option>辅助诊断</option><option>其他</option></select>
+          <select class="f-select"><option>智能体来源</option><option>自研</option><option>第三方</option></select>
+          <input class="f-input" style="width:150px" placeholder="提交时间起" onfocus="this.type='date'">
+          <input class="f-input" style="width:150px" placeholder="提交时间止" onfocus="this.type='date'">
+          <button class="btn-ghost" onclick="resetFilters()">⟲ 重置筛选</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="tabs" id="tabs"></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>序号</th><th>智能体编号</th><th>智能体名称</th><th>所属科室</th>
+                <th>诊疗环节</th><th>智能体来源</th><th>注册状态</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+          <div class="empty" id="empty">⌀ 当前筛选条件下暂无记录</div>
+        </div>
+        <div class="table-foot">
+          <span id="foot-info" class="num"></span>
+          <div class="pager">
+            <button>‹</button><button class="on num">1</button><button>›</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 医小管 助手（原版形象与位置） -->
+<div class="assistant" id="assistant">
+  <div class="as-head">
+    <b>医小管</b>
+    <span class="as-close" onclick="toggleAssistant(false)">✕</span>
+  </div>
+  <div class="as-body">
+    你好！我是医小管。点击【新建注册】，把产品说明书 / 技术规格书 PDF（或链接 / 图片）丢给我，我来帮你自动识别并填表～
+  </div>
+  <div class="as-chips">
+    <span class="as-chip ch-wait" onclick="setTab('待审核')">待审核 1</span>
+    <span class="as-chip ch-ing" onclick="setTab('审核中')">审核中 1</span>
+    <span class="as-chip ch-back" onclick="setTab('退回修改')">退回 1</span>
+    <span class="as-chip ch-pass" onclick="setTab('审核通过')">已通过 1</span>
+  </div>
+  <div class="as-links">
+    <a>→ 台账中心</a>
+    <a>→ 准入评测沙盒</a>
+  </div>
+</div>
+<button class="as-mascot" onclick="toggleAssistant()" title="医小管">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="mHead" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9f1fc"/>
+      </linearGradient>
+      <linearGradient id="mFace" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1c2f66"/><stop offset="1" stop-color="#101d45"/>
+      </linearGradient>
+      <linearGradient id="mBlue" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3d7ff0"/><stop offset="1" stop-color="#2456c9"/>
+      </linearGradient>
+      <linearGradient id="mEye" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8fe6ff"/><stop offset="1" stop-color="#3fb6f5"/>
+      </linearGradient>
+    </defs>
+    <!-- 头顶发卷 -->
+    <path d="M60 16 C52 8 40 12 42 21 C36 19 32 26 38 29" fill="none" stroke="url(#mBlue)" stroke-width="6" stroke-linecap="round"/>
+    <!-- 耳机 -->
+    <ellipse cx="17" cy="55" rx="7" ry="11" fill="url(#mBlue)"/>
+    <ellipse cx="103" cy="55" rx="7" ry="11" fill="url(#mBlue)"/>
+    <!-- 头部 -->
+    <rect x="20" y="26" width="80" height="56" rx="26" fill="url(#mHead)" stroke="#c9d9ef" stroke-width="1.5"/>
+    <!-- 头部高光 -->
+    <path d="M30 38 Q34 30 44 29" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+    <!-- 面屏 -->
+    <rect x="30" y="36" width="60" height="38" rx="17" fill="url(#mFace)"/>
+    <!-- 眼睛 -->
+    <rect x="44" y="47" width="9" height="15" rx="4.5" fill="url(#mEye)"/>
+    <rect x="67" y="47" width="9" height="15" rx="4.5" fill="url(#mEye)"/>
+    <circle cx="46.5" cy="50.5" r="1.8" fill="#eafcff"/>
+    <circle cx="69.5" cy="50.5" r="1.8" fill="#eafcff"/>
+    <!-- 脸颊光点 -->
+    <circle cx="37" cy="60" r="2.5" fill="#3fb6f5" opacity=".55"/>
+    <circle cx="83" cy="60" r="2.5" fill="#3fb6f5" opacity=".55"/>
+    <!-- 身体 -->
+    <path d="M38 84 Q38 78 46 78 L74 78 Q82 78 82 84 L80 104 Q79 112 70 112 L50 112 Q41 112 40 104 Z" fill="url(#mHead)" stroke="#c9d9ef" stroke-width="1.5"/>
+    <!-- 蓝色披肩/衣领 -->
+    <path d="M40 82 Q60 92 80 82 L79 92 Q60 100 41 92 Z" fill="url(#mBlue)"/>
+    <!-- 手臂 -->
+    <ellipse cx="33" cy="93" rx="6.5" ry="10" fill="#ffffff" stroke="#c9d9ef" stroke-width="1.5"/>
+    <ellipse cx="87" cy="93" rx="6.5" ry="10" fill="#ffffff" stroke="#c9d9ef" stroke-width="1.5"/>
+    <!-- 胸前指示灯 -->
+    <circle cx="60" cy="102" r="4" fill="url(#mEye)"/>
+  </svg>
+</button>
+
+<script>
+const DATA = [
+  {id:"XX-0001", name:"智能预问诊",   dept:"信息中心", stage:"预问诊",   src:"自研", status:"审核通过"},
+  {id:"XX-0003", name:"智能导诊分诊", dept:"信息中心", stage:"导诊分诊", src:"自研", status:"草稿"},
+  {id:"XX-0004", name:"门诊预问诊助手",dept:"信息中心", stage:"预问诊",   src:"自研", status:"待审核"},
+  {id:"XX-0005", name:"住院病程生成", dept:"信息中心", stage:"住院",     src:"自研", status:"审核中"},
+  {id:"XX-0006", name:"检验报告解读", dept:"信息中心", stage:"辅助诊断", src:"自研", status:"撤销修改"},
+  {id:"XX-0007", name:"智能随访管理", dept:"信息中心", stage:"其他",     src:"自研", status:"退回修改"},
+];
+const ST_CLS = {"审核通过":"st-pass","草稿":"st-draft","待审核":"st-wait","审核中":"st-ing","撤销修改":"st-revoke","退回修改":"st-back"};
+const TABS = ["全部","草稿","待审核","审核中","撤销修改","退回修改","审核通过"];
+let curTab = "全部";
+
+function renderTabs(){
+  document.getElementById("tabs").innerHTML = TABS.map(t=>{
+    const n = t==="全部" ? DATA.length : DATA.filter(d=>d.status===t).length;
+    return `<div class="tab ${t===curTab?'active':''}" onclick="setTab('${t}')">${t}<span class="cnt num">${n}</span></div>`;
+  }).join("");
+}
+function setTab(t){ curTab = t; render(); }
+function resetFilters(){
+  document.getElementById("q").value = "";
+  document.querySelectorAll(".f-select").forEach(s=>s.selectedIndex=0);
+  curTab = "全部"; render();
+}
+function render(){
+  renderTabs();
+  const q = document.getElementById("q").value.trim().toLowerCase();
+  const rows = DATA
+    .filter(d => curTab==="全部" || d.status===curTab)
+    .filter(d => !q || d.name.toLowerCase().includes(q) || d.id.toLowerCase().includes(q));
+  document.getElementById("tbody").innerHTML = rows.map((d,i)=>`
+    <tr>
+      <td class="num">${String(i+1).padStart(2,"0")}</td>
+      <td class="aid num">${d.id}</td>
+      <td><span class="aname">${d.name}</span>${d.status==="草稿"?'（草稿）':''}</td>
+      <td><span class="tag">${d.dept}</span></td>
+      <td>${d.stage}</td>
+      <td><span class="src">${d.src}</span></td>
+      <td><span class="status ${ST_CLS[d.status]}">${d.status}</span></td>
+      <td class="ops"><a>◉ 查看详情</a><a class="more">⋯ 更多</a></td>
+    </tr>`).join("");
+  document.getElementById("empty").style.display = rows.length ? "none" : "block";
+  document.getElementById("foot-info").textContent = `共 ${rows.length} 条记录 · 第 1 / 1 页`;
+}
+function toggleAssistant(show){
+  const el = document.getElementById("assistant");
+  const next = show !== undefined ? show : el.style.display === "none";
+  el.style.display = next ? "block" : "none";
+}
+/* 动态背景粒子 */
+(function(){
+  const box = document.getElementById("bgfx");
+  for(let i=0;i<26;i++){
+    const p = document.createElement("div");
+    p.className = "particle";
+    const s = 1.5 + Math.random()*2.5;
+    p.style.width = p.style.height = s+"px";
+    p.style.left = Math.random()*100+"%";
+    p.style.animationDuration = (9+Math.random()*14)+"s";
+    p.style.animationDelay = (-Math.random()*20)+"s";
+    box.appendChild(p);
+  }
+})();
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+.project-form-page {
+  width: 100%;
+}
+
+.project-form-shell {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.project-form-main {
+  min-width: 0;
+}
+
+.project-material-switcher {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.project-material-switcher-label,
+.project-material-category {
+  font-size: 12px;
+}
+
+.project-material-category {
+  padding: 2px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+}
+
+.project-material-required {
+  margin-left: 4px;
+  color: #ff4d4f;
+}
+
+.project-material-count {
+  margin-left: 6px;
+  color: #999;
+}
+
+.project-upload-unified .ant-upload-drag {
+  min-height: 164px;
+  padding: 8px 0;
+}
+
+.project-upload-unified .ant-upload-drag-icon {
+  margin-bottom: 4px !important;
+}
+
+.project-upload-unified .ant-upload-drag-icon .anticon {
+  font-size: 36px;
+}
+
+.project-upload-unified .ant-upload-text {
+  font-size: 13px !important;
+}
+
+.project-upload-unified .ant-upload-hint {
+  margin-top: 2px !important;
+  font-size: 11px !important;
+}
+
+.project-material-files {
+  margin-top: 12px;
+}
+
+.project-material-file-group {
+  margin-bottom: 8px;
+}
+
+.project-material-file-label {
+  margin-right: 8px;
+  font-size: 12px;
+}
+
+.project-option-buttons {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.project-option-buttons .ant-radio-button-wrapper {
+  text-align: center;
+}
+
+.project-form-main .ant-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+}
+
+.project-form-main .ant-checkbox-wrapper {
+  margin-inline-start: 0;
+}
+
+.project-indicators {
+  margin-bottom: 24px;
+}
+
+.project-indicators-title {
+  margin-bottom: 2px;
+  color: rgba(0, 0, 0, 0.88);
+  font-size: 14px;
+}
+
+.project-required-mark {
+  margin-inline-end: 4px;
+  color: #ff4d4f;
+  font-family: SimSun, sans-serif;
+}
+
+.project-indicators-hint {
+  margin-bottom: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.project-indicator-dimension {
+  height: 100%;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.project-indicator-dimension-title {
+  margin-bottom: 12px;
+  color: rgba(0, 0, 0, 0.88);
+  font-weight: 600;
+}
+
+.project-indicator-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.project-ai-preaudit-field {
+  padding: 16px 18px 8px;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  background: #f6ffed;
+}
+
+.project-ai-preaudit-field .ant-form-item {
+  margin-bottom: 8px;
+}
+
+.project-ai-preaudit-tag {
+  margin-inline-start: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.project-ai-preaudit-textarea,
+.project-ai-preaudit-textarea:hover,
+.project-ai-preaudit-textarea:focus {
+  border-color: #95de64;
+  background: #fcfff8;
+}
+
+.project-ai-prefill-field {
+  margin-bottom: 18px;
+  padding: 10px 12px 2px;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  background: #f6ffed;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.project-ai-prefill-field .ant-input,
+.project-ai-prefill-field .ant-input-number,
+.project-ai-prefill-field .ant-select-selector,
+.project-ai-prefill-field textarea {
+  border-color: #95de64 !important;
+  background: #fcfff8 !important;
+}
+
+.project-ai-prefill-tag {
+  margin-inline-end: 0;
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 18px;
+}

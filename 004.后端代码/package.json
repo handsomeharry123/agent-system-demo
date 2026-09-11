@@ -1,0 +1,1 @@
+{"name":"yixiaozhi-api","private":true,"scripts":{"start":"python3 api/server.py"}}

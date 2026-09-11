@@ -1,0 +1,194 @@
+.lifecycle-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #f0f1f3;
+  background:
+    radial-gradient(ellipse 28% 115% at 4% 22%, rgba(22, 119, 255, 0.095), transparent 72%),
+    linear-gradient(90deg, rgba(244, 249, 255, 0.56) 0%, rgba(255, 255, 255, 0) 26%),
+    #fff;
+  box-shadow: 0 3px 12px rgba(31, 56, 88, 0.045);
+}
+
+.lifecycle-card::after {
+  position: absolute;
+  top: 0;
+  left: 32px;
+  width: 72px;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, transparent, rgba(22, 119, 255, 0.45), transparent);
+}
+
+.lifecycle-card .ant-card-body { padding: 15px 32px 13px; }
+
+.lifecycle-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.lifecycle-title { font-size: 16px; color: #17233d; }
+.lifecycle-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  color: #389e0d;
+  font-size: 12px;
+  line-height: 18px;
+  border: 1px solid rgba(82, 196, 26, 0.18);
+  border-radius: 999px;
+  background: rgba(82, 196, 26, 0.065);
+}
+.lifecycle-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #52c41a;
+  box-shadow: 0 0 0 4px rgba(82,196,26,.11);
+  animation: lifecycle-status-pulse 2s ease-in-out infinite;
+}
+
+.lifecycle-progress-body { position: relative; }
+
+.lifecycle-steps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  min-height: 54px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lifecycle-track {
+  position: absolute;
+  z-index: 0;
+  top: 14px;
+  right: 15px;
+  left: 15px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8edf5;
+  box-shadow: inset 0 1px 2px rgba(31, 56, 88, 0.08);
+}
+
+.lifecycle-track-fill {
+  position: relative;
+  width: var(--lifecycle-progress);
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #389e0d, #52c41a 55%, #95de64);
+  box-shadow: 0 0 10px rgba(82, 196, 26, 0.42);
+  transform-origin: left center;
+  animation: lifecycle-fill 1050ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.lifecycle-track-fill span {
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  transform: translateX(-150%);
+  animation: lifecycle-shimmer 2.25s ease-in-out 700ms infinite;
+}
+
+.lifecycle-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 30px;
+  flex-direction: column;
+  align-items: center;
+  color: #8b95a7;
+  opacity: 0;
+  transform: translateY(8px) scale(.92);
+  animation: lifecycle-step-in 520ms cubic-bezier(.22, 1.35, .36, 1) calc(100ms + var(--step-index) * 105ms) forwards;
+}
+.lifecycle-step-button {
+  position: relative;
+  display: flex;
+  width: 30px;
+  min-width: 30px;
+  height: 54px;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.lifecycle-step-button:disabled { cursor: default; }
+.lifecycle-step-button:disabled:hover .lifecycle-node-core {
+  transform: none;
+  box-shadow: 0 1px 5px rgba(31, 56, 88, .08);
+}
+.lifecycle-step-button:disabled:hover .lifecycle-label { color: inherit; }
+.lifecycle-step-button:focus-visible .lifecycle-node-ring {
+  border: 2px solid #52B788;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, .18);
+}
+.lifecycle-step-button:hover .lifecycle-node-core {
+  transform: translateY(-2px) scale(1.08);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, .24);
+}
+.lifecycle-step-button:hover .lifecycle-label { color: #52B788; }
+.lifecycle-node { position: relative; display: grid; width: 30px; height: 30px; place-items: center; }
+.lifecycle-node-ring { position: absolute; inset: 0; border-radius: 50%; }
+.lifecycle-node-core {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: #7d8798;
+  font-weight: 600;
+  font-size: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #edf1f6;
+  box-shadow: 0 1px 5px rgba(31, 56, 88, .08);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.lifecycle-step.is-completed, .lifecycle-step.is-active { color: #389e0d; }
+.lifecycle-step.is-completed .lifecycle-node-core,
+.lifecycle-step.is-active .lifecycle-node-core {
+  color: #fff;
+  background: linear-gradient(145deg, #73d13d, #389e0d);
+  box-shadow: 0 2px 8px rgba(82, 196, 26, .25), inset 0 1px 1px rgba(255,255,255,.48);
+}
+.lifecycle-step.is-active .lifecycle-node-core {
+  transform: scale(1.08);
+  animation: lifecycle-core-breathe 2.2s ease-in-out 700ms infinite;
+}
+.lifecycle-step.is-active .lifecycle-node-ring {
+  border: 1px solid rgba(82, 196, 26, .4);
+  background: rgba(82, 196, 26, .13);
+  animation: lifecycle-pulse 1.45s ease-out 300ms infinite;
+}
+.lifecycle-label { position: absolute; top: 34px; left: 50%; font-size: 13px; font-weight: 500; white-space: nowrap; transform: translateX(-50%); transition: color .2s ease; }
+.lifecycle-step:first-child .lifecycle-label { left: 0; transform: none; }
+.lifecycle-step:last-child .lifecycle-label { right: 0; left: auto; transform: none; }
+.lifecycle-step.is-active .lifecycle-label { color: #389e0d; font-weight: 600; }
+
+@keyframes lifecycle-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes lifecycle-shimmer { 0%, 25% { transform: translateX(-150%); } 70%, 100% { transform: translateX(350%); } }
+@keyframes lifecycle-step-in { to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes lifecycle-pulse { 0% { transform: scale(.76); opacity: 1; } 75%, 100% { transform: scale(1.85); opacity: 0; } }
+@keyframes lifecycle-core-breathe {
+  0%, 100% { transform: scale(1.08); box-shadow: 0 2px 8px rgba(82, 196, 26, .26), inset 0 1px 1px rgba(255,255,255,.48); }
+  50% { transform: scale(1.21); box-shadow: 0 4px 18px rgba(82, 196, 26, .5), 0 0 0 3px rgba(82,196,26,.1), inset 0 1px 1px rgba(255,255,255,.62); }
+}
+@keyframes lifecycle-status-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(82,196,26,.08); }
+  50% { box-shadow: 0 0 0 5px rgba(82,196,26,.18); }
+}
+
+@media (max-width: 760px) {
+  .lifecycle-card .ant-card-body { padding: 14px 18px 12px; }
+  .lifecycle-label { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lifecycle-track-fill, .lifecycle-track-fill span, .lifecycle-step, .lifecycle-step.is-active .lifecycle-node-ring, .lifecycle-step.is-active .lifecycle-node-core, .lifecycle-status i { animation: none; }
+  .lifecycle-step { opacity: 1; transform: none; }
+}
