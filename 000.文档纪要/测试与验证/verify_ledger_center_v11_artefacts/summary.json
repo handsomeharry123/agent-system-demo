@@ -1,0 +1,153 @@
+{
+  "ts": "2026-07-03T07:15:52.644Z",
+  "total": 29,
+  "passed": 28,
+  "failed": 1,
+  "results": [
+    {
+      "name": "[A1] 态势汇报气泡出现",
+      "pass": true,
+      "detail": "找到医小管"
+    },
+    {
+      "name": "[A2] 气泡含「生成报告」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A2] 气泡含「订阅速读」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A3] 生成报告跳转 /app/ledger-demo/report",
+      "pass": true,
+      "detail": "http://localhost:5173/app/ledger-demo/report"
+    },
+    {
+      "name": "[A4] 报告页全院标题可见",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A5] 5 大模块齐全",
+      "pass": true,
+      "detail": "建设=true/对接=true/评测=true/健康=true/建议=true"
+    },
+    {
+      "name": "[A6] 新增章节按钮存在",
+      "pass": false,
+      "detail": "未找到一级章节按钮"
+    },
+    {
+      "name": "[A7] PDF 真实导出",
+      "pass": true,
+      "detail": "/Users/harry/Desktop/CC_TEST/agent-system/verify_ledger_center_v11_artefacts/A7-report.pdf"
+    },
+    {
+      "name": "[A8] Word 真实导出",
+      "pass": true,
+      "detail": "/Users/harry/Desktop/CC_TEST/agent-system/verify_ledger_center_v11_artefacts/A8-report.doc"
+    },
+    {
+      "name": "[A9] PPT 真实导出",
+      "pass": true,
+      "detail": "/Users/harry/Desktop/CC_TEST/agent-system/verify_ledger_center_v11_artefacts/A9-report.pptx"
+    },
+    {
+      "name": "[A10] 总览页含「生成报告」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A10] 总览页含「订阅速读」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A11] 速读订阅 Drawer 打开",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A11] Drawer 含推送通道 Switch",
+      "pass": true,
+      "detail": "共 3 个"
+    },
+    {
+      "name": "[A11] 立即开启订阅可点击",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A12] 列表页含「生成报告」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A12] 列表页含「订阅速读」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[A13] 详情页 Agent 浮窗可见",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B1] 科室用户态气泡出现",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B1] 气泡口径为「本科室智能体」",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B2] 本月调用量展示",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B2] 正常运行率展示",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B3] 科室用户生成报告跳转",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B3] 报告页默认全院标题",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B3] 切换至本科室小结标题",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B4] 本科室 4 大模块齐全",
+      "pass": true,
+      "detail": "清单=true/使用=true/可用性=true/建议=true"
+    },
+    {
+      "name": "[B5] 对话窗口标题可见",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B5] 科室用户口径推荐问句",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B5] 发送按钮存在",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

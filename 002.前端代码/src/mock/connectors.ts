@@ -42,7 +42,7 @@ export const initialConnectors: ConnectorState[] = [
   {
     key: 'wechat',
     name: '微信',
-    description: '接入个人微信，用于接收医小知推送的报告、告警等消息',
+    description: '接入个人微信，用于接收医小管推送的报告、告警等消息',
     iconName: 'WechatOutlined',
     brandColor: '#07C160',
     capabilities: ['消息推送', '附件发送'],
@@ -83,7 +83,7 @@ export const initialConnectors: ConnectorState[] = [
     name: '钉钉',
     description: '接入钉钉账号/机器人，用于钉钉群/工作通知消息推送',
     iconName: 'DingtalkOutlined',
-    brandColor: '#52B788',
+    brandColor: '#1677FF',
     capabilities: ['消息推送', '群通知', '工作通知'],
     status: 'error',
     errorMessage: '授权令牌已过期，请重新授权',

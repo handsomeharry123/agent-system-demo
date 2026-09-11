@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   App,
   Button,
@@ -50,7 +50,6 @@ import {
   TeamOutlined,
   ToolOutlined,
   ThunderboltFilled,
-  ThunderboltOutlined,
   WalletOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -59,9 +58,10 @@ import type { UploadFile } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import PageHeader from '../../components/PageHeader';
 import { useSmartDraft } from '../agent-center/smart/store';
-import auditMaterialPdfUrl from '../../../output/pdf/项目审计填报材料-完成度100%-已使用金额136.8万元.pdf?url';
+import auditMaterialPdfUrl from '../../assets/项目审计填报材料-完成度100%-已使用金额136.8万元.pdf?url';
 import auditProjectHeroUrl from '../../assets/audit-project-hero-v10.png';
 import './audit.css';
+import { operationLogsApi, type LogFilters, type OperationLog } from '../../services/operationLogs';
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -72,22 +72,10 @@ const departments = ['全部科室', '0301 心内科', '0302 影像科', '0303 �
 // 按市场常规的综合估算价格折算：50 元 / 百万 Token。
 // 项目只提供 Token 总量，未区分输入/输出，因此采用统一综合单价。
 const TOKEN_PRICE_PER_MILLION_YUAN = 50;
-const TOTAL_INVESTMENT_BUDGET_IN_TEN_THOUSAND_YUAN = 2780;
-const CURRENT_MONTH_TOKEN_CONSUMPTION = 70_466_667;
 const calculateTokenCost = (tokens: number) => tokens / 1_000_000 * TOKEN_PRICE_PER_MILLION_YUAN;
 const calculateInvestmentRatio = (tokenCost: number, budgetInTenThousandYuan: number) => (
   budgetInTenThousandYuan > 0 ? (tokenCost / (budgetInTenThousandYuan * 10_000)) * 100 : 0
 );
-const economicRows = [
-  { key: '1', id: '0301-0007', name: '心血管疾病智能随访助手', version: 'V2.1', dept: '0301 心内科', budget: 180, tokens: 3284000, updated: '2026-07-28 09:42:16' },
-  { key: '2', id: '0302-0012', name: '胸部CT影像智能分析平台', version: 'V3.0', dept: '0302 影像科', budget: 320, tokens: 8926000, updated: '2026-07-28 09:39:05' },
-  { key: '3', id: '0303-0004', name: '合理用药智能审核助手', version: 'V1.8', dept: '0303 药剂科', budget: 95, tokens: 2145000, updated: '2026-07-28 09:35:32' },
-  { key: '4', id: '0304-0009', name: '病案首页智能质控智能体', version: 'V2.4', dept: '0304 医务科', budget: 150, tokens: 4762000, updated: '2026-07-28 09:31:48' },
-].map((row) => {
-  const cost = calculateTokenCost(row.tokens);
-  return { ...row, cost, ratio: calculateInvestmentRatio(cost, row.budget) };
-});
-
 type ProjectStatus = '待申请' | '草稿' | '待审计' | '审计中' | '撤销修改' | '审计通过' | '审计不通过';
 const statusColor: Record<ProjectStatus, string> = {
   待申请: 'default', 草稿: 'orange', 待审计: 'blue', 审计中: 'processing', 撤销修改: 'gold', 审计通过: 'success', 审计不通过: 'error',
@@ -192,98 +180,6 @@ const Header = ({ title, description, extra }: { title: string; description: str
 const Toolbar = ({ children }: { children: React.ReactNode }) => <Card className="audit-filter-card" bordered={false}>{children}</Card>;
 const truncate = (value: string) => <Tooltip title={value}><span className="audit-ellipsis">{value}</span></Tooltip>;
 const exportMessage = (message: ReturnType<typeof App.useApp>['message'], count: number) => message.success(`已生成 Excel 文件，共导出 ${count} 条记录`);
-
-function EconomicAudit() {
-  const { message } = App.useApp();
-  const [dept, setDept] = useState('全部科室');
-  const [selected, setSelected] = useState<React.Key[]>([]);
-  const data = economicRows.filter((r) => dept === '全部科室' || r.dept === dept);
-  const currentMonthTokenCost = calculateTokenCost(CURRENT_MONTH_TOKEN_CONSUMPTION);
-  const overallInvestmentRatio = calculateInvestmentRatio(
-    currentMonthTokenCost,
-    TOTAL_INVESTMENT_BUDGET_IN_TEN_THOUSAND_YUAN,
-  );
-  const columns: ColumnsType<(typeof economicRows)[number]> = [
-    { title: '智能体编号', dataIndex: 'id', width: 120, fixed: 'left' },
-    { title: '智能体名称', dataIndex: 'name', width: 190, ellipsis: true },
-    { title: '版本', dataIndex: 'version', width: 80 },
-    { title: '所属科室', dataIndex: 'dept', width: 140 },
-    { title: '投资预算金额', dataIndex: 'budget', width: 145, sorter: (a, b) => a.budget - b.budget, render: (v) => `${v.toFixed(2)} 万元` },
-    { title: 'Token 消耗量', dataIndex: 'tokens', width: 145, sorter: (a, b) => a.tokens - b.tokens, render: (v) => v.toLocaleString() },
-    { title: 'Token 使用金额', dataIndex: 'cost', width: 150, sorter: (a, b) => a.cost - b.cost, render: (v) => `¥ ${v.toFixed(2)}` },
-    { title: '投入产出比', dataIndex: 'ratio', width: 150, sorter: (a, b) => a.ratio - b.ratio, render: (v) => <Text strong>{v.toFixed(6)}%</Text> },
-    { title: '最后更新时间', dataIndex: 'updated', width: 175 },
-  ];
-  const metrics = [
-    {
-      key: 'agents',
-      title: '纳入审计智能体',
-      value: 48,
-      suffix: '个',
-      icon: <RobotOutlined />,
-      bars: [35, 48, 44, 61, 55, 74, 68, 86],
-    },
-    {
-      key: 'budget',
-      title: '总投资预算',
-      value: TOTAL_INVESTMENT_BUDGET_IN_TEN_THOUSAND_YUAN,
-      suffix: '万元',
-      icon: <WalletOutlined />,
-      bars: [70, 58, 78, 66, 82, 74, 91, 84],
-    },
-    {
-      key: 'token',
-      title: '本月 Token 使用金额',
-      value: currentMonthTokenCost,
-      prefix: '¥',
-      precision: 2,
-      icon: <ThunderboltOutlined />,
-      bars: [88, 79, 82, 68, 73, 60, 55, 48],
-    },
-    {
-      key: 'roi',
-      title: '投入产出比',
-      value: overallInvestmentRatio,
-      suffix: '%',
-      precision: 6,
-      icon: <RiseOutlined />,
-      bars: [38, 45, 42, 58, 64, 61, 76, 92],
-    },
-  ];
-  return <div>
-    <Header title="经济审计" description="汇总智能体投资预算与 Token 实际消耗，辅助识别投入产出效率。" />
-    <div className="audit-stat-grid economic-stat-grid">
-      {metrics.map((metric, index) => (
-        <Card
-          key={metric.key}
-          bordered={false}
-          className={`economic-stat-card economic-stat-card-${metric.key}`}
-          style={{ '--card-delay': `${index * 90}ms` } as React.CSSProperties}
-        >
-          <div className="economic-stat-glow" />
-          <div className="economic-stat-head">
-            <span className="economic-stat-icon">{metric.icon}</span>
-          </div>
-          <Statistic
-            title={metric.title}
-            value={metric.value}
-            prefix={metric.prefix}
-            suffix={metric.suffix}
-            precision={metric.precision}
-            groupSeparator=","
-          />
-          <div className="economic-stat-foot">
-            <span className="economic-mini-chart" aria-hidden="true">
-              {metric.bars.map((height, barIndex) => <i key={barIndex} style={{ height: `${height}%` }} />)}
-            </span>
-          </div>
-        </Card>
-      ))}
-    </div>
-    <Toolbar><Space wrap><Text strong>所属科室</Text><Select value={dept} onChange={setDept} options={departments.map((x) => ({ label: x, value: x }))} style={{ width: 190 }} /><Text type="secondary">点击表头可按金额、用量或投入产出比排序</Text></Space></Toolbar>
-    <Card bordered={false} className="audit-table-card"><Table rowSelection={{ selectedRowKeys: selected, onChange: setSelected }} columns={columns} dataSource={data} scroll={{ x: 1200 }} pagination={{ pageSize: 8, showTotal: (n) => `共 ${n} 条` }} /></Card>
-  </div>;
-}
 
 const MetricCell = ({ value, description, empty }: { value: number; description: string; empty?: boolean }) => {
   if (empty) return <Text type="secondary">—</Text>;
@@ -443,7 +339,7 @@ function ProjectFormView({ project, onBack, onSubmit }: { project: typeof initia
         file?: UploadFile;
         source?: 'form' | 'assistant';
       }>).detail;
-      // 表单入口已经在 beforeUpload 中保存；医小知入口则由这里同步到证明材料。
+      // 表单入口已经在 beforeUpload 中保存；医小管入口则由这里同步到证明材料。
       if (!detail?.fileName || detail.source === 'form') return;
       saveMaterial({
         uid: detail.file?.uid || `assistant-${detail.fileName}-${detail.fileSize || 0}`,
@@ -1454,16 +1350,27 @@ function BehaviorAudit() {
 }
 
 function OperationLogs() {
-  const [filters, setFilters] = useState({ org: '全部组织', module: '全部模块', type: '全部类型', result: '全部结果' });
+  const { message } = App.useApp();
+  const [filters, setFilters] = useState<LogFilters>({ order: 'desc' });
   const [selected, setSelected] = useState<React.Key[]>([]);
-  const [detail, setDetail] = useState<(typeof logRows)[number] | null>(null);
-  const filtered = useMemo(() => logRows.filter((x) => (filters.org === '全部组织' || x.org === filters.org) && (filters.module === '全部模块' || x.module === filters.module) && (filters.type === '全部类型' || x.type === filters.type) && (filters.result === '全部结果' || x.result.startsWith(filters.result))), [filters]);
-  const choose = (key: keyof typeof filters, value: string) => setFilters((p) => ({ ...p, [key]: value }));
-  return <div><Header title="操作日志" description="记录平台关键操作、执行结果和登录 IP，满足全过程留痕与责任追溯。" />
-    <Toolbar><div className="filter-grid"><Select value={filters.org} onChange={(v) => choose('org', v)} options={['全部组织', '信息中心', '心内科', '影像科', '医务科'].map((x) => ({ label: x, value: x }))} /><Select value={filters.module} onChange={(v) => choose('module', v)} options={['全部模块', ...new Set(logRows.map((x) => x.module))].map((x) => ({ label: x, value: x }))} /><Select value={filters.type} onChange={(v) => choose('type', v)} options={['全部类型', '新建', '编辑', '删除', '查看', '上传', '导出', '审计', '撤销', '停用'].map((x) => ({ label: x, value: x }))} /><Select value={filters.result} onChange={(v) => choose('result', v)} options={['全部结果', '成功', '失败'].map((x) => ({ label: x, value: x }))} /><RangePicker showTime /></div></Toolbar>
-    <Card bordered={false} className="audit-table-card"><Table rowSelection={{ selectedRowKeys: selected, onChange: setSelected }} dataSource={filtered} columns={[
-      { title: '用户名称', dataIndex: 'user', width: 100 }, { title: '用户角色', dataIndex: 'role', width: 125 }, { title: '所属组织', dataIndex: 'org', width: 100 }, { title: '操作模块', dataIndex: 'module', width: 165, ellipsis: true }, { title: '操作类型', dataIndex: 'type', width: 90, render: (v) => <Tag color="blue">{v}</Tag> }, { title: '操作描述', dataIndex: 'desc', width: 250, ellipsis: true, render: truncate }, { title: '操作结果', dataIndex: 'result', width: 190, render: (v: string) => <Tag color={v === '成功' ? 'success' : 'error'}>{v}</Tag> }, { title: '登录 IP 地址', dataIndex: 'ip', width: 130 }, { title: '操作时间', dataIndex: 'time', width: 175, sorter: (a, b) => a.time.localeCompare(b.time) }, { title: '操作', fixed: 'right', width: 90, render: (_, r) => <Button type="link" icon={<EyeOutlined />} onClick={() => setDetail(r)}>详情</Button> },
-    ]} scroll={{ x: 1450 }} pagination={{ pageSize: 8, showTotal: (n) => `共 ${n} 条` }} /></Card>
+  const [detail, setDetail] = useState<OperationLog | null>(null);
+  const [rows,setRows]=useState<OperationLog[]>([]); const [loading,setLoading]=useState(false);
+  const [meta,setMeta]=useState<{organizations:{label:string;value:string}[];modules:{label:string;value:string}[];types:{label:string;value:string}[]}>({organizations:[],modules:[],types:[]});
+  const [userOptions,setUserOptions]=useState<{label:string;value:string}[]>([]); const [usersLoading,setUsersLoading]=useState(false);
+  const userSearchTimer=useRef<ReturnType<typeof setTimeout>>(); const userSearchSequence=useRef(0);
+  const [page,setPage]=useState({current:1,pageSize:10,total:0});
+  const load=async(current=page.current,nextFilters=filters)=>{setLoading(true);try{const data=await operationLogsApi.list(nextFilters,current,page.pageSize);setRows(data.list);setPage(data.pagination);}catch(error){message.error(error instanceof Error?error.message:'日志加载失败');}finally{setLoading(false);}};
+  useEffect(()=>{void operationLogsApi.meta().then(setMeta).catch(()=>undefined);void load(1);},[]);
+  const choose=(key:keyof LogFilters,value?:string)=>{const next={...filters,[key]:value||undefined};setFilters(next);void load(1,next);};
+  const searchUsers=(keyword='')=>{window.clearTimeout(userSearchTimer.current);const sequence=++userSearchSequence.current;userSearchTimer.current=setTimeout(async()=>{setUsersLoading(true);try{const options=await operationLogsApi.users(keyword.trim());if(sequence===userSearchSequence.current)setUserOptions(options);}catch(error){if(sequence===userSearchSequence.current)message.error(error instanceof Error?error.message:'用户搜索失败');}finally{if(sequence===userSearchSequence.current)setUsersLoading(false);}},300);};
+  const refresh=async()=>{try{await operationLogsApi.refresh();await load(1);setMeta(await operationLogsApi.meta());message.success('操作日志已刷新');}catch(error){message.error(error instanceof Error?error.message:'刷新失败');}};
+  const exportRows=async()=>{try{await operationLogsApi.export(filters,selected.map(String));message.success(`已导出${selected.length||page.total}条操作日志`);await load();}catch(error){message.error(error instanceof Error?error.message:'导出失败');}};
+  const openDetail=async(row:OperationLog)=>{try{setDetail(await operationLogsApi.detail(row.key));}catch(error){message.error(error instanceof Error?error.message:'详情加载失败');}};
+  return <div><Header title="操作日志" description="记录平台关键操作、执行结果和登录 IP，满足全过程留痕与责任追溯。" extra={<Space><Button icon={<ReloadOutlined />} onClick={()=>void refresh()}>刷新</Button><Button type="primary" icon={<DownloadOutlined />} onClick={()=>void exportRows()}>批量导出{selected.length?`（${selected.length}）`:''}</Button></Space>} />
+    <Toolbar><div className="filter-grid operation-log-filter-grid"><Select value={filters.userId} onChange={(v)=>choose('userId',v)} onSearch={searchUsers} onOpenChange={(open)=>{if(open&&!userOptions.length)searchUsers();}} options={userOptions} loading={usersLoading} placeholder="搜索姓名/工号" showSearch filterOption={false} allowClear notFoundContent={usersLoading?'搜索中…':'暂无匹配用户'} /><Select value={filters.org} onChange={(v)=>choose('org',v)} options={meta.organizations} placeholder="全部组织" allowClear /><Select value={filters.module} onChange={(v)=>choose('module',v)} options={meta.modules} placeholder="全部模块" allowClear /><Select value={filters.type} onChange={(v)=>choose('type',v)} options={meta.types} placeholder="全部类型" allowClear /><Select value={filters.result} onChange={(v)=>choose('result',v)} options={[{label:'成功',value:'SUCCESS'},{label:'失败',value:'FAILED'}]} placeholder="全部结果" allowClear /><RangePicker showTime onChange={(dates)=>{const next={...filters,startTime:dates?.[0]?.format('YYYY-MM-DD HH:mm:ss'),endTime:dates?.[1]?.format('YYYY-MM-DD HH:mm:ss')};setFilters(next);void load(1,next);}} /></div></Toolbar>
+    <Card bordered={false} className="audit-table-card"><Table loading={loading} rowSelection={{ selectedRowKeys: selected, onChange: setSelected }} dataSource={rows} columns={[
+      { title: '用户名称', dataIndex: 'user', width: 130 }, { title: '用户角色', dataIndex: 'role', width: 125 }, { title: '所属组织', dataIndex: 'org', width: 100 }, { title: '操作模块', dataIndex: 'module', width: 165, ellipsis: true }, { title: '操作类型', dataIndex: 'type', width: 90, render: (v) => <Tag color="blue">{v}</Tag> }, { title: '操作描述', dataIndex: 'desc', width: 250, ellipsis: true, render: truncate }, { title: '操作结果', dataIndex: 'result', width: 190, render: (v: string) => <Tag color={v === '成功' ? 'success' : 'error'}>{v}</Tag> }, { title: '登录 IP 地址', dataIndex: 'ip', width: 130 }, { title: '操作时间', dataIndex: 'time', width: 175, sorter: true }, { title: '操作', fixed: 'right', width: 120, render: (_, r) => <Button type="link" icon={<EyeOutlined />} onClick={() => void openDetail(r)}>详情</Button> },
+    ].map((column:any)=>column.dataIndex==='time'?{...column,sortOrder:filters.order==='asc'?'ascend':'descend',sorter:true}:column)} scroll={{ x: 1480 }} pagination={{...page,showSizeChanger:false,showTotal:(n)=>`共 ${n} 条`,onChange:(current)=>void load(current)}} onChange={(_p,_f,sorter:any)=>{const next={...filters,order:sorter.order==='ascend'?'asc' as const:'desc' as const};setFilters(next);void load(1,next);}} /></Card>
     <Drawer title="操作日志详情" open={!!detail} onClose={() => setDetail(null)} width={620} extra={<Button onClick={() => setDetail(null)}>返回</Button>}>{detail && <><div className={`log-result ${detail.result === '成功' ? 'success' : 'error'}`}>{detail.result === '成功' ? <CheckCircleOutlined /> : <ClockCircleOutlined />}<div><Text strong>{detail.result}</Text><Text type="secondary">系统已完整记录本次操作上下文</Text></div></div><Descriptions column={1} bordered items={Object.entries({ 用户名称: detail.user, 用户角色: detail.role, 所属组织: detail.org, 操作模块: detail.module, 操作类型: detail.type, 操作描述: detail.desc, 操作结果: detail.result, '登录 IP 地址': detail.ip, 操作时间: detail.time }).map(([label, children]) => ({ key: label, label, children }))} /></>}</Drawer>
   </div>;
 }

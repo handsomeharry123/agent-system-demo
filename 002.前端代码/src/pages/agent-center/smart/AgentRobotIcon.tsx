@@ -1,5 +1,5 @@
 /**
- * Agent 机器人形象 — SVG 实现 (V6 医小知品牌版)
+ * Agent 机器人形象 — SVG 实现 (V6 医小管品牌版)
  *
  * 3.1.1 入口形象规范:
  *   - 萌系主导:白色圆角大头 + 深蓝面罩 + 蓝色胶囊眼 + 小圆身体
@@ -75,11 +75,11 @@ const RobotIcon = ({ mood = 'idle', size = 64, badge, badgePulse = false, handWa
           <linearGradient id="agent-shell-grad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#FFFFFF" />
             <stop offset="58%" stopColor="#F8FCFF" />
-            <stop offset="100%" stopColor="#D8F3DC" />
+            <stop offset="100%" stopColor="#DCEBFF" />
           </linearGradient>
           <linearGradient id="agent-blue-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#74C69D" />
-            <stop offset="100%" stopColor="#40916C" />
+            <stop offset="0%" stopColor="#5AA4FF" />
+            <stop offset="100%" stopColor="#1C63E8" />
           </linearGradient>
           <radialGradient id="agent-face-grad" cx="42%" cy="28%" r="85%">
             <stop offset="0%" stopColor="#263E78" />
@@ -92,7 +92,7 @@ const RobotIcon = ({ mood = 'idle', size = 64, badge, badgePulse = false, handWa
           </linearGradient>
           <radialGradient id="agent-soft-glow" cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#7FE8FF" stopOpacity="0.42" />
-            <stop offset="100%" stopColor="#52B788" stopOpacity="0" />
+            <stop offset="100%" stopColor="#1677FF" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -119,7 +119,7 @@ const RobotIcon = ({ mood = 'idle', size = 64, badge, badgePulse = false, handWa
                C 56 14 53 12 50 13
                C 46 14 45 17 45 20"
             fill="none"
-            stroke="#52B788"
+            stroke="#2A7CFF"
             strokeWidth="5.5"
             strokeLinecap="round"
           />

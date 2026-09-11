@@ -128,7 +128,7 @@ const ConnectorList = ({ embedded = false }: { embedded?: boolean } = {}) => {
         style={embedded ? { padding: '14px 18px' } : undefined}
         title={
           <Space size={embedded ? 8 : 10}>
-            <ApiOutlined style={{ color: '#52B788' }} />
+            <ApiOutlined style={{ color: '#1677FF' }} />
             <span>连接器</span>
           </Space>
         }

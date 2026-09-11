@@ -40,6 +40,7 @@ import {
   Flex,
   Segmented,
   Upload,
+  Spin,
 } from 'antd';
 import { Radar } from '@ant-design/charts';
 import {
@@ -66,7 +67,6 @@ import {
   BgColorsOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
-import ProfileView360 from './ProfileView360';
 import AgentLifecycleProgress, { type AgentLifecycleStage } from '../../components/AgentLifecycleProgress';
 import { useAuth } from '../../hooks/useAuth';
 import {
@@ -88,6 +88,7 @@ import { mockEvaluationTasks } from '../../mock/evaluation';
 import { useAccessRecords } from '../agent-center/store';
 import { initialPujiangTasks } from '../evaluation/pujiang/data';
 import { findProjectApplicationId } from '../project-application';
+import { getLedgerAgent } from '../../services/ledgerApi';
 
 const { Title, Text, Paragraph, Link } = Typography;
 
@@ -183,7 +184,7 @@ interface LayerNode {
 }
 const NODE_THEME: Record<LayerKind, { border: string; bg: string; label: string; tagColor: string }> = {
   flow: { border: '#B37FEB', bg: '#F9F0FF', label: '编排流程', tagColor: 'purple' },
-  resource: { border: '#52B788', bg: '#EAF7EF', label: 'IT 资源', tagColor: 'blue' },
+  resource: { border: '#1677FF', bg: '#E6F4FF', label: 'IT 资源', tagColor: 'blue' },
   agent: { border: '#13C2C2', bg: '#E6FFFB', label: '智能体', tagColor: 'cyan' },
 };
 const ResourceGraph: React.FC<{ agent: LedgerAgent }> = ({ agent }) => {
@@ -215,7 +216,7 @@ const ResourceGraph: React.FC<{ agent: LedgerAgent }> = ({ agent }) => {
         style={{
           position: 'relative',
           minHeight: 280,
-          background: 'linear-gradient(180deg,#F3FBF6 0%,#FAFAFA 100%)',
+          background: 'linear-gradient(180deg,#F0F5FF 0%,#FAFAFA 100%)',
           border: '1px solid #F0F0F0',
           borderRadius: 8,
           display: 'flex',
@@ -376,7 +377,7 @@ const ResourceGraph: React.FC<{ agent: LedgerAgent }> = ({ agent }) => {
       style={{
         position: 'relative',
         minHeight: 360,
-        background: 'linear-gradient(180deg,#F3FBF6 0%,#FAFAFA 100%)',
+        background: 'linear-gradient(180deg,#F0F5FF 0%,#FAFAFA 100%)',
         border: '1px solid #F0F0F0',
         borderRadius: 8,
         padding: 12,
@@ -504,10 +505,34 @@ const LedgerDetail = () => {
   const isHospitalLeader = auth?.currentUser?.roles.includes('医院领导') ?? false;
   const accessRecords = useAccessRecords();
 
-  const agent: LedgerAgent | undefined = useMemo(
+  const mockAgent: LedgerAgent | undefined = useMemo(
     () => ledgerAgents.find((a) => a.id === id),
     [id],
   );
+  const [agent, setAgent] = useState<LedgerAgent | undefined>(mockAgent);
+  const [agentLoading, setAgentLoading] = useState(!mockAgent);
+
+  useEffect(() => {
+    setAgent(mockAgent);
+    if (mockAgent || !id) {
+      setAgentLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setAgentLoading(true);
+    void getLedgerAgent<LedgerAgent>(id)
+      .then((record) => {
+        if (!cancelled) setAgent(record);
+      })
+      .catch((error) => {
+        if (!cancelled) message.error(error instanceof Error ? error.message : '智能体详情加载失败');
+      })
+      .finally(() => {
+        if (!cancelled) setAgentLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [id, mockAgent]);
 
   const [editing, setEditing] = useState(false);
   const [basicForm] = Form.useForm();
@@ -521,7 +546,7 @@ const LedgerDetail = () => {
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   // 360 画像视图 / 信息详情页 切换(PRD §3.2.2:详情页默认展示本次新增的「360 画像视图」)
-  const [view, setView] = useState<'profile' | 'detail'>('profile');
+  const [view, setView] = useState<'profile' | 'detail'>('detail');
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [avatarPrompt, setAvatarPrompt] = useState('');
   const [avatarSrc, setAvatarSrc] = useState('');
@@ -558,6 +583,10 @@ const LedgerDetail = () => {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [editing]);
+
+  if (agentLoading) {
+    return <Flex align="center" justify="center" style={{ minHeight: 420 }}><Spin size="large" tip="正在加载智能体详情" /></Flex>;
+  }
 
   if (!agent) {
     return (
@@ -1281,7 +1310,7 @@ exporter = OTLPSpanExporter(
               <Card size="small" bodyStyle={{ padding: 12 }}>
                 <Flex justify="space-between" align="flex-start" gap={12}>
                   <Space size={10} align="start">
-                    <FileTextOutlined style={{ fontSize: 28, color: '#52B788' }} />
+                    <FileTextOutlined style={{ fontSize: 28, color: '#1677FF' }} />
                     <div style={{ minWidth: 0 }}>
                       <Tooltip title={f.name}>
                         <div
@@ -1438,7 +1467,7 @@ exporter = OTLPSpanExporter(
                 bodyStyle={{ padding: 16 }}
                 title={
                   <Space size={6}>
-                    <FileSearchOutlined style={{ color: '#52B788' }} />
+                    <FileSearchOutlined style={{ color: '#1677FF' }} />
                     <span style={{ fontSize: 14, fontWeight: 600 }}>评测结果总分</span>
                     <Text type="secondary" style={{ fontSize: 12, fontWeight: 400 }}>
                       {agent.evaluationReport.reportId}
@@ -1522,8 +1551,8 @@ exporter = OTLPSpanExporter(
                     xField="dimension"
                     yField="score"
                     area={{ style: { fill: 'rgba(22,119,255,0.25)' } }}
-                    line={{ style: { stroke: '#52B788', lineWidth: 2 } }}
-                    point={{ size: 4, style: { fill: '#52B788', stroke: '#fff' } }}
+                    line={{ style: { stroke: '#1677FF', lineWidth: 2 } }}
+                    point={{ size: 4, style: { fill: '#1677FF', stroke: '#fff' } }}
                     scale={{
                       score: { min: 0, max: 100, nice: true, tickCount: 5 },
                     }}
@@ -1579,7 +1608,7 @@ exporter = OTLPSpanExporter(
             style={{ marginTop: 12 }}
             title={
               <Space size={6}>
-                <HistoryOutlined style={{ color: '#52B788' }} />
+                <HistoryOutlined style={{ color: '#1677FF' }} />
                 <span style={{ fontSize: 14, fontWeight: 600 }}>多次评测结果趋势</span>
                 <Tag color="default">按版本号升序累加展示，不覆盖</Tag>
               </Space>
@@ -1681,14 +1710,6 @@ exporter = OTLPSpanExporter(
               {agent.name}
             </Title>
             {/* PRD §3.2.2:详情页默认展示本次新增的「360 画像视图」,可切换回原「智能体信息详情页」 */}
-            <Segmented
-              value={view}
-              onChange={(v) => setView(v as 'profile' | 'detail')}
-              options={[
-                { label: '360 画像视图', value: 'profile' },
-                { label: '智能体信息详情页', value: 'detail' },
-              ]}
-            />
           </Space>
           {/* 顶部操作按钮仅在「智能体信息详情页」展示;360 画像视图下隐藏,
               360 视图自身的 Panel 内已提供 风险分级 / 报告 / 测试连接 等入口 */}
@@ -1762,8 +1783,6 @@ exporter = OTLPSpanExporter(
       </div>
 
       {/* 360 画像视图(PRD §3.2.2 — 默认展示) */}
-      {view === 'profile' && <ProfileView360 agent={agent} onSwitchToDetail={() => setView('detail')} />}
-
       {/* 原 V1.8 §2.2 画像布局(view='detail' 时展示,本次不改动) */}
       {view === 'detail' && (
         <>
@@ -1812,7 +1831,7 @@ exporter = OTLPSpanExporter(
             styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
             title={
               <Space>
-                <LinkOutlined style={{ color: '#52B788' }} />
+                <LinkOutlined style={{ color: '#1677FF' }} />
                 <span style={{ fontSize: 14, fontWeight: 600 }}>已对接资源关联图谱</span>
               </Space>
             }
@@ -1880,7 +1899,7 @@ exporter = OTLPSpanExporter(
             styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column' } }}
             title={
               <Space size={8}>
-                <HistoryOutlined style={{ color: '#52B788' }} />
+                <HistoryOutlined style={{ color: '#1677FF' }} />
                 <span style={{ fontSize: 14, fontWeight: 600 }}>状态变更时间线</span>
                 <Tag color="default">与左侧关联图谱底部对齐</Tag>
               </Space>
@@ -1928,8 +1947,8 @@ exporter = OTLPSpanExporter(
             </div>
           </div>
         </div>
-        <div style={{ padding: 16, borderRadius: 12, background: '#f7faff', border: '1px solid #EAF7EF' }}>
-          <Text strong><BgColorsOutlined style={{ color: '#52B788', marginRight: 6 }} />通过提示词生成</Text>
+        <div style={{ padding: 16, borderRadius: 12, background: '#f7faff', border: '1px solid #e6f4ff' }}>
+          <Text strong><BgColorsOutlined style={{ color: '#1677ff', marginRight: 6 }} />通过提示词生成</Text>
           <Input.TextArea
             value={avatarPrompt}
             onChange={(event) => setAvatarPrompt(event.target.value)}

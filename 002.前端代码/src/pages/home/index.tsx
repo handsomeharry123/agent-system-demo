@@ -1,9 +1,9 @@
 /**
- * 医小知智能体 · 首页 V1.0（PRD V1 落地版）
+ * 医小管智能体 · 首页 V1.0（PRD V1 落地版）
  *
  * 改造范围:仅首页内容区。左侧 7 模块菜单由 BasicLayout(ProLayout)负责,保持原样不动。
  *
- * 首页内容区 = 「医小知智能体落地页」,V1.x 起改为三段式布局:
+ * 首页内容区 = 「医小管智能体落地页」,V1.x 起改为三段式布局:
  *   第一层(全局 7 菜单)—— BasicLayout(ProLayout)
  *   第二层(本页内左侧管理栏,280px)—— HomeSidebarV2:工具/品牌/工作台/自动化任务记录/历史会话/账户
  *   第三层(本页内右侧对话区,flex:1)—— 2.1 问候区 / 2.2 推荐问句区 / 2.3 指令输入区
@@ -68,37 +68,7 @@ import {
 } from 'antd';
 import type { UploadFile } from 'antd';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { skillPromptExamples, type SkillItem, type SkillKey } from '../../mock/skills';
-
-/** Convert legacy one-line pseudo tables already stored in localStorage into a compact weather card text. */
-function normalizeLegacyWeatherContent(content: string): string {
-  if (!content.includes('| 项目 | 数据 |')) return content;
-  const clean = (text?: string) => text?.replace(/\*\*/g, '').trim();
-  const value = (label: string) => Array.from(content.matchAll(new RegExp(`${label}\\s*\\|\\s*([^|]+)`, 'g')))
-    .map((match) => clean(match[1]))
-    .find((item) => item && item !== '项目' && item !== '数据');
-  const city = clean(content.match(/📍\s*([^|]+?今日天气)/)?.[1]?.replace(/今日天气$/, ''));
-  const weather = value('天气');
-  const temperature = value('气温');
-  const feelsLike = value('体感');
-  const humidity = value('湿度');
-  const wind = value('风速');
-  const observedAt = value('数据时间');
-  if (!city || !weather) return content;
-  const headline = `${city}当前${weather}${temperature ? `，${temperature}` : ''}${feelsLike ? `（体感 ${feelsLike}）` : ''}`;
-  const details = [humidity && `湿度 ${humidity}`, wind && `风速 ${wind}`].filter(Boolean).join(' · ');
-  const temperatureNumber = Number.parseFloat(temperature || '');
-  const humidityNumber = Number.parseFloat(humidity || '');
-  let healthTip = '天气变化时注意及时增减衣物，慢性病人群按医嘱做好日常管理。';
-  if (temperatureNumber >= 35) healthTip = '高温时减少正午外出并及时补水；出现头晕、恶心等中暑表现应及时处理。';
-  else if (temperatureNumber <= 5) healthTip = '低温时注意保暖，心脑血管或呼吸系统疾病人群外出需加强防护。';
-  else if (humidityNumber >= 80) healthTip = '湿度较高，体感可能闷热；适量补水并保持室内通风。';
-  else if (humidityNumber <= 30) healthTip = '空气较干燥，注意补水和皮肤保湿，鼻咽不适者可适当增加室内湿度。';
-  else if (/[雨雪]/.test(weather)) healthTip = '雨雪天气路面湿滑，老年人和行动不便者外出注意防滑。';
-  else if (weather.includes('晴')) healthTip = '晴天外出注意防晒；长时间户外活动应适时补水。';
-  return [headline, details, observedAt && `数据时间：${observedAt}`, `健康提示：${healthTip}`].filter(Boolean).join('\n');
-}
 import { useAuth } from '../../hooks/useAuth';
 import { useDemoSettings } from '../../hooks/useDemoSettings';
 import {
@@ -607,7 +577,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-  const palette = ['#52B788', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
+  const palette = ['#1677FF', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
   const renderKpis = (kpis: NonNullable<ReportNode['kpis']>) => `
     <div class="kpi-grid" style="grid-template-columns:repeat(${Math.min(kpis.length, 5)},1fr);">
       ${kpis
@@ -615,7 +585,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
           (k) => `
             <div class="kpi-card">
               <div class="kpi-label">${esc(k.label)}</div>
-              <div class="kpi-value" style="color:${esc(k.color || '#52B788')}">${esc(k.value)}${
+              <div class="kpi-value" style="color:${esc(k.color || '#1677FF')}">${esc(k.value)}${
                 k.unit ? `<span>${esc(k.unit)}</span>` : ''
               }</div>
             </div>`,
@@ -726,7 +696,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
     <h2 class="section-title">一、${isHospitalScope ? '监控总体情况' : '科室监控总体情况'}</h2>
     <h3>（一）总体监控概览</h3>
     ${renderKpis([
-      { label: isHospitalScope ? '纳管智能体总数' : '科室纳管智能体', value: isHospitalScope ? '42' : '8', unit: '个', color: '#52B788' },
+      { label: isHospitalScope ? '纳管智能体总数' : '科室纳管智能体', value: isHospitalScope ? '42' : '8', unit: '个', color: '#1677FF' },
       { label: '累计调用次数', value: isHospitalScope ? '126.8' : '28.6', unit: '万', color: '#13C2C2' },
       { label: '任务执行成功率', value: isHospitalScope ? '96.8' : '96.2', unit: '%', color: '#52C41A' },
       { label: '智能体在线率', value: isHospitalScope ? '85.7' : '87.5', unit: '%', color: '#FA8C16' },
@@ -752,19 +722,19 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
     ${renderKpis([
       { label: '任务执行成功率', value: isHospitalScope ? '96.8' : '96.2', unit: '%', color: '#52C41A' },
       { label: '任务中断率', value: isHospitalScope ? '2.1' : '2.4', unit: '%', color: '#FA8C16' },
-      { label: '自助解决率', value: isHospitalScope ? '83.5' : '81.9', unit: '%', color: '#52B788' },
+      { label: '自助解决率', value: isHospitalScope ? '83.5' : '81.9', unit: '%', color: '#1677FF' },
     ])}
     <p class="para">图2-1 任务执行成功率与任务中断率月度趋势。统计周期内任务执行质量持续改善，中断任务主要集中于高峰时段接口超时场景。</p>
     <h3>（二）调用情况</h3>
     ${renderKpis([
-      { label: '累计调用次数', value: isHospitalScope ? '126.8' : '28.6', unit: '万次', color: '#52B788' },
+      { label: '累计调用次数', value: isHospitalScope ? '126.8' : '28.6', unit: '万次', color: '#1677FF' },
       { label: '当日调用次数', value: isHospitalScope ? '1.12' : '2560', unit: isHospitalScope ? '万次' : '次', color: '#13C2C2' },
       { label: isHospitalScope ? 'TOP10智能体调用占比' : 'TOP1智能体调用占比', value: isHospitalScope ? '71' : '43', unit: '%', color: '#722ED1' },
     ])}
     <p class="para">${isHospitalScope ? '图2-2 调用次数月度趋势（万次；平台支持日/周/月粒度切换）。调用量持续攀升，需同步关注高峰时段资源保障。' : '图2-2 科室调用次数月度趋势；图2-3 科室各智能体日均调用次数排行。影像报告解读助手日均调用1120次、居科室首位。'}</p>
     <h3>（三）响应性能</h3>
     ${renderKpis([
-      { label: '平均响应时间', value: isHospitalScope ? '1.7' : '1.8', unit: '秒', color: '#52B788' },
+      { label: '平均响应时间', value: isHospitalScope ? '1.7' : '1.8', unit: '秒', color: '#1677FF' },
       { label: '响应时间P95', value: isHospitalScope ? '4.0' : '4.1', unit: '秒', color: '#13C2C2' },
       { label: '响应时间P99', value: '6.2', unit: '秒', color: '#FA8C16' },
       { label: '响应超时率', value: isHospitalScope ? '0.9' : '1.1', unit: '%', color: '#F5222D' },
@@ -779,7 +749,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
     <h3>（一）${isHospitalScope ? '实时在线/离线情况' : '实时运行状态'}</h3>
     ${renderKpis([
       { label: isHospitalScope ? '实时在线智能体数量' : '实时在线', value: isHospitalScope ? '36' : '7', unit: '个', color: '#52C41A' },
-      { label: '在线率', value: isHospitalScope ? '85.7' : '87.5', unit: '%', color: '#52B788' },
+      { label: '在线率', value: isHospitalScope ? '85.7' : '87.5', unit: '%', color: '#1677FF' },
       { label: isHospitalScope ? '实时离线智能体数量' : '实时离线', value: isHospitalScope ? '2' : '0', unit: '个', color: '#FA8C16' },
       { label: isHospitalScope ? '累计异常智能体' : '当前异常', value: isHospitalScope ? '4' : '1', unit: '个', color: '#F5222D' },
     ])}
@@ -798,7 +768,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
     <h2 class="section-title">四、成本监控情况</h2>
     <h3>（一）单位成本情况</h3>
     ${renderKpis([
-      { label: '单次会话平均成本', value: isHospitalScope ? '0.31' : '0.29', unit: '元', color: '#52B788' },
+      { label: '单次会话平均成本', value: isHospitalScope ? '0.31' : '0.29', unit: '元', color: '#1677FF' },
       { label: '单任务平均成本', value: isHospitalScope ? '0.42' : '0.38', unit: '元', color: '#13C2C2' },
       { label: '使用成本合计', value: isHospitalScope ? '38.6' : '8.2', unit: '万元', color: '#FA8C16' },
     ])}
@@ -835,7 +805,7 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
     ${renderKpis([
       { label: '告警次数', value: isHospitalScope ? '68' : '14', unit: '次', color: '#FA8C16' },
       { label: '故障次数', value: isHospitalScope ? '3' : '1', unit: '次', color: '#F5222D' },
-      { label: '故障平均恢复时间', value: isHospitalScope ? '42' : '35', unit: '分钟', color: '#52B788' },
+      { label: '故障平均恢复时间', value: isHospitalScope ? '42' : '35', unit: '分钟', color: '#1677FF' },
     ])}
     <h3>（二）${isHospitalScope ? '告警原因分析' : '典型问题及处理方案'}</h3>
     ${renderTable({
@@ -915,16 +885,16 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
   node.innerHTML = `
     <style>
       .report-doc{padding:38px 48px 44px;background:#fff;color:#262626;}
-      .cover{text-align:center;padding:72px 32px 62px;border-bottom:3px double #52B788;margin-bottom:28px;background:linear-gradient(180deg,#F3FBF6 0%,#fff 100%);}
+      .cover{text-align:center;padding:72px 32px 62px;border-bottom:3px double #1677FF;margin-bottom:28px;background:linear-gradient(180deg,#F0F5FF 0%,#fff 100%);}
       .cover .hospital{font-size:14px;color:#8C8C8C;letter-spacing:4px;margin-bottom:24px;}
-      .cover h1{margin:0 0 32px;color:#52B788;font-size:34px;line-height:1.2;}
+      .cover h1{margin:0 0 32px;color:#1677FF;font-size:34px;line-height:1.2;}
       .cover p{margin:3px 0;font-size:15px;}
       .toc{border:1px solid #D6E4FF;border-radius:8px;padding:18px 24px;margin-bottom:28px;}
-      .toc h2{margin:0 0 12px;color:#52B788;font-size:22px;}
+      .toc h2{margin:0 0 12px;color:#1677FF;font-size:22px;}
       .toc-grid{columns:2;column-gap:40px;font-size:14px;}
       .toc-grid div{padding:5px 0;border-bottom:1px dashed #F0F0F0;break-inside:avoid;}
-      .section-title{margin:26px 0 12px;border-bottom:2px solid #52B788;padding-bottom:6px;color:#52B788;font-size:24px;}
-      h3{margin:16px 0 7px;color:#52B788;font-size:16px;}
+      .section-title{margin:26px 0 12px;border-bottom:2px solid #1677FF;padding-bottom:6px;color:#1677FF;font-size:24px;}
+      h3{margin:16px 0 7px;color:#1677FF;font-size:16px;}
       .para{margin:0 0 12px;font-size:14px;line-height:1.85;}
       .kpi-grid{display:grid;gap:12px;margin:0 0 14px;}
       .kpi-card{background:#FAFAFA;border:1px solid #F0F0F0;border-radius:8px;text-align:center;padding:14px 10px;}
@@ -939,16 +909,16 @@ async function exportLedgerReportPdf(reportCard: LedgerReportCard) {
       .chart-bar{height:100%;border-radius:999px;}
       .chart-value{text-align:right;color:#262626;}
       table{width:100%;border-collapse:collapse;font-size:13px;}
-      th{background:#F3FBF6;color:#52B788;font-weight:600;text-align:left;}
+      th{background:#F0F5FF;color:#1677FF;font-weight:600;text-align:left;}
       th,td{border:1px solid #D9D9D9;padding:8px 10px;vertical-align:top;}
       .matrix-table th,.matrix-table td{text-align:center;}
       .matrix-table tbody th{text-align:left;}
       .note{margin-top:8px;color:#8C8C8C;font-size:12px;}
-      .colophon{margin-top:32px;padding:20px;background:#F3FBF6;border-left:4px solid #52B788;border-radius:6px;}
-      .colophon h2{margin:0 0 12px;color:#52B788;font-size:20px;}
+      .colophon{margin-top:32px;padding:20px;background:#F0F5FF;border-left:4px solid #1677FF;border-radius:6px;}
+      .colophon h2{margin:0 0 12px;color:#1677FF;font-size:20px;}
       .colophon p{margin:0 0 8px;font-size:13px;}
       .signature{text-align:right;color:#595959;font-size:13px;margin-top:12px;}
-      .ending{margin-top:32px;padding-top:16px;border-top:2px solid #52B788;text-align:right;color:#8C8C8C;font-size:12px;}
+      .ending{margin-top:32px;padding-top:16px;border-top:2px solid #1677FF;text-align:right;color:#8C8C8C;font-size:12px;}
     </style>
     <div class="report-doc">
       ${sectionsHtml}
@@ -993,7 +963,7 @@ const pickReply = (text: string): { module: string; reply: string; link?: { to: 
   for (const m of moduleReplyMap) {
     if (m.match.test(text)) return m;
   }
-  return { module: '医小知', reply: fallbackReply };
+  return { module: '医小管', reply: fallbackReply };
 };
 
 type RequirementStep =
@@ -1400,28 +1370,12 @@ const HomePage = () => {
     requirementSummary?: RequirementSlots;
     accessSummary?: AccessSlots;
     evaluationProgress?: EvaluationProgressSummary;
-    contextContent?: string;
-    failed?: boolean;
-    retryText?: string;
     time: string;
   };
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    try {
-      const cached = JSON.parse(localStorage.getItem('yixiaozhi_recent_messages') || '[]');
-      if (Array.isArray(cached) && cached.length > 0) return cached;
-    } catch {
-      // 缓存损坏时使用默认问候语。
-    }
-    return [{
-      id: `a-${Date.now()}`,
-      role: 'assistant',
-      content: buildGreeting(role, currentUser?.name),
-      time: nowStr(),
-    }];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [selectedSkillTags, setSelectedSkillTags] = useState<string[]>([]);
-  const [model, setModel] = useState('MiniMax-M3');
+  const [model, setModel] = useState('auto');
   const [loading, setLoading] = useState(false);
   const [extraSessions, setExtraSessions] = useState<SessionEntry[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -1452,7 +1406,7 @@ const HomePage = () => {
     email: false,
     sms: false,
   });
-  /* 首页中间内容区 slot:'overview' 显示医小知对话;'connector' 显示连接器列表;'skill' 显示技能列表;'skill-manage' 显示技能管理;'auto-tasks' 显示自动化任务列表 */
+  /* 首页中间内容区 slot:'overview' 显示医小管对话;'connector' 显示连接器列表;'skill' 显示技能列表;'skill-manage' 显示技能管理;'auto-tasks' 显示自动化任务列表 */
   const requestedMiddleView = (
     location.state as {
       middleView?: 'overview' | 'connector' | 'skill' | 'skill-manage' | 'auto-tasks';
@@ -1566,11 +1520,31 @@ const HomePage = () => {
     };
   }, [isNewTaskView, isItAdmin, updateSceneTagScrollState]);
 
-  // 短期记忆：仅保留最近 N 轮，避免浏览器缓存无限增长。
+  // 角色变化/首次进入 → 注入问候语
   useEffect(() => {
-    const turns = Number(import.meta.env.VITE_LLM_CONTEXT_TURNS || 6);
-    localStorage.setItem('yixiaozhi_recent_messages', JSON.stringify(messages.slice(-turns * 2)));
-  }, [messages]);
+    setMessages([
+      {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        content: buildGreeting(role, currentUser?.name),
+        dashboardMetrics: buildHomeDashboardMetrics(role),
+        time: nowStr(),
+      },
+    ]);
+    setActiveSessionId(null);
+    setRequirementFlow(null);
+    setLedgerFlow(null);
+    setAccessFlow(null);
+    setResourceRegisterFlow(null);
+    setResourceApplyFlow(null);
+    setResourceAuditFlow(null);
+    setEvaluationFlow(null);
+    setEvaluationAuditFlow(null);
+    setMonitorFlow(null);
+    setAccessAuditFlow(null);
+    setIsNewTaskView(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
 
   useEffect(() => {
     if (!activeSessionId) return;
@@ -1760,7 +1734,7 @@ const HomePage = () => {
   }, []);
 
   const handleNewTask = useCallback(() => {
-    /* 任何视图下点「新建任务」→ 先切回医小知对话区,再注入问候语 + 聚焦输入框 */
+    /* 任何视图下点「新建任务」→ 先切回医小管对话区,再注入问候语 + 聚焦输入框 */
     setMiddleView('overview');
     setActiveSessionId(null);
     setRequirementFlow(null);
@@ -1973,7 +1947,7 @@ const HomePage = () => {
             id: `${id}-a1`,
             role: 'assistant',
             content: `已恢复「${session.title}」的模拟对话记录。您可以继续在当前窗口追问或补充信息。`,
-            module: '医小知',
+            module: '医小管',
             time: session.updatedAt,
           },
         ];
@@ -3041,7 +3015,7 @@ ${ACCESS_SCENE.closing}`,
   }, [messages, loading]);
 
   /* ---------- 事件:发送 / 停止 ---------- */
-  const handleSend = async (overrideText?: string, visibleText?: string) => {
+  const handleSend = (overrideText?: string, visibleText?: string) => {
     const selectedSkillText = selectedSkillTags.map((name) => `#${name}`).join(' ');
     const text = (overrideText ?? [selectedSkillText, draft].filter(Boolean).join(' ')).trim();
     if (!text || loading) return;
@@ -3053,61 +3027,6 @@ ${ACCESS_SCENE.closing}`,
     };
     setDraft('');
     setSelectedSkillTags([]);
-
-    // 医疗百科独立版：所有自然语言问题统一交给 OpenAI 兼容的 LLM 接口。
-    const history = messages
-      .filter((item) => item.content && !item.failed)
-      .map((item) => ({
-        role: item.role,
-        content: item.content,
-      }));
-    setMessages((prev) => [...prev, userMsg]);
-    setLoading(true);
-    try {
-      const response = await fetch(import.meta.env.VITE_AI_API_URL || '/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          history,
-          context: {
-            page: '医疗百科问答',
-            assistant: '医小知',
-            userName: currentUser?.name || '用户',
-          },
-          message: { role: 'user', content: text },
-        }),
-      });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || `接口返回 ${response.status}`);
-      }
-      const data = await response.json();
-      const rawContent = data?.choices?.[0]?.message?.content?.trim();
-      if (!rawContent) throw new Error('模型未返回有效内容');
-      const content = rawContent.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim() || rawContent;
-      setMessages((prev) => [...prev, {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        content,
-        contextContent: rawContent,
-        time: nowStr(),
-      }]);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : '未知错误';
-      setMessages((prev) => [...prev, {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: `请求失败：${reason}`,
-        failed: true,
-        retryText: text,
-        time: nowStr(),
-      }]);
-    } finally {
-      setLoading(false);
-    }
-    return;
 
     const isFreshHomeQuestion =
       !activeSessionId &&
@@ -3957,8 +3876,8 @@ ${ACCESS_SCENE.closing}`,
       data-testid="home-v1"
       style={{
         padding: 16,
-        background: '#F3FBF6',
-        height: 'calc(100dvh - 56px)',
+        background: '#F0F2F5',
+        height: 'calc(100dvh - 64px)',
         minHeight: 0,
         boxSizing: 'border-box',
         display: 'flex',
@@ -4083,17 +4002,17 @@ ${ACCESS_SCENE.closing}`,
             alignItems: 'center',
             gap: 14,
             padding: '14px 24px',
-            background: 'linear-gradient(135deg, #EAF7EF 0%, #F3FBF6 100%)',
+            background: 'linear-gradient(135deg, #E6F4FF 0%, #F0F5FF 100%)',
             borderBottom: '1px solid #F0F0F0',
           }}
         >
           <AgentRobotIcon mood={loading ? 'thinking' : 'happy'} size={52} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Title level={4} style={{ margin: 0, color: '#52B788', fontSize: 18 }}>
-              医小知
+            <Title level={4} style={{ margin: 0, color: '#1677FF', fontSize: 18 }}>
+              医小管
             </Title>
             <Text style={{ fontSize: 12, color: '#555', display: 'block', marginTop: 2 }}>
-              你的可信医疗百科助手
+              需求· 接入 · 台账 · 资源 · 评测 · 监控，一句话就能办
             </Text>
           </div>
         </div>
@@ -4128,7 +4047,6 @@ ${ACCESS_SCENE.closing}`,
                   }
                   handleSend(action);
                 }}
-                onRetry={(text) => handleSend(text)}
                 onMetricClick={(label) => navigate(resolveLedgerMetricRoute(label))}
                 onRequirementSummaryConfirm={handleRequirementSummaryConfirm}
                 onAccessSummaryConfirm={handleAccessSummaryConfirm}
@@ -4149,7 +4067,7 @@ ${ACCESS_SCENE.closing}`,
                   fontSize: 12,
                 }}
               >
-                医小知正在思考…
+                医小管正在思考…
               </div>
             </div>
           )}
@@ -4167,14 +4085,115 @@ ${ACCESS_SCENE.closing}`,
             background: '#FFFFFF',
           }}
         >
-          {/* 独立版隐藏场景快捷入口，用户通过输入框直接向医小知下达指令。 */}
+          {/* 场景标签:仅在「新建任务」视图下展示,且紧贴输入框上方(图2 布局) */}
+          {isNewTaskView && (
+            <div
+              style={{
+                position: 'relative',
+                marginBottom: 6,
+                minWidth: 0,
+              }}
+            >
+              {sceneTagScrollState.left && (
+                <Button
+                  type="text"
+                  shape="circle"
+                  size="small"
+                  icon={<LeftOutlined />}
+                  aria-label="向左滑动业务标签"
+                  onClick={() => scrollSceneTags('left')}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: '50%',
+                    zIndex: 2,
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+                  }}
+                />
+              )}
+              <div
+                ref={sceneTagScrollRef}
+                onScroll={updateSceneTagScrollState}
+                className="home-v1-scene-tag-scrollbar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexWrap: 'nowrap',
+                  gap: 8,
+                  overflowX: 'auto',
+                  overflowY: 'hidden',
+                  minWidth: 0,
+                  padding: '2px 0',
+                  scrollBehavior: 'smooth',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+              >
+                {visibleSceneTags.map((t) => (
+                  <div
+                    key={t.key}
+                    onClick={() => handleSceneTagClick(t)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      flex: '0 0 auto',
+                      gap: 6,
+                      background: '#FFFFFF',
+                      border: '1px solid #D9D9D9',
+                      borderRadius: 999,
+                      padding: '4px 12px',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      lineHeight: '20px',
+                      whiteSpace: 'nowrap',
+                      color: '#262626',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#1677FF';
+                      e.currentTarget.style.color = '#1677FF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#D9D9D9';
+                      e.currentTarget.style.color = '#262626';
+                    }}
+                    data-testid={`home-v1-scene-${t.key}`}
+                  >
+                    <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 12 }}>{t.icon}</span>
+                    <span>{t.label}</span>
+                  </div>
+                ))}
+              </div>
+              {sceneTagScrollState.right && (
+                <Button
+                  type="text"
+                  shape="circle"
+                  size="small"
+                  icon={<RightOutlined />}
+                  aria-label="向右滑动业务标签"
+                  onClick={() => scrollSceneTags('right')}
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '50%',
+                    zIndex: 2,
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
+                  }}
+                />
+              )}
+            </div>
+          )}
           <div
             onDragEnter={handleInputDragOver}
             onDragOver={handleInputDragOver}
             onDragLeave={handleInputDragLeave}
             onDrop={handleInputDrop}
             style={{
-              border: `1px solid ${isInputDragOver ? '#52B788' : '#D9D9D9'}`,
+              border: `1px solid ${isInputDragOver ? '#1677FF' : '#D9D9D9'}`,
               borderRadius: 10,
               padding: '6px 10px',
               background: isInputDragOver ? '#F0F7FF' : '#FFFFFF',
@@ -4186,7 +4205,7 @@ ${ACCESS_SCENE.closing}`,
               <div
                 style={{
                   marginBottom: 4,
-                  color: '#52B788',
+                  color: '#1677FF',
                   fontSize: 12,
                   fontWeight: 600,
                 }}
@@ -4259,7 +4278,7 @@ ${ACCESS_SCENE.closing}`,
                     handleSend();
                   }
                 }}
-                placeholder={selectedSkillTags.length ? '继续输入任务内容' : '向医小知提问:例如「今天整体台账情况如何?」'}
+                placeholder={selectedSkillTags.length ? '继续输入任务内容' : '向医小管提问:例如「今天整体台账情况如何?」'}
                 autoSize={{ minRows: selectedSkillTags.length ? 1 : 2, maxRows: 5 }}
                 variant="borderless"
                 data-testid="home-v1-input"
@@ -4391,7 +4410,7 @@ ${ACCESS_SCENE.closing}`,
                       height: 34,
                       border: 0,
                       boxShadow: 'none',
-                      background: draft.trim() || selectedSkillTags.length > 0 ? '#52B788' : '#D9D9D9',
+                      background: draft.trim() || selectedSkillTags.length > 0 ? '#1677FF' : '#D9D9D9',
                       color: '#FFFFFF',
                     }}
                     data-testid="home-v1-send"
@@ -4427,7 +4446,7 @@ ${ACCESS_SCENE.closing}`,
         }
       >
         <Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
-          开启后可将医小知消息推送至外部系统。
+          开启后可将医小管消息推送至外部系统。
         </Text>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
@@ -4479,7 +4498,6 @@ const MessageBubble = ({
   onRequirementSummaryConfirm,
   onAccessSummaryConfirm,
   onAlertRuleDraftConfirm,
-  onRetry,
 }: {
   msg: any;
   navigate: (to: string) => void;
@@ -4488,10 +4506,11 @@ const MessageBubble = ({
   onRequirementSummaryConfirm?: (slots: RequirementSlots) => void;
   onAccessSummaryConfirm?: (slots: AccessSlots) => void;
   onAlertRuleDraftConfirm?: (draft: AlertRuleDraft) => void;
-  onRetry?: (text: string) => void;
 }) => {
   const isUser = msg.role === 'user';
+  const hasDashboardMetrics = !isUser && Array.isArray(msg.dashboardMetrics) && msg.dashboardMetrics.length > 0;
   const isWideAssistantContent = !isUser && Boolean(msg.accessAuditTable || msg.accessAuditConfirmation || msg.evaluationAuditTable || msg.accessSummary || msg.requirementSummary || msg.alertRuleDraft);
+  const shouldShowStandaloneMetrics = hasDashboardMetrics;
   return (
     <div
       style={{
@@ -4503,14 +4522,14 @@ const MessageBubble = ({
       }}
     >
       {isUser ? (
-        <Avatar size={28} style={{ background: '#52B788', flexShrink: 0 }} icon={<UserOutlined />} />
+        <Avatar size={28} style={{ background: '#1677FF', flexShrink: 0 }} icon={<UserOutlined />} />
       ) : (
         <AgentRobotIcon mood="happy" size={28} />
       )}
       <div
         style={{
-          maxWidth: isWideAssistantContent ? 'calc(100% - 44px)' : '78%',
-          width: isWideAssistantContent ? 'calc(100% - 44px)' : undefined,
+          maxWidth: isWideAssistantContent || shouldShowStandaloneMetrics ? 'calc(100% - 44px)' : '78%',
+          width: isWideAssistantContent || shouldShowStandaloneMetrics ? 'calc(100% - 44px)' : undefined,
         }}
       >
         {!isUser && msg.module && (
@@ -4522,7 +4541,7 @@ const MessageBubble = ({
         )}
         <div
           style={{
-            background: isUser ? '#52B788' : '#FFFFFF',
+            background: isUser ? '#1677FF' : '#FFFFFF',
             color: isUser ? '#fff' : '#333',
             border: isUser ? 'none' : '1px solid #E5E7EB',
             borderRadius: 8,
@@ -4531,7 +4550,7 @@ const MessageBubble = ({
             lineHeight: 1.6,
             wordBreak: 'break-word',
             width: isWideAssistantContent ? '100%' : 'fit-content',
-            maxWidth: '100%',
+            maxWidth: shouldShowStandaloneMetrics ? '78%' : '100%',
           }}
         >
           {msg.accessSummary ? (
@@ -4544,7 +4563,6 @@ const MessageBubble = ({
             <>
               {msg.content !== '【汇总确认卡】' && (
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({ children }) => <span style={{ display: 'block', marginBottom: 4 }}>{children}</span>,
                     strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
@@ -4561,7 +4579,6 @@ const MessageBubble = ({
           ) : msg.alertRuleDraft ? (
             <>
               <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
                 components={{
                   p: ({ children }) => <span style={{ display: 'block', marginBottom: 4 }}>{children}</span>,
                   strong: ({ children }) => <strong style={{ fontWeight: 600 }}>{children}</strong>,
@@ -4576,25 +4593,11 @@ const MessageBubble = ({
             </>
           ) : (
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
               components={{
-                p: ({ children }) => <span style={{ display: 'block', marginBottom: 4, whiteSpace: 'pre-line' }}>{children}</span>,
+                p: ({ children }) => <span style={{ display: 'block', marginBottom: 4 }}>{children}</span>,
                 ul: ({ children }) => <ul style={{ paddingLeft: 18, margin: '4px 0' }}>{children}</ul>,
                 ol: ({ children }) => <ol style={{ paddingLeft: 18, margin: '4px 0' }}>{children}</ol>,
                 li: ({ children }) => <li style={{ marginBottom: 2 }}>{children}</li>,
-                table: ({ children }) => (
-                  <div style={{ maxWidth: '100%', overflowX: 'auto', margin: '6px 0' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>{children}</table>
-                  </div>
-                ),
-                th: ({ children }) => (
-                  <th style={{ padding: '6px 8px', textAlign: 'left', background: '#F3F8F5', border: '1px solid #DDE8E1', whiteSpace: 'nowrap' }}>
-                    {children}
-                  </th>
-                ),
-                td: ({ children }) => (
-                  <td style={{ padding: '6px 8px', border: '1px solid #E5E7EB' }}>{children}</td>
-                ),
                 code: ({ children }) => (
                   <code
                     style={{
@@ -4619,7 +4622,7 @@ const MessageBubble = ({
                           padding: 0,
                           margin: 0,
                           background: 'transparent',
-                          color: '#52B788',
+                          color: '#1677FF',
                           fontWeight: 600,
                           cursor: 'pointer',
                           textDecoration: 'underline',
@@ -4635,18 +4638,8 @@ const MessageBubble = ({
                 },
               }}
             >
-              {normalizeLegacyWeatherContent(msg.content)}
+              {msg.content}
             </ReactMarkdown>
-          )}
-          {msg.failed && msg.retryText && (
-            <Button
-              size="small"
-              icon={<ReloadOutlined />}
-              onClick={() => onRetry?.(msg.retryText)}
-              style={{ marginTop: 8 }}
-            >
-              重试
-            </Button>
           )}
           {!isUser && Array.isArray(msg.candidates) && msg.candidates.length > 0 && (
             <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
@@ -4683,7 +4676,7 @@ const MessageBubble = ({
               }}
               data-testid="home-v1-ledger-report-card"
             >
-              <div style={{ fontWeight: 600, color: '#52B788', marginBottom: 4 }}>
+              <div style={{ fontWeight: 600, color: '#1677FF', marginBottom: 4 }}>
                 {msg.reportCard.title}
               </div>
               <Space size={6} wrap>
@@ -4742,7 +4735,7 @@ const MessageBubble = ({
               <Button
                 type="link"
                 size="small"
-                style={{ padding: 0, color: isUser ? '#fff' : '#52B788' }}
+                style={{ padding: 0, color: isUser ? '#fff' : '#1677FF' }}
                 onClick={() => {
                   if (msg.link!.newTab) {
                     const url = new URL(msg.link!.to, window.location.origin);
@@ -4799,6 +4792,9 @@ const MessageBubble = ({
             </div>
           )}
         </div>
+        {shouldShowStandaloneMetrics && (
+          <HomeDashboardMetricsView metrics={msg.dashboardMetrics} />
+        )}
         <div
           style={{
             fontSize: 11,
@@ -4845,8 +4841,8 @@ const EvaluationProgressCard = ({ progress }: { progress: EvaluationProgressSumm
       <Progress
         percent={progress.percent}
         size="small"
-        strokeColor="#52B788"
-        trailColor="#EAF7EF"
+        strokeColor="#1677FF"
+        trailColor="#E6F4FF"
         status="active"
         style={{ marginBottom: 0 }}
       />
@@ -6161,8 +6157,8 @@ function resolveLedgerMetricRoute(label: string): string {
 function buildGreeting(role: '信息科管理员' | '科室管理员', userName?: string): string {
   const who = userName ?? '用户';
   return role === '信息科管理员'
-    ? `您好,${who},我是医小知,请问有什么能帮到您?`
-    : `您好,${who},我是医小知,请问有什么能帮到您?\n\n我可以帮您快速:\n- 查找本科室可用的智能体\n- 提报建设需求 / 跟踪接入审批\n- 了解本科室本月调用与告警情况`;
+    ? `您好,${who},我是医小管,请问有什么能帮到您?`
+    : `您好,${who},我是医小管,请问有什么能帮到您?\n\n我可以帮您快速:\n- 查找本科室可用的智能体\n- 提报建设需求 / 跟踪接入审批\n- 了解本科室本月调用与告警情况`;
 }
 
 function buildHomeDashboardMetrics(role: '信息科管理员' | '科室管理员'): HomeDashboardMetric[] {
@@ -6176,7 +6172,7 @@ function buildHomeDashboardMetrics(role: '信息科管理员' | '科室管理员
       label: '纳管智能体数量',
       value: `${agents.length} 个`,
       trend: buildManagedAgentMonthlyTrend(agents),
-      accent: '#52B788',
+      accent: '#1677FF',
       fill: 'rgba(22, 119, 255, 0.14)',
     },
     {
@@ -6237,11 +6233,11 @@ function buildScaledMonthlyTrend(total: number, weights: number[]) {
 }
 
 function buildRequirementOpening(): string {
-  return '你好！我是医小知，我来帮您登记智能体建设需求（约 8 步、3–5 分钟，内容随时可改）。请用一两句话描述：您想建设一个什么样的智能体、主要解决什么问题？';
+  return '你好！我是医小管，我来帮您登记智能体建设需求（约 8 步、3–5 分钟，内容随时可改）。请用一两句话描述：您想建设一个什么样的智能体、主要解决什么问题？';
 }
 
 function buildLedgerOpening(): string {
-  return '你好，我是医小知。台账相关问题都可以问我';
+  return '你好，我是医小管。台账相关问题都可以问我';
 }
 
 function buildAccessOpening(): string {
@@ -6782,7 +6778,7 @@ ${businessPreview}
 【模型资源列表】已弹出，以下为已支持注册的模型清单。
 ${modelRegisterCatalog.map((item) => `- ${item}`).join('\n')}
 
-你好！我是医小知。把资源信息文件发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮你进行医院资源注册～
+你好！我是医小管。把资源信息文件发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮你进行医院资源注册～
 
 没找到？直接输入系统关键字（如缩写、别名、业务描述），我来帮你匹配`;
 }
@@ -7205,7 +7201,7 @@ function getResourceRegisterDoneReply(
 function buildResourceOpening(): string {
   return `【可申请资源列表】已弹出。
 
-你好，我是医小知。你只需要告诉我要为哪个智能体申请什么资源，我将为你自动申请。
+你好，我是医小管。你只需要告诉我要为哪个智能体申请什么资源，我将为你自动申请。
 
 当前可申请资源：
 - 业务系统数据资源：HIS、EMR、LIS、PACS、UIS、CDR、ODR、BI、EDW、PASS、PIVAS、EMPI 等已注册资源
@@ -7548,7 +7544,7 @@ function buildResourceAuditOpening(flow: ResourceAuditFlow) {
         .map((item, index) => `${index + 1}. ${item.agentId} ${item.agentName}｜申请资源：${item.resourceName}`)
         .join('\n')
     : '暂无待审核资源使用权限申请。';
-  return `你好，我是医小知。目前资源申请待审核 ${pending.length} 项。
+  return `你好，我是医小管。目前资源申请待审核 ${pending.length} 项。
 
 ${list}
 
@@ -7770,7 +7766,7 @@ function getResourceAuditNext(
       if (/修改.*(申请|资源|智能体|科室|描述)|编辑/.test(normalized)) {
         return {
           flow,
-          replies: ['权限申请信息均为只读引用，医小知不能修改申请内容；如需修改，请退回申请人重新提交。\n\n请给出审核结论：审核通过 / 退回修改。'],
+          replies: ['权限申请信息均为只读引用，医小管不能修改申请内容；如需修改，请退回申请人重新提交。\n\n请给出审核结论：审核通过 / 退回修改。'],
           quickActions: ['审核通过', '退回修改'],
         };
       }
@@ -7785,7 +7781,7 @@ function getResourceAuditNext(
       if (!conclusion) {
         return {
           flow,
-          replies: ['请给出审核结论：审核通过 / 退回修改。结论必须由管理员做出，医小知不会代为裁决。'],
+          replies: ['请给出审核结论：审核通过 / 退回修改。结论必须由管理员做出，医小管不会代为裁决。'],
           quickActions: ['审核通过', '退回修改'],
         };
       }
@@ -7942,7 +7938,7 @@ const EVALUATION_SCENE = {
 };
 
 function buildEvaluationOpening(): string {
-  return `你好！我是医小知，我来帮您新建智能体安全评测任务（约 4 步、2–3 分钟）。目前待评测 ${evaluationPendingAgents.length} 个智能体，请问要给哪个、选哪档评测？（快速 30% / 标准 60% / 深度 100%）
+  return `你好！我是医小管，我来帮您新建智能体安全评测任务（约 4 步、2–3 分钟）。目前待评测 ${evaluationPendingAgents.length} 个智能体，请问要给哪个、选哪档评测？（快速 30% / 标准 60% / 深度 100%）
 
 【待评测清单】
 ${evaluationPendingAgents.map((agent, index) => `${index + 1}. 编号：${agent.code}；名称：${agent.name}；版本：${agent.version}；评测档位：待选择${agent.riskLevel === '高风险' ? '（高度关注，建议深度评测）' : ''}`).join('\n')}`;
@@ -8424,9 +8420,9 @@ function availableEvaluationAuditTasks(flow: EvaluationAuditFlow) {
 function buildEvaluationAuditOpening(flow: EvaluationAuditFlow): string {
   const queue = availableEvaluationAuditTasks(flow);
   if (queue.length === 0) {
-    return '你好！我是医小知。目前系统已评测待审队列为空。\n\n本次审核到此结束。后续仅开放：查看审核记录、查看批次汇总。';
+    return '你好！我是医小管。目前系统已评测待审队列为空。\n\n本次审核到此结束。后续仅开放：查看审核记录、查看批次汇总。';
   }
-  return `你好！我是医小知。目前系统已评测 ${queue.length} 个智能体待审核，已为您拉取「已评测待审队列」：
+  return `你好！我是医小管。目前系统已评测 ${queue.length} 个智能体待审核，已为您拉取「已评测待审队列」：
 
 ${queue.map((task, index) => {
   const { systemConclusion, detail } = getEvaluationAuditDetail(task);
@@ -8885,7 +8881,7 @@ function getEvaluationAuditDoneReply(
 }
 
 function buildMonitorOpening(role: '信息科管理员' | '科室管理员'): string {
-  return '你好，我是医小知。运行监控相关问题都可以问我';
+  return '你好，我是医小管。运行监控相关问题都可以问我';
 }
 
 function monitorScope(role: '信息科管理员' | '科室管理员') {
@@ -9218,7 +9214,7 @@ const ACCESS_DEMO_DETAIL_ID = 'acc-xg-001';
 
 const ACCESS_SCENE = {
   opening:
-    '你好！我是医小知。把产品说明书 / 技术规格书发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮你进行智能体接入信息注册申请～',
+    '你好！我是医小管。把产品说明书 / 技术规格书发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮你进行智能体接入信息注册申请～',
   sidetrack: '我们先来完成智能体接入注册申请，稍后再为您解决此问题',
   duplicateName: '此名称已被使用，请重新命名',
   invalidPhone: '请输入正确的11位手机号',

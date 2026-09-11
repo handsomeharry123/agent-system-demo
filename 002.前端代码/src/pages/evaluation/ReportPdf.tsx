@@ -97,7 +97,7 @@ const REPORT_CSS = `
   h1 {
     font-size: 26px;
     text-align: center;
-    color: #52B788;
+    color: #1677FF;
     margin: 0 0 8px;
     letter-spacing: 2px;
   }
@@ -110,8 +110,8 @@ const REPORT_CSS = `
   }
   h2 {
     font-size: 18px;
-    color: #52B788;
-    border-bottom: 2px solid #52B788;
+    color: #1677FF;
+    border-bottom: 2px solid #1677FF;
     padding-bottom: 6px;
     margin: 24px 0 12px;
   }
@@ -121,7 +121,7 @@ const REPORT_CSS = `
     margin: 16px 0 8px;
     font-weight: 600;
   }
-  h3 .sec-no { color: #52B788; margin-right: 6px; }
+  h3 .sec-no { color: #1677FF; margin-right: 6px; }
   p { font-size: 12px; line-height: 1.7; margin: 6px 0; }
   table {
     width: 100%;
@@ -161,8 +161,8 @@ const REPORT_CSS = `
     display: inline-block;
     margin-top: 80px;
     padding: 16px 32px;
-    border: 2px solid #52B788;
-    color: #52B788;
+    border: 2px solid #1677FF;
+    color: #1677FF;
     font-size: 22px;
     font-weight: 700;
     letter-spacing: 4px;
@@ -189,7 +189,7 @@ const REPORT_CSS = `
   .find-list li {
     padding: 6px 10px;
     background: #FAFAFA;
-    border-left: 3px solid #52B788;
+    border-left: 3px solid #1677FF;
     margin-bottom: 6px;
     font-size: 12px;
     line-height: 1.6;
@@ -211,7 +211,7 @@ const REPORT_CSS = `
     font-size: 11px;
   }
   .bar-cell { width: 100%; background: #F0F0F0; border-radius: 3px; height: 8px; position: relative; overflow: hidden; }
-  .bar-cell .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #52B788; }
+  .bar-cell .bar-fill { position: absolute; left: 0; top: 0; bottom: 0; background: #1677FF; }
   .conclusion-box {
     padding: 16px 20px;
     background: #F0F7FF;
@@ -221,7 +221,7 @@ const REPORT_CSS = `
   }
   .conclusion-box .label { font-size: 11px; color: #8C8C8C; margin-bottom: 4px; }
   .conclusion-box .value { font-size: 18px; font-weight: 700; }
-  .opt-table th { background: #EAF7EF; color: #52B788; }
+  .opt-table th { background: #E6F4FF; color: #1677FF; }
   .threshold-list { padding-left: 20px; font-size: 11px; line-height: 1.8; color: #595959; }
 `;
 
@@ -243,7 +243,7 @@ const buildCover = (task: EvaluationTask, report: ReportModel | undefined): stri
       </div>
       ${report ? `<div class="stamp">${esc(report.conclusion)}</div>` : ''}
     </div>
-    <div class="footer-line">医小知 · 评测报告</div>
+    <div class="footer-line">医疗智能体管理平台 · 评测报告</div>
   </div>
 `;
 
@@ -503,7 +503,7 @@ const buildSection7_8 = (task: EvaluationTask): string => `
   <div class="report-page">
     <h2>声明页</h2>
     <h3>版权声明</h3>
-    <p>本报告由医小知出具，报告版权归评测单位所有。未经评测单位书面许可，任何单位和个人不得以任何形式全部或部分复制、转载、引用本报告内容。</p>
+    <p>本报告由医疗智能体管理平台出具，报告版权归评测单位所有。未经评测单位书面许可，任何单位和个人不得以任何形式全部或部分复制、转载、引用本报告内容。</p>
     <h3>保密条款</h3>
     <p>本报告中涉及的评测数据、智能体输出日志、攻击案例举证等属于委托单位商业机密，评测单位对上述信息负有保密义务。</p>
     <h3>使用限制</h3>
@@ -511,7 +511,7 @@ const buildSection7_8 = (task: EvaluationTask): string => `
     <h3>报告有效性</h3>
     <p>本报告自签发之日起有效期为壹年。评测结果受测试集版本、模型版本、工具配置等因素影响，超出有效期或评测环境发生重大变化时，建议重新评测。</p>
 
-    <div class="footer-line">医小知 · 评测报告 · ${esc(task.taskNo)}</div>
+    <div class="footer-line">医疗智能体管理平台 · 评测报告 · ${esc(task.taskNo)}</div>
   </div>
 `;
 

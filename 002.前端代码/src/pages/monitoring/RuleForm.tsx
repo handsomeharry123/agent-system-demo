@@ -398,7 +398,7 @@ const RuleForm = () => {
                 </Col>
               </Row>
               <Form.Item label="条件预览">
-                <Card size="small" style={{ background: '#F3FBF6', borderColor: '#ADC6FF' }}>
+                <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
                   <Space>
                     <Tag color="blue">实时预览</Tag>
                     <Text id="rule-preview-text">{buildPreview(form.getFieldsValue(true))}</Text>
@@ -477,7 +477,7 @@ const RuleForm = () => {
                   style={{
                     cursor: 'pointer',
                     padding: '10px 12px',
-                    background: selected ? '#EAF7EF' : 'transparent',
+                    background: selected ? '#E6F4FF' : 'transparent',
                     border: selected ? '1px solid #91CAFF' : '1px solid transparent',
                     borderRadius: 6,
                   }}

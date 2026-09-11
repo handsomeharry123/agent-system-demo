@@ -37,6 +37,7 @@ import {
   Col,
   Form,
   Input,
+  InputNumber,
   Radio,
   Row,
   Select,
@@ -57,7 +58,6 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../hooks/useAuth';
-import { departmentOptions } from '../../mock/departments';
 import PageHeader from '../../components/PageHeader';
 import {
   ROLE_ADMIN,
@@ -78,8 +78,9 @@ import {
 import { useSmartDraft } from './smart/store.tsx';
 import AIPrefillWrapper from './smart/AIPrefillWrapper';
 import ConnectivityTester from './smart/ConnectivityTester';
-import { AutoInsightPanel } from './smart/InsightBubble';
 import type { ReviewProblem } from './smart/types';
+import { agentAccessApi } from '../../services/agentAccess';
+import { useDepartmentOptions } from './useDepartmentOptions';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -91,6 +92,7 @@ const { TextArea } = Input;
 type AttachmentCategory = 'product' | 'tech' | 'other';
 
 const Registration = () => {
+  const departmentOptions = useDepartmentOptions();
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ id?: string }>();
@@ -128,7 +130,7 @@ const Registration = () => {
   const draftTarget: AccessRecord | undefined = useMemo(() => {
     if (!editingId) return undefined;
     return getAccessRecord(editingId);
-  }, [editingId]);
+  }, [editingId, records]);
 
   const [form] = Form.useForm();
 
@@ -175,13 +177,6 @@ const Registration = () => {
       platformKey: v.platformKey,
     });
   }, []);
-
-  const connectionAutoTriggerKey = useMemo(() => {
-    const endpoint = String(connectionValues.apiEndpoint || '').trim();
-    const apiKey = String(connectionValues.apiKey || '').trim();
-    if (connectionValues.accessMode !== 'API' || !endpoint || !apiKey) return '';
-    return ['API', endpoint, apiKey].join('|');
-  }, [connectionValues]);
 
   const connectionSignature = useMemo(
     () =>
@@ -252,6 +247,7 @@ const Registration = () => {
           status: 'done',
           size: 1024 * 1024,
           category: cat,
+          fileUuid: a.fileUuid,
         } as UploadFile;
       }),
     );
@@ -293,6 +289,11 @@ const Registration = () => {
         modelName: draftTarget.modelName,
         modelVersion: draftTarget.modelVersion,
         modelDeploymentMode: draftTarget.modelDeploymentMode,
+        parameterCount: draftTarget.parameterCount,
+        contextLength: draftTarget.contextLength,
+        temperature: draftTarget.temperature,
+        topP: draftTarget.topP,
+        concurrency: draftTarget.concurrency,
         department: draftTarget.department,
         clinicalStage: draftTarget.clinicalStage,
         source: draftTarget.source,
@@ -757,23 +758,19 @@ const Registration = () => {
       const without = prev.filter((x) => x.uid !== f.uid);
       return [...without, { ...f, category: guessed } as UploadFile];
     });
-    message.success(`上传成功（${f.name}）`);
+    message.success(`已选择文件（${f.name}），保存或提交时上传`);
   };
 
-  const obtainSdk = () => {
-    form.setFieldsValue({
-      platformUrl: 'https://otel.platform-hospital.cn/agent/' + (form.getFieldValue('agentCode') || 'new'),
-      platformKey: 'sk-sdk-' + Math.random().toString(36).slice(2, 10),
-    });
-    message.success('SDK 已签发：URL + 密钥已生成');
+  const obtainInstrumentation = async (mode: 'SDK' | 'OTEL') => {
+    try {
+      const issued = await agentAccessApi.issueInstrumentation(mode, form.getFieldValue('agentCode'));
+      form.setFieldsValue({ platformUrl: issued.platformUrl, platformKey: issued.platformKey });
+      setTested(false); setTestResult(null);
+      message.success(`${mode} 已由平台签发：URL + 密钥已生成`);
+    } catch (error) { message.error(error instanceof Error ? error.message : `${mode}签发失败`); }
   };
-  const obtainOtel = () => {
-    form.setFieldsValue({
-      platformUrl: 'https://otel.platform-hospital.cn/agent/' + (form.getFieldValue('agentCode') || 'new'),
-      platformKey: 'sk-otel-' + Math.random().toString(36).slice(2, 10),
-    });
-    message.success('OTel 已签发：URL + 密钥已生成');
-  };
+  const obtainSdk = () => { void obtainInstrumentation('SDK'); };
+  const obtainOtel = () => { void obtainInstrumentation('OTEL'); };
 
   // ──────────────────────────────────────────────────────────────────
   // 校验并保存
@@ -785,7 +782,10 @@ const Registration = () => {
       message.error('请检查表单填写，存在未通过的校验');
       return false;
     }
-    // V3.1：备案材料不做必填校验，管理员审核时自行判断
+    if (fileList.length < 2) {
+      message.error('请上传产品说明书和技术规格书两份 PDF 备案材料');
+      return false;
+    }
     const v = form.getFieldsValue();
     if (!/^1[3-9]\d{9}$/.test(v.contactPhone || '')) {
       message.error('请输入正确的 11 位手机号');
@@ -818,7 +818,18 @@ const Registration = () => {
     return true;
   };
 
-  const buildRecord = (status: AccessRecord['status'], extra: Partial<AccessRecord> = {}): AccessRecord => {
+  const uploadPendingFiles = async () => {
+    const uploaded = await Promise.all(fileList.map(async (f) => {
+      const existingUuid = (f as UploadFile & { fileUuid?: string }).fileUuid;
+      if (existingUuid) return { name: f.name, size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`, url: '#', fileUuid: existingUuid };
+      if (!f.originFileObj) throw new Error(`无法读取文件：${f.name}`);
+      const saved = await agentAccessApi.uploadFile(f.originFileObj as File);
+      return { name: saved.name, size: `${(saved.sizeBytes / 1024 / 1024).toFixed(1)} MB`, url: saved.url, fileUuid: saved.fileUuid };
+    }));
+    return uploaded;
+  };
+
+  const buildRecord = (status: AccessRecord['status'], extra: Partial<AccessRecord> = {}, attachments?: AccessRecord['attachments']): AccessRecord => {
     const v = form.getFieldsValue(true);
     const id = draftTarget?.id || `acc-${Date.now()}`;
     const code =
@@ -837,6 +848,11 @@ const Registration = () => {
       modelName: v.modelName || '',
       modelVersion: v.modelVersion || '',
       modelDeploymentMode: v.modelDeploymentMode,
+      parameterCount: v.parameterCount,
+      contextLength: v.contextLength,
+      temperature: v.temperature,
+      topP: v.topP,
+      concurrency: v.concurrency,
       department: v.department || '',
       clinicalStage: v.clinicalStage || '',
       source: v.source,
@@ -847,10 +863,11 @@ const Registration = () => {
       description: v.description,
       applicant: draftTarget?.applicant || loginName,
       applicantRole: draftTarget?.applicantRole || role,
-      attachments: fileList.map((f) => ({
+      attachments: attachments ?? fileList.map((f) => ({
         name: f.name,
         size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`,
         url: '#',
+        fileUuid: (f as UploadFile & { fileUuid?: string }).fileUuid,
       })),
       accessMode: v.accessMode,
       apiEndpoint: v.apiEndpoint,
@@ -879,8 +896,11 @@ const Registration = () => {
 
   const saveDraft = async () => {
     if (!(await validateDraft())) return;
-    const rec = buildRecord('草稿');
-    upsertAccessRecord(rec);
+    try {
+      const attachments = await uploadPendingFiles();
+      const rec = buildRecord('草稿', {}, attachments);
+      await upsertAccessRecord(rec);
+    } catch (error) { message.error(error instanceof Error ? error.message : '草稿保存失败'); return; }
     message.success('注册表单填写记录已暂存至草稿状态列表页');
     setTimeout(() => navigate('/app/agent-center?tab=草稿'), 400);
   };
@@ -894,6 +914,9 @@ const Registration = () => {
     }
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 500));
+    let attachments: AccessRecord['attachments'];
+    try { attachments = await uploadPendingFiles(); }
+    catch (error) { setSubmitting(false); message.error(error instanceof Error ? error.message : '材料上传失败'); return; }
     const rec = buildRecord('待审核', {
       submitTime: nowISO(0),
       auditHistory: [
@@ -906,8 +929,9 @@ const Registration = () => {
           desc: '已提交，等待信息科管理员审核',
         },
       ],
-    });
-    upsertAccessRecord(rec);
+    }, attachments);
+    try { await upsertAccessRecord(rec); }
+    catch (error) { setSubmitting(false); message.error(error instanceof Error ? error.message : '提交失败'); return; }
     setSubmitting(false);
     message.success('提交成功');
     // V2.6 给对话助手推一条提交成功反馈 (与新建注册页一致)
@@ -948,22 +972,6 @@ const Registration = () => {
       {/* §3.2 智能审查结果已统一收回到右下角 Agent 对话气泡（pre-audit-summary + pre-audit-issue），
           不在新建注册页新增独立「实时定位问题」面板/状态条卡片（PRD §3.2.1）。
           用户可在对话窗口看到错误/警告计数,并通过单条问题气泡的「定位到字段」跳转到具体字段。 */}
-
-      {isEdit && draftTarget && (
-        <div style={{ marginBottom: 12 }}>
-          <AutoInsightPanel
-            record={{
-              name: draftTarget.name,
-              agentCode: draftTarget.agentCode,
-              status: draftTarget.status,
-              passTime: draftTarget.passTime,
-              submitTime: draftTarget.submitTime,
-            }}
-            loginName={loginName}
-            isPlatformAdmin={!isDeptAdmin}
-          />
-        </div>
-      )}
 
       <Form
         form={form}
@@ -1274,6 +1282,62 @@ const Registration = () => {
 
         {/* 技术信息 */}
         <Card title="技术信息" style={{ marginBottom: 16 }}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="parameterCount"
+                label="参数量（单位：十亿）"
+                rules={[
+                  { required: true, message: '请输入参数量' },
+                  { type: 'number', min: 0.1, message: '参数量须大于 0' },
+                ]}
+              >
+                <InputNumber min={0.1} step={0.1} precision={1} addonAfter="B" placeholder="请输入参数量" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="contextLength"
+                label="上下文长度（单位：token）"
+                rules={[
+                  { required: true, message: '请输入上下文长度' },
+                  { type: 'number', min: 1, message: '上下文长度须为正整数' },
+                ]}
+              >
+                <InputNumber min={1} precision={0} addonAfter="K" placeholder="请输入智能体可支持的上下文长度" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="temperature"
+                label="Temperature"
+                rules={[
+                  { required: true, message: '请输入 Temperature' },
+                  { type: 'number', min: 0, max: 2, message: 'Temperature 须在 0–2 之间' },
+                ]}
+              >
+                <InputNumber min={0} max={2} step={0.1} placeholder="请输入 Temperature" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="topP"
+                label="Top P"
+                rules={[{ type: 'number', min: 0, max: 1, message: 'Top P 须在 0–1 之间' }]}
+              >
+                <InputNumber min={0} max={1} step={0.1} placeholder="请输入 Top P" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="concurrency"
+                label="预计 API 并发量"
+                rules={[{ type: 'number', min: 1, message: '预计 API 并发量须为正整数' }]}
+              >
+                <InputNumber min={1} precision={0} placeholder="比如：32" style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
           <Form.Item
             name="accessMode"
             label="接入方式"
@@ -1306,7 +1370,7 @@ const Registration = () => {
                             rules={[{ required: isApi, message: '请填写接口地址' }]}
                           >
                             <Input
-                              placeholder="如：http://10.10.10.20:8080/chat"
+                              placeholder="支持 Base URL，如：https://api.minimaxi.com/v1"
                               addonAfter={
                                 <Button
                                   type="text"
@@ -1329,7 +1393,7 @@ const Registration = () => {
                           fieldKey="apiKey"
                           onUserChange={() => handleUserChange('apiKey')}
                         >
-                          <Form.Item name="apiKey" label="API key">
+                          <Form.Item name="apiKey" label="API key" rules={[{ required: isApi, message: '请填写完整的 API Key' }]}>
                             <Input.Password
                               placeholder="默认密文显示（点击 icon1 切换显示 / 隐藏）"
                               visibilityToggle={{
@@ -1444,8 +1508,12 @@ const Registration = () => {
           <Space direction="vertical" style={{ width: '100%' }}>
             {/* §3.3 智能化连通测试 — 替换原「测试验证」按钮 + Steps */}
             <ConnectivityTester
-              autoTriggerKey={connectionAutoTriggerKey}
+              parametersKey={connectionSignature}
               onTestStart={() => {
+                setTested(false);
+                setTestResult(null);
+              }}
+              onTestInvalidated={() => {
                 setTested(false);
                 setTestResult(null);
               }}
@@ -1457,6 +1525,7 @@ const Registration = () => {
                   'platformUrl',
                   'platformKey',
                   'name',
+                  'modelName',
                 ]);
                 return {
                   accessMode: v.accessMode,
@@ -1465,6 +1534,7 @@ const Registration = () => {
                   platformUrl: v.platformUrl,
                   platformKey: v.platformKey,
                   agentName: v.name,
+                  modelName: v.modelName,
                 };
               }}
               onLocateField={(fieldKey) => {

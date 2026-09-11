@@ -161,12 +161,12 @@ const ProductionPage = () => {
       // 非关键分组：普通二次确认
       Modal.confirm({
         title: '确认保存正式环境配置？',
-        icon: <InfoCircleOutlined style={{ color: '#52B788' }} />,
+        icon: <InfoCircleOutlined style={{ color: '#1677FF' }} />,
         content: (
           <div>
             <Text>
               本次保存将对当前正式环境内{' '}
-              <Text strong style={{ color: '#52B788' }}>{agentCount}</Text>{' '}
+              <Text strong style={{ color: '#1677FF' }}>{agentCount}</Text>{' '}
               个智能体生效；未涉及资源/网络/权限关键分组变更。
             </Text>
           </div>
@@ -199,7 +199,7 @@ const ProductionPage = () => {
             message={
               <span>
                 生产慎重：本次保存将影响{' '}
-                <Text strong style={{ color: '#52B788' }}>{agentCount}</Text>{' '}
+                <Text strong style={{ color: '#1677FF' }}>{agentCount}</Text>{' '}
                 个智能体；涉及 {changedListText} 变更；变更原因将归档审计中心。
               </span>
             }

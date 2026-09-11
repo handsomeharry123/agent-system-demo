@@ -222,13 +222,13 @@ const RadarChart: React.FC<{
           })
           .join(' ')}
         fill="rgba(22,119,255,0.20)"
-        stroke="#52B788"
+        stroke="#1677FF"
         strokeWidth={2}
       />
       {/* 数据点 */}
       {data.map((d, i) => {
         const p = pt(angles[i], d.score / 100);
-        return <circle key={d.name} cx={p.x} cy={p.y} r={4} fill="#52B788" stroke="#fff" strokeWidth={2} />;
+        return <circle key={d.name} cx={p.x} cy={p.y} r={4} fill="#1677FF" stroke="#fff" strokeWidth={2} />;
       })}
       {/* 标签 */}
       {data.map((d, i) => {
@@ -249,7 +249,7 @@ const RadarChart: React.FC<{
               x={lp.x}
               y={lp.y + 14}
               fontSize={10}
-              fill="#52B788"
+              fill="#1677FF"
               textAnchor="middle"
               dominantBaseline="middle"
               fontWeight={600}
@@ -285,11 +285,11 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
   });
 
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', background: 'linear-gradient(180deg,#F3FBF6 0%,#FAFAFA 100%)', borderRadius: 8 }}>
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', background: 'linear-gradient(180deg,#F0F5FF 0%,#FAFAFA 100%)', borderRadius: 8 }}>
       <defs>
         <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#52B788" stopOpacity={0.2} />
-          <stop offset="100%" stopColor="#52B788" stopOpacity={0} />
+          <stop offset="0%" stopColor="#1677FF" stopOpacity={0.2} />
+          <stop offset="100%" stopColor="#1677FF" stopOpacity={0} />
         </radialGradient>
       </defs>
       <circle cx={cx} cy={cy} r={80} fill="url(#centerGlow)" />
@@ -323,7 +323,7 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
               x={(cx + p.x) / 2}
               y={(cy + p.y) / 2 + 4}
               fontSize={10}
-              fill={p.status === 'error' ? '#FF4D4F' : '#52B788'}
+              fill={p.status === 'error' ? '#FF4D4F' : '#1677FF'}
               textAnchor="middle"
             >
               {p.linkType}
@@ -334,8 +334,8 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
 
       {/* 中心节点:智能体 */}
       <g>
-        <circle cx={cx} cy={cy} r={44} fill="#52B788" />
-        <circle cx={cx} cy={cy} r={48} fill="none" stroke="#52B788" strokeOpacity={0.3} strokeWidth={1}>
+        <circle cx={cx} cy={cy} r={44} fill="#1677FF" />
+        <circle cx={cx} cy={cy} r={48} fill="none" stroke="#1677FF" strokeOpacity={0.3} strokeWidth={1}>
           <animate attributeName="r" values="48;60;48" dur="2.4s" repeatCount="indefinite" />
           <animate attributeName="stroke-opacity" values="0.3;0;0.3" dur="2.4s" repeatCount="indefinite" />
         </circle>
@@ -347,14 +347,14 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
           {/* 头部方框 */}
           <rect x={-12} y={-20} width={24} height={20} rx={4} fill="#fff" opacity={0.95} />
           {/* 双圆眼 */}
-          <circle cx={-5} cy={-12} r={2.5} fill="#52B788" />
-          <circle cx={5} cy={-12} r={2.5} fill="#52B788" />
+          <circle cx={-5} cy={-12} r={2.5} fill="#1677FF" />
+          <circle cx={5} cy={-12} r={2.5} fill="#1677FF" />
           {/* 嘴巴 */}
-          <rect x={-4} y={-6} width={8} height={2} rx={1} fill="#52B788" />
+          <rect x={-4} y={-6} width={8} height={2} rx={1} fill="#1677FF" />
           {/* 身体 */}
           <rect x={-10} y={2} width={20} height={14} rx={3} fill="#fff" opacity={0.95} />
-          <circle cx={-5} cy={9} r={1.5} fill="#52B788" />
-          <circle cx={5} cy={9} r={1.5} fill="#52B788" />
+          <circle cx={-5} cy={9} r={1.5} fill="#1677FF" />
+          <circle cx={5} cy={9} r={1.5} fill="#1677FF" />
         </g>
         <text
           x={cx}
@@ -380,9 +380,9 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
       {/* 资源节点 */}
       {positions.map((p) => {
         const isErr = p.status === 'error';
-        const stroke = isErr ? '#FF4D4F' : '#52B788';
-        const bg = isErr ? '#FFF1F0' : '#EAF7EF';
-        const color = isErr ? '#FF4D4F' : '#52B788';
+        const stroke = isErr ? '#FF4D4F' : '#1677FF';
+        const bg = isErr ? '#FFF1F0' : '#E6F4FF';
+        const color = isErr ? '#FF4D4F' : '#1677FF';
         return (
           <g key={p.id}>
             <rect
@@ -447,7 +447,7 @@ const ResourceTopology: React.FC<{ resources: typeof MOCK_AGENT.linkedResources 
       {/* 图例 */}
       <g transform={`translate(${W - 160}, ${H - 40})`}>
         <rect x={0} y={0} width={150} height={28} rx={4} fill="#fff" stroke="#F0F0F0" />
-        <circle cx={14} cy={14} r={4} fill="#52B788" />
+        <circle cx={14} cy={14} r={4} fill="#1677FF" />
         <text x={24} y={17} fontSize={10} fill="#595959">正常对接</text>
         <circle cx={84} cy={14} r={4} fill="#FF4D4F" />
         <text x={94} y={17} fontSize={10} fill="#FF4D4F">异常连接(已醒目)</text>
@@ -493,11 +493,11 @@ const EvalTrendChart: React.FC<{ history: typeof MOCK_AGENT.evaluation.history }
         通过线 75
       </text>
       {/* 折线 */}
-      <path d={pathD} fill="none" stroke="#52B788" strokeWidth={2} />
+      <path d={pathD} fill="none" stroke="#1677FF" strokeWidth={2} />
       {/* 节点 */}
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#52B788" strokeWidth={2} />
+          <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#1677FF" strokeWidth={2} />
           <text x={p.x} y={p.y - 8} fontSize={10} fill="#262626" textAnchor="middle">
             {p.score}
           </text>
@@ -747,7 +747,7 @@ const AgentProfileV32: React.FC = () => {
                 <Tag color="green">{a.evaluation.conclusion}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label="综合总分" span={3}>
-                <span style={{ fontSize: 22, fontWeight: 600, color: '#52B788' }}>
+                <span style={{ fontSize: 22, fontWeight: 600, color: '#1677FF' }}>
                   {a.evaluation.totalScore}
                 </span>
                 <Text type="secondary" style={{ marginLeft: 8 }}>
@@ -787,7 +787,7 @@ const AgentProfileV32: React.FC = () => {
                 <Statistic
                   title="总调用量(月)"
                   value={a.runtime.callVolume.monthly}
-                  valueStyle={{ color: '#52B788' }}
+                  valueStyle={{ color: '#1677FF' }}
                 />
               </Col>
               <Col span={8}>
@@ -855,13 +855,13 @@ const AgentProfileV32: React.FC = () => {
                 <Statistic
                   title={
                     <Space size={4}>
-                      <ThunderboltOutlined style={{ color: '#52B788' }} />
+                      <ThunderboltOutlined style={{ color: '#1677FF' }} />
                       <span>本科室调用量(月)</span>
                     </Space>
                   }
                   value={a.runtime.deptUsage.callVolume.monthly}
                   suffix="次"
-                  valueStyle={{ color: '#52B788' }}
+                  valueStyle={{ color: '#1677FF' }}
                 />
                 <div style={{ fontSize: 11, color: '#8C8C8C', marginTop: 2 }}>
                   日 {a.runtime.deptUsage.callVolume.daily} · 周 {a.runtime.deptUsage.callVolume.weekly}
@@ -1171,7 +1171,7 @@ const ProfileView: React.FC<{
         <Row gutter={24}>
           <Col span={8}>
             <Space direction="vertical" size={16} style={{ width: '100%' }}>
-              <Card size="small" style={{ background: '#F3FBF6' }} bodyStyle={{ padding: 12 }}>
+              <Card size="small" style={{ background: '#F0F5FF' }} bodyStyle={{ padding: 12 }}>
                 <Space size={4}>
                   <SafetyCertificateOutlined style={{ color: '#52C41A' }} />
                   <Text>评测阶段</Text>
@@ -1182,7 +1182,7 @@ const ProfileView: React.FC<{
               </Card>
               <Card size="small" bodyStyle={{ padding: 12 }}>
                 <Space size={4}>
-                  <CheckCircleOutlined style={{ color: '#52B788' }} />
+                  <CheckCircleOutlined style={{ color: '#1677FF' }} />
                   <Text>评测结论</Text>
                 </Space>
                 <div style={{ marginTop: 4 }}>
@@ -1191,11 +1191,11 @@ const ProfileView: React.FC<{
               </Card>
               <Card size="small" bodyStyle={{ padding: 12 }}>
                 <Space size={4}>
-                  <LineChartOutlined style={{ color: '#52B788' }} />
+                  <LineChartOutlined style={{ color: '#1677FF' }} />
                   <Text>综合总分</Text>
                 </Space>
                 <div style={{ marginTop: 4 }}>
-                  <span style={{ fontSize: 26, fontWeight: 600, color: '#52B788' }}>
+                  <span style={{ fontSize: 26, fontWeight: 600, color: '#1677FF' }}>
                     {a.evaluation.totalScore}
                   </span>
                   <Text type="secondary"> / 100</Text>
@@ -1234,16 +1234,16 @@ const ProfileView: React.FC<{
       >
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={6}>
-            <Card size="small" style={{ background: '#EAF7EF' }} bodyStyle={{ padding: 12 }}>
+            <Card size="small" style={{ background: '#E6F4FF' }} bodyStyle={{ padding: 12 }}>
               <Statistic
                 title={
                   <Space size={4}>
-                    <ThunderboltOutlined style={{ color: '#52B788' }} />
+                    <ThunderboltOutlined style={{ color: '#1677FF' }} />
                     <span>总调用量</span>
                   </Space>
                 }
                 value={a.runtime.callVolume.total}
-                valueStyle={{ color: '#52B788', fontSize: 22 }}
+                valueStyle={{ color: '#1677FF', fontSize: 22 }}
               />
               <div style={{ fontSize: 11, color: '#8C8C8C', marginTop: 2 }}>
                 日 {a.runtime.callVolume.daily} · 周 {a.runtime.callVolume.weekly} · 月 {a.runtime.callVolume.monthly}
@@ -1321,14 +1321,14 @@ const ProfileView: React.FC<{
               marginTop: 8,
               marginBottom: 12,
               padding: 12,
-              background: 'linear-gradient(90deg,#F3FBF6 0%,#EAF7EF 100%)',
+              background: 'linear-gradient(90deg,#F0F5FF 0%,#E6F4FF 100%)',
               border: '1px solid #91CAFF',
               borderRadius: 8,
             }}
           >
             <Space style={{ marginBottom: 8 }} align="center">
               <Tag color="cyan" style={{ margin: 0 }}>§4.2.3</Tag>
-              <Text strong style={{ fontSize: 13, color: '#52B788' }}>
+              <Text strong style={{ fontSize: 13, color: '#1677FF' }}>
                 运行监测 · 使用效果(本科室)
               </Text>
               <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1348,13 +1348,13 @@ const ProfileView: React.FC<{
               <Col span={8}>
                 <Card size="small" bodyStyle={{ padding: 12 }} style={{ background: '#fff' }}>
                   <Space size={4}>
-                    <ThunderboltOutlined style={{ color: '#52B788' }} />
+                    <ThunderboltOutlined style={{ color: '#1677FF' }} />
                     <Text>本科室调用量</Text>
                     <Tooltip title="本科室对该智能体的调用次数,支持日/周/月">
                       <EyeOutlined style={{ fontSize: 11, color: '#BFBFBF' }} />
                     </Tooltip>
                   </Space>
-                  <div style={{ fontSize: 24, fontWeight: 600, color: '#52B788', marginTop: 4 }}>
+                  <div style={{ fontSize: 24, fontWeight: 600, color: '#1677FF', marginTop: 4 }}>
                     {a.runtime.deptUsage.callVolume.monthly.toLocaleString()}
                     <span style={{ fontSize: 12, marginLeft: 4, color: '#8C8C8C' }}>次/月</span>
                   </div>

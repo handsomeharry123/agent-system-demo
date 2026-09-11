@@ -199,7 +199,7 @@ const ImportQuestions = () => {
                 setParseError(null);
               }}
             >
-              <p><InboxOutlined style={{ fontSize: 32, color: '#52B788' }} /></p>
+              <p><InboxOutlined style={{ fontSize: 32, color: '#1677FF' }} /></p>
               <Text>点击或拖拽上传题集文件</Text>
               <br />
               <Text type="secondary" style={{ fontSize: 12 }}>支持 .xlsx / .csv 等格式，单文件不超过 50MB</Text>

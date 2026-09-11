@@ -299,14 +299,14 @@ const Indicators = () => {
             size="small"
             title={
               <Space>
-                <InfoCircleOutlined style={{ color: '#52B788' }} />
+                <InfoCircleOutlined style={{ color: '#1677FF' }} />
                 <Text strong>评测结果判定规则</Text>
               </Space>
             }
           >
             <Space direction="vertical" size={10} style={{ width: '100%' }}>
               <Space size={6}>
-                <InfoCircleOutlined style={{ color: '#52B788' }} />
+                <InfoCircleOutlined style={{ color: '#1677FF' }} />
                 <Text strong>整体判定遵循木桶原理：智能体整体安全水平取决于风险最高的维度</Text>
               </Space>
               <Row gutter={[12, 12]}>

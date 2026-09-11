@@ -180,7 +180,7 @@ const Status = () => {
               Object.keys(d).filter((k) => k !== 'date').map((k) => ({ date: d.date, instance: k, value: d[k as keyof typeof d] as number })),
             )}
             xField="date" yField="value" colorField="instance"
-            color={['#52B788', '#722ED1', '#52C41A', '#FA8C16']}
+            color={['#1677FF', '#722ED1', '#52C41A', '#FA8C16']}
             yAxis={{ label: { formatter: (v: number) => `${v}%` }, max: 100 }}
             annotations={[
               { type: 'lineY', yField: 80, style: { stroke: '#FF4D4F', lineDash: [4, 4], lineWidth: 1 } },
@@ -197,7 +197,7 @@ const Status = () => {
               Object.keys(d).filter((k) => k !== 'date').map((k) => ({ date: d.date, instance: k, value: d[k as keyof typeof d] as number })),
             )}
             xField="date" yField="value" colorField="instance"
-            color={['#52C41A', '#52B788', '#722ED1', '#FA8C16']}
+            color={['#52C41A', '#1677FF', '#722ED1', '#FA8C16']}
             yAxis={{ label: { formatter: (v: number) => `${v}%` }, max: 100 }}
             annotations={[
               { type: 'lineY', yField: 80, style: { stroke: '#FF4D4F', lineDash: [4, 4], lineWidth: 1 } },
@@ -214,7 +214,7 @@ const Status = () => {
               Object.keys(d).filter((k) => k !== 'date').map((k) => ({ date: d.date, instance: k, value: d[k as keyof typeof d] as number })),
             )}
             xField="date" yField="value" colorField="instance"
-            color={['#52B788', '#722ED1', '#52C41A']}
+            color={['#1677FF', '#722ED1', '#52C41A']}
             yAxis={{ label: { formatter: (v: number) => `${v}%` }, max: 100 }}
             annotations={[
               { type: 'lineY', yField: 85, style: { stroke: '#FF4D4F', lineDash: [4, 4], lineWidth: 1 } },
@@ -268,7 +268,7 @@ const Status = () => {
           xField="date"
           yField={['P0', 'P1', 'P2']}
           stack
-          color={['#FF4D4F', '#FA8C16', '#52B788']}
+          color={['#FF4D4F', '#FA8C16', '#1677FF']}
           legend={{ position: 'top' }}
         />
         <div style={{ marginTop: 12, maxHeight: 160, overflow: 'auto' }}>
@@ -340,10 +340,10 @@ const Status = () => {
       {/* 4 KPI 卡片 */}
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col span={6}>
-          <Card bordered={false} hoverable style={{ background: '#EAF7EF', height: 88, overflow: 'hidden' }} bodyStyle={{ padding: 12 }}>
+          <Card bordered={false} hoverable style={{ background: '#E6F4FF', height: 88, overflow: 'hidden' }} bodyStyle={{ padding: 12 }}>
             <Space direction="vertical" size={2}>
-              <MetricLabel name="全部实例数" variant="kpi" prefix={<DatabaseOutlined style={{ color: '#52B788' }} />} />
-              <Text style={{ fontSize: 30, fontWeight: 600, color: '#52B788' }}>{statusSummary.total}</Text>
+              <MetricLabel name="全部实例数" variant="kpi" prefix={<DatabaseOutlined style={{ color: '#1677FF' }} />} />
+              <Text style={{ fontSize: 30, fontWeight: 600, color: '#1677FF' }}>{statusSummary.total}</Text>
               <Text type="secondary" style={{ fontSize: 12 }}>个智能体</Text>
             </Space>
           </Card>

@@ -57,7 +57,7 @@ const PHASE_META: Record<
   reviewing: {
     label: '信息审查中',
     description: '管理员已开启审核流程',
-    color: '#52B788',
+    color: '#1677FF',
   },
   success: {
     label: '接入成功',
@@ -85,7 +85,7 @@ export const InsightBubble: React.FC<InsightBubbleProps> = ({
   if (collapsed) {
     return (
       <Tooltip title="查看接入态势">
-        <Badge dot color="#52B788" offset={[-4, 4]}>
+        <Badge dot color="#1677FF" offset={[-4, 4]}>
           <Button
             shape="circle"
             icon={<BellOutlined />}
@@ -118,9 +118,9 @@ export const InsightBubble: React.FC<InsightBubbleProps> = ({
         aria-label="关闭接入态势"
       />
       <Space size={8} style={{ marginBottom: 8 }}>
-        <ThunderboltOutlined style={{ color: '#52B788' }} />
-        <Text strong style={{ color: '#52B788' }}>
-          医小知 · 接入态势速览
+        <ThunderboltOutlined style={{ color: '#1677FF' }} />
+        <Text strong style={{ color: '#1677FF' }}>
+          医小管 · 接入态势速览
         </Text>
         <Tag color="blue" style={{ marginLeft: 4 }}>
           非打断
@@ -199,7 +199,7 @@ export const InsightDetailPanel: React.FC<InsightDetailPanelProps> = ({ progress
       size="small"
       title={
         <Space>
-          <ThunderboltOutlined style={{ color: '#52B788' }} />
+          <ThunderboltOutlined style={{ color: '#1677FF' }} />
           <Text strong>接入进度 · 核心指标</Text>
           <Tag color={progress.phase === 'success' ? 'success' : progress.phase === 'reviewing' ? 'processing' : 'warning'}>
             {phase.label}

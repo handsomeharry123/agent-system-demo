@@ -86,7 +86,7 @@ const LedgerDemo: React.FC = () => {
               size="small"
               onClick={() => navigate('/app/ledger')}
             />
-            <ExperimentOutlined style={{ color: '#52B788' }} />
+            <ExperimentOutlined style={{ color: '#1677FF' }} />
             <span>统一台账中心智能化升级 Demo</span>
           </Space>
         }

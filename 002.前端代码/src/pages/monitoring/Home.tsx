@@ -39,7 +39,7 @@ const chartBaseConfig: ChartConfig = {
 };
 
 const levelColor = (lv: AlertIncident['level']) =>
-  lv === 'severe' ? '#FF4D4F' : lv === 'warning' ? '#FA8C16' : '#52B788';
+  lv === 'severe' ? '#FF4D4F' : lv === 'warning' ? '#FA8C16' : '#1677FF';
 const levelLabel = (lv: AlertIncident['level']) =>
   lv === 'severe' ? '严重' : lv === 'warning' ? '警告' : '提示';
 
@@ -252,7 +252,7 @@ const Home = () => {
             <Card bordered={false} hoverable styles={{ body: { padding: 12, height: 88, overflow: 'hidden' } }}>
               <Space direction="vertical" size={2}>
                 <MetricLabel name="今日调用量" variant="kpi" />
-                <Text strong style={{ fontSize: 28, fontWeight: 600, color: '#52B788', lineHeight: 1.2 }}>
+                <Text strong style={{ fontSize: 28, fontWeight: 600, color: '#1677FF', lineHeight: 1.2 }}>
                   12,834
                 </Text>
                 <Space size={4}>
@@ -344,7 +344,7 @@ const Home = () => {
               xField="date"
               yField="v"
               smooth
-              color="#52B788"
+              color="#1677FF"
               legend={false}
             />
           </Card>
@@ -437,7 +437,7 @@ const Home = () => {
               yField="value"
               stack
               colorField="level"
-              color={['#FF4D4F', '#FA8C16', '#52B788']}
+              color={['#FF4D4F', '#FA8C16', '#1677FF']}
             />
           </Card>
         </Col>

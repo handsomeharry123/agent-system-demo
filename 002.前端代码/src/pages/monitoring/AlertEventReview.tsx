@@ -123,7 +123,7 @@ const AlertEventReview = () => {
     } | null)?.assistantReviewDraft;
     if (!draft) return;
     reviewForm.setFieldsValue(draft);
-    message.success('医小知已根据您的描述自动填充审核结论与说明');
+    message.success('医小管已根据您的描述自动填充审核结论与说明');
     navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
   }, [location.pathname, location.search, location.state, navigate, reviewForm]);
 

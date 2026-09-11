@@ -128,7 +128,7 @@ const AlertEventHandle = () => {
       </Card>
 
       <Card bordered={false} style={{ marginTop: 16 }} title="触发告警内容（统一结构）">
-        <Card size="small" style={{ background: '#F3FBF6', borderColor: '#ADC6FF' }}>
+        <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
           <Descriptions column={1} size="small">
             <Descriptions.Item label="规则名称">{event.triggerContent.rule_name}</Descriptions.Item>
             <Descriptions.Item label="触发时间">{event.triggerContent.trigger_time}</Descriptions.Item>

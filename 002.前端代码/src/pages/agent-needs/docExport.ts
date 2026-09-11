@@ -36,7 +36,7 @@ export const buildNeedDocHtml = (need: BuildNeed): string => {
     <h1 style="text-align:center;font-size:24px;margin:0 0 4px;">智能体建设需求文档</h1>
     <p style="text-align:center;color:#888;margin:0 0 24px;font-size:13px;">${esc(need.title)}</p>
 
-    <h2 style="font-size:16px;border-left:4px solid #52B788;padding-left:8px;margin:24px 0 12px;">一、基本信息</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">一、基本信息</h2>
     <table style="width:100%;border-collapse:collapse;font-size:14px;" border="1" cellpadding="8" cellspacing="0" bordercolor="#E5E5E5">
       <tr><td style="width:120px;background:#FAFAFA;">需求标题</td><td>${esc(need.title)}</td></tr>
       <tr><td style="background:#FAFAFA;">提出科室</td><td>${esc(need.department)}</td></tr>
@@ -48,13 +48,13 @@ export const buildNeedDocHtml = (need: BuildNeed): string => {
       <tr><td style="background:#FAFAFA;">提出时间</td><td>${esc(need.submitTime || need.lastUpdateTime)}</td></tr>
     </table>
 
-    <h2 style="font-size:16px;border-left:4px solid #52B788;padding-left:8px;margin:24px 0 12px;">二、提出原因</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">二、提出原因</h2>
     <p style="font-size:14px;line-height:1.9;margin:0;white-space:pre-wrap;">${esc(need.reason || '—')}</p>
 
-    <h2 style="font-size:16px;border-left:4px solid #52B788;padding-left:8px;margin:24px 0 12px;">三、功能描述</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">三、功能描述</h2>
     <p style="font-size:14px;line-height:1.9;margin:0;white-space:pre-wrap;">${esc(need.functionDesc || '—')}</p>
 
-    <h2 style="font-size:16px;border-left:4px solid #52B788;padding-left:8px;margin:24px 0 12px;">四、智能化匹配结果（TOP3）</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">四、智能化匹配结果（TOP3）</h2>
     <table style="width:100%;border-collapse:collapse;font-size:14px;" border="1" cellpadding="8" cellspacing="0" bordercolor="#E5E5E5">
       <thead><tr style="background:#FAFAFA;"><th style="width:48px;">排名</th><th>智能体编号</th><th>智能体名称</th><th style="width:90px;">匹配度</th></tr></thead>
       <tbody>${matchRows}</tbody>

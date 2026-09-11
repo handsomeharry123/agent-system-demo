@@ -315,7 +315,7 @@ const ChatDrawer = ({
             {msg.role === 'assistant' && (
               <Avatar
                 icon={<RobotOutlined />}
-                style={{ marginRight: 8, background: '#52B788' }}
+                style={{ marginRight: 8, background: '#1677FF' }}
               />
             )}
             <div
@@ -342,7 +342,7 @@ const ChatDrawer = ({
                 style={{
                   padding: '10px 14px',
                   borderRadius: 8,
-                  background: msg.role === 'user' ? '#52B788' : '#fff',
+                  background: msg.role === 'user' ? '#1677FF' : '#fff',
                   color: msg.role === 'user' ? '#fff' : '#333',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
                 }}
@@ -392,7 +392,7 @@ const ChatDrawer = ({
 
         {loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Avatar icon={<RobotOutlined />} style={{ background: '#52B788' }} />
+            <Avatar icon={<RobotOutlined />} style={{ background: '#1677FF' }} />
             <div
               style={{
                 padding: '12px 16px',

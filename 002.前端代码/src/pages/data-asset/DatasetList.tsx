@@ -230,7 +230,7 @@ const DatasetList = () => {
         <Tag
           style={{
             margin: 0,
-            background: '#F3FBF6',
+            background: '#F0F5FF',
             borderColor: '#ADC6FF',
             color: '#1D39C4',
             fontWeight: 500,
@@ -525,14 +525,14 @@ const DatasetList = () => {
                 display: 'inline-block',
                 width: 3,
                 height: 14,
-                background: '#52B788',
+                background: '#1677FF',
                 borderRadius: 2,
               }}
             />
             <Text strong style={{ fontSize: 15 }}>
               数据集资产列表
             </Text>
-            <Tag style={{ background: '#F3FBF6', borderColor: '#ADC6FF', color: '#1D39C4' }}>
+            <Tag style={{ background: '#F0F5FF', borderColor: '#ADC6FF', color: '#1D39C4' }}>
               共 {filteredDatasets.length} 条
             </Tag>
           </Space>

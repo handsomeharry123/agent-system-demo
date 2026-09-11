@@ -1,0 +1,64 @@
+{
+  "ts": "2026-07-04T04:45:16.024Z",
+  "tester": "B",
+  "total": 11,
+  "passed": 11,
+  "failed": 0,
+  "results": [
+    {
+      "name": "[B1] 审核页能进入(URL=/app/agent-center/audit/:id)",
+      "pass": true,
+      "detail": "http://localhost:5173/app/agent-center/audit/lung-ai-001"
+    },
+    {
+      "name": "[B2] 机器人旁气泡出现",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B3] 气泡文案预览",
+      "pass": true,
+      "detail": "我已完成预审：标注了 0 个疑似问题并跑了连通测试，预审结论为「待定」，供你二次审核参考，最终以你的决策为准。"
+    },
+    {
+      "name": "[B4] X 被实际数字替换(非字面 X)",
+      "pass": true,
+      "detail": "x=[0]"
+    },
+    {
+      "name": "[B5] XX 被实际 verdict 替换(非字面 XX)",
+      "pass": true,
+      "detail": "verdict=[待定]"
+    },
+    {
+      "name": "[B6] X 替换为合法数字",
+      "pass": true,
+      "detail": "x=0"
+    },
+    {
+      "name": "[B7] verdict 替换为合法值",
+      "pass": true,
+      "detail": "verdict=[待定]"
+    },
+    {
+      "name": "[B8] 至少 1 个操作按钮",
+      "pass": true,
+      "detail": "n=3"
+    },
+    {
+      "name": "[B9] 「审核通过」按钮触发 agent-audit-verdict-pass 事件",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B10] 「退回修改」按钮触发 agent-audit-verdict-return 事件",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[B11] 不同 recordId 多次进入,X/XX 持续被替换",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}

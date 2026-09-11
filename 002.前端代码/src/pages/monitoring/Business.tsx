@@ -96,7 +96,7 @@ const Business = () => {
             { date: '06-29', count: 11900 }, { date: '06-30', count: 12500 },
             { date: '07-01', count: 12834 },
           ]}
-          xField="date" yField="count" color="#52B788" legend={false}
+          xField="date" yField="count" color="#1677FF" legend={false}
         />
       </ChartCard>
       <ChartCard title="活跃用户数（DAU/MAU）" span={8}>
@@ -111,7 +111,7 @@ const Business = () => {
             { date: '06-30', DAU: 18400, MAU: 52200 },
             { date: '07-01', DAU: 18564, MAU: 52340 },
           ]}
-          xField="date" yField={['DAU', 'MAU']} smooth color={['#52B788', '#722ED1']}
+          xField="date" yField={['DAU', 'MAU']} smooth color={['#1677FF', '#722ED1']}
         />
       </ChartCard>
       <ChartCard title="科室覆盖数（Top 10）" span={8}>
@@ -481,7 +481,7 @@ const Business = () => {
           <Card bordered={false} hoverable style={kpiCardStyle} bodyStyle={kpiCardBodyStyle}>
             <MetricLabel name="业务调用总量" variant="kpi" />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <Text strong style={{ fontSize: 28, fontWeight: 600, color: '#52B788', lineHeight: 1.1 }}>
+              <Text strong style={{ fontSize: 28, fontWeight: 600, color: '#1677FF', lineHeight: 1.1 }}>
                 {kpi.callCount.value.toLocaleString()}
               </Text>
               <Text type="secondary" style={{ fontSize: 12 }}>次 · 环比 ↑ 8.2%</Text>

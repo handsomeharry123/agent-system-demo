@@ -1,5 +1,5 @@
 /**
- * 医小知智能体首页 V1.x · 第二层 · 首页内左侧管理栏
+ * 医小管智能体首页 V1.x · 第二层 · 首页内左侧管理栏
  *
  * PRD §1:自上而下 6 大区 —— 工具区 / 品牌区 / 工作台区 / 自动化任务执行区(称「自动化任务记录」) / 最近对话区(称「历史会话」) / 账户区。
  *
@@ -313,7 +313,7 @@ const HighlightRow = ({
         marginLeft: -8,
         width: 'calc(100% + 16px)',
         borderRadius: 6,
-        background: active ? '#EAF7EF' : 'transparent',
+        background: active ? '#E6F4FF' : 'transparent',
         cursor: 'pointer',
         transition: 'all 0.15s',
         display: 'flex',
@@ -338,17 +338,17 @@ const HighlightRow = ({
             bottom: 4,
             width: 3,
             borderRadius: 2,
-            background: '#52B788',
+            background: '#1677FF',
           }}
         />
       )}
       {icon ? (
-        <span style={{ color: active ? '#52B788' : '#595959', fontSize: 12, flexShrink: 0 }}>{icon}</span>
+        <span style={{ color: active ? '#1677FF' : '#595959', fontSize: 12, flexShrink: 0 }}>{icon}</span>
       ) : null}
       <span
         style={{
           fontSize: 13,
-          color: active ? '#52B788' : '#333',
+          color: active ? '#1677FF' : '#333',
           fontWeight: active ? 500 : 400,
           flex: 1,
           minWidth: 0,
@@ -640,7 +640,7 @@ const HomeSidebarV2 = ({ onNewTask, onRestoreSession, onRestoreRun, initialActiv
                           style={{
                             display: 'block',
                             fontSize: 12,
-                            color: isActive ? '#52B788' : '#333',
+                            color: isActive ? '#1677FF' : '#333',
                             fontWeight: isActive ? 500 : 400,
                             flex: 1,
                             minWidth: 0,
@@ -690,9 +690,9 @@ const HomeSidebarV2 = ({ onNewTask, onRestoreSession, onRestoreRun, initialActiv
                         testId={`home-v1-side-task-row-${t.id}`}
                         icon={
                           isOpen ? (
-                            <CaretDownOutlined style={{ fontSize: 10, color: isTaskActive ? '#52B788' : '#8c8c8c' }} />
+                            <CaretDownOutlined style={{ fontSize: 10, color: isTaskActive ? '#1677FF' : '#8c8c8c' }} />
                           ) : (
-                            <CaretRightOutlined style={{ fontSize: 10, color: isTaskActive ? '#52B788' : '#8c8c8c' }} />
+                            <CaretRightOutlined style={{ fontSize: 10, color: isTaskActive ? '#1677FF' : '#8c8c8c' }} />
                           )
                         }
                       >
@@ -700,7 +700,7 @@ const HomeSidebarV2 = ({ onNewTask, onRestoreSession, onRestoreRun, initialActiv
                           ellipsis
                           style={{
                             fontSize: 12,
-                            color: isTaskActive ? '#52B788' : '#595959',
+                            color: isTaskActive ? '#1677FF' : '#595959',
                             fontWeight: 500,
                             flex: 1,
                             minWidth: 0,
@@ -748,7 +748,7 @@ const HomeSidebarV2 = ({ onNewTask, onRestoreSession, onRestoreRun, initialActiv
                                     style={{
                                       display: 'block',
                                       fontSize: 11,
-                                      color: isRunActive ? '#52B788' : '#595959',
+                                      color: isRunActive ? '#1677FF' : '#595959',
                                       flex: 1,
                                       minWidth: 0,
                                     }}

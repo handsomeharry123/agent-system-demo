@@ -75,7 +75,7 @@ const chartBaseConfig: any = {
 
 // 4 类告警配色（统一在 KPI/饼图/图例 chip 复用）
 const typeColorMap: Record<string, string> = {
-  business: '#52B788',
+  business: '#1677FF',
   status: '#52C41A',
   cost: '#FA8C16',
   security: '#FF4D4F',
@@ -162,9 +162,9 @@ const Overview = () => {
       key: 'total',
       title: '当日告警总数',
       value: alertOverviewKpiV18.totalToday,
-      color: '#52B788',
+      color: '#1677FF',
       icon: <AlertOutlined />,
-      iconBg: '#EAF7EF',
+      iconBg: '#E6F4FF',
       to: '/app/monitoring/alert-events?tab=all',
       extra: '含未处理 + 已处理',
     },
@@ -270,7 +270,7 @@ const Overview = () => {
                 xField="date"
                 yField="count"
                 smooth
-                color="#52B788"
+                color="#1677FF"
                 point={trendRange === '7d' || trendRange === '1m'
                   ? { size: 4, shape: 'circle' }
                   : false}
@@ -396,9 +396,9 @@ const Overview = () => {
                   yField="name"
                   color={({ name }: { name: string }) => {
                     const item = alertAgentRankingV18.find((d) => d.name === name);
-                    if (!item) return '#52B788';
-                    const palette = ['#FF4D4F', '#FA8C16', '#FAAD14', '#52B788', '#52C41A'];
-                    return palette[item.rank - 1] || '#52B788';
+                    if (!item) return '#1677FF';
+                    const palette = ['#FF4D4F', '#FA8C16', '#FAAD14', '#1677FF', '#52C41A'];
+                    return palette[item.rank - 1] || '#1677FF';
                   }}
                   legend={false}
                   barWidthRatio={0.6}
@@ -449,7 +449,7 @@ const Overview = () => {
                         background: '#FAFAFA',
                         transition: 'background 0.2s',
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F3FBF6'; }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#F0F5FF'; }}
                       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#FAFAFA'; }}
                     >
                       <span style={{

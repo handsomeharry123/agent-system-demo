@@ -535,7 +535,7 @@ const AlertRuleForm = () => {
               <Divider style={{ margin: '12px 0' }} />
 
               <Form.Item label="规则预览">
-                <Card size="small" style={{ background: '#F3FBF6', borderColor: '#ADC6FF' }}>
+                <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
                   <Space>
                     <Tag color="blue">实时预览</Tag>
                     <Text>{preview}</Text>

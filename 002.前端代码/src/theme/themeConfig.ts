@@ -28,11 +28,11 @@ export const simpleTheme: ThemeConfig = {
   token: {
     ...sharedToken,
     // Brand colors
-    colorPrimary: '#52B788',
+    colorPrimary: '#1677FF',
     colorSuccess: '#52C41A',
     colorWarning: '#FAAD14',
     colorError: '#FF4D4F',
-    colorInfo: '#52B788',
+    colorInfo: '#1677FF',
     // Neutral colors
     colorTextBase: '#000000',
     colorBgBase: '#FFFFFF',

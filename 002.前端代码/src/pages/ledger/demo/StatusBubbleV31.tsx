@@ -125,7 +125,7 @@ const MetricLink: React.FC<{ metric: MetricChip; onClick: (to: string) => void; 
   showLabel = true,
 }) => {
   const palette = {
-    primary: { color: '#52B788', bg: 'rgba(22,119,255,0.08)' },
+    primary: { color: '#1677FF', bg: 'rgba(22,119,255,0.08)' },
     warning: { color: '#FA8C16', bg: 'rgba(250,140,22,0.10)' },
     danger: { color: '#FF4D4F', bg: 'rgba(255,77,79,0.10)' },
   }[metric.tone];
@@ -169,7 +169,7 @@ const MetricTile: React.FC<{ metric: MetricChip; onClick: (to: string) => void; 
   wide,
 }) => {
   const palette = {
-    primary: { color: '#52B788', bg: '#F0F7FF', border: '#BAE0FF' },
+    primary: { color: '#1677FF', bg: '#F0F7FF', border: '#BAE0FF' },
     warning: { color: '#FA8C16', bg: '#FFF7E6', border: '#FFD591' },
     danger: { color: '#FF4D4F', bg: '#FFF1F0', border: '#FFA39E' },
   }[metric.tone];
@@ -452,8 +452,8 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
             gap: 6,
           }}
         >
-          <ThunderboltFilled style={{ color: '#52B788', fontSize: 13 }} />
-          <strong style={{ fontSize: 13, color: '#52B788' }}>医小知</strong>
+          <ThunderboltFilled style={{ color: '#1677FF', fontSize: 13 }} />
+          <strong style={{ fontSize: 13, color: '#1677FF' }}>医小管</strong>
         </div>
         <button
           type="button"
@@ -488,7 +488,7 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
         {isDetail ? (
           <>
             <div style={{ fontSize: 12, color: '#262626', marginBottom: 6 }}>
-              您好，我是医小知。当前为您展示
+              您好，我是医小管。当前为您展示
               <strong>【{activeDetailAgent.name}】</strong>
               的{detailView === 'profile' ? '360画像' : '信息详情'}，有什么该智能体相关问题可以直接问我~
             </div>
@@ -497,7 +497,7 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
           <>
         <div style={{ fontSize: 12, color: '#262626', marginBottom: 8 }}>
           <div style={{ lineHeight: '20px', marginBottom: 8 }}>
-            你好，我是医小知！这是{isDept ? '本科室智能体今日使用速览' : '今日全院智能体台账速览'}。
+            你好，我是医小管！这是{isDept ? '本科室智能体今日使用速览' : '今日全院智能体台账速览'}。
           </div>
           <div
             style={{
@@ -537,7 +537,7 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
             style={{
               marginTop: 6,
               padding: '6px 8px',
-              background: 'linear-gradient(90deg,#F0F8FF 0%,#EAF7EF 100%)',
+              background: 'linear-gradient(90deg,#F0F8FF 0%,#E6F4FF 100%)',
               border: '1px solid #91CAFF',
               borderRadius: 6,
             }}
@@ -555,7 +555,7 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
                     flex: 1,
                     minWidth: 0,
                     padding: '4px 8px',
-                    background: '#52B788',
+                    background: '#1677FF',
                     color: '#fff',
                     border: 'none',
                     borderRadius: 4,
@@ -584,7 +584,7 @@ export const StatusBubbleV31: React.FC<StatusBubbleProps> = ({
                     minWidth: 0,
                     padding: '4px 8px',
                     background: '#fff',
-                    color: '#52B788',
+                    color: '#1677FF',
                     border: '1px solid #91CAFF',
                     borderRadius: 4,
                     fontSize: 12,

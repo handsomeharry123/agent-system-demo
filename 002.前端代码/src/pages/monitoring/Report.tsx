@@ -97,8 +97,8 @@ const MonitoringReport = () => {
       />
 
       <div ref={reportRef} style={{ maxWidth: 980, margin: '0 auto', background: '#FFFFFF', padding: 36 }}>
-        <div style={{ textAlign: 'center', borderBottom: '2px solid #52B788', paddingBottom: 24, marginBottom: 24 }}>
-          <FileTextOutlined style={{ color: '#52B788', fontSize: 34 }} />
+        <div style={{ textAlign: 'center', borderBottom: '2px solid #1677FF', paddingBottom: 24, marginBottom: 24 }}>
+          <FileTextOutlined style={{ color: '#1677FF', fontSize: 34 }} />
           <Text type="secondary">{templateName.replace('.docx', '')}</Text>
           <Title level={2} style={{ marginTop: 12 }}>{reportTitle}</Title>
           <Space direction="vertical" size={2}>
@@ -131,7 +131,7 @@ const MonitoringReport = () => {
         <Title level={5}>（一）总体监控概览</Title>
         <Row gutter={[12, 12]}>
           {[
-            [isItAdmin ? '纳管智能体总数' : '科室纳管智能体', isItAdmin ? '42 个' : '8 个', '#52B788'],
+            [isItAdmin ? '纳管智能体总数' : '科室纳管智能体', isItAdmin ? '42 个' : '8 个', '#1677FF'],
             ['累计调用次数', isItAdmin ? '126.8 万' : '28.6 万', '#13C2C2'],
             ['任务执行成功率', isItAdmin ? '96.8%' : '96.2%', '#52C41A'],
             ['智能体在线率', isItAdmin ? '85.7%' : '87.5%', '#FA8C16'],

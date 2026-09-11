@@ -34,7 +34,7 @@ export const dimensionIconKey: Record<SecurityDimension, string> = {
 
 /** 维度颜色 */
 export const dimensionColor: Record<SecurityDimension, string> = {
-  系统: '#52B788',
+  系统: '#1677FF',
   网络: '#722ED1',
   身份: '#FA8C16',
   数据: '#13C2C2',

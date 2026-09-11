@@ -44,7 +44,6 @@ import {
   SaveOutlined,
   SendOutlined,
 } from '@ant-design/icons';
-import { departmentOptions } from '../../../mock/departments';
 import PageHeader from '../../../components/PageHeader';
 import {
   ROLE_ADMIN,
@@ -67,6 +66,8 @@ import AIPrefillWrapper from './AIPrefillWrapper';
 import ConnectivityTester from './ConnectivityTester';
 import type { AgentMessage } from './types';
 import type { ReviewProblem } from './types';
+import { agentAccessApi } from '../../../services/agentAccess';
+import { useDepartmentOptions } from '../useDepartmentOptions';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -128,6 +129,7 @@ const isRequiredRegistrationInfoComplete = (v: Record<string, any>) => {
 };
 
 const SmartRegistrationForm = () => {
+  const departmentOptions = useDepartmentOptions();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const role = currentUser?.roles[0] || ROLE_ADMIN;
@@ -170,12 +172,7 @@ const SmartRegistrationForm = () => {
   useEffect(() => {
     form.setFieldsValue({
       version: '1.0',
-      parameterCount: 7,
       openSource: '否',
-      contextLength: 32,
-      temperature: 0.7,
-      topP: 0.9,
-      concurrency: 32,
       releaseDate: dayjs(),
       accessMode: 'API',
       modelConfigs: [{ modelName: '', modelVersion: '', deploymentMode: '本地化部署' }],
@@ -183,7 +180,7 @@ const SmartRegistrationForm = () => {
     });
   }, [form, isDeptAdmin, currentUser]);
 
-  // PRD §4.2：接入必填项完整即自动跑连通测试
+  // 接入参数签名：用于参数变化后使已有测试结果失效；不再自动发起网络测试。
   //   - 监听 5 个接入相关字段：accessMode / apiEndpoint / apiKey / platformUrl / platformKey
   //   - 签名规则：必填项完整才输出稳定签名,字段变化/补全即触发,缺字段时输出空串
   //   - 解决 V3.2 拆出 SmartRegistrationForm 时未同步「必填完整即自动跑」逻辑导致的两个问题:
@@ -192,10 +189,11 @@ const SmartRegistrationForm = () => {
   const watchedAccessMode = Form.useWatch('accessMode', form);
   const watchedApiEndpoint = Form.useWatch('apiEndpoint', form);
   const watchedApiKey = Form.useWatch('apiKey', form);
+  const watchedModelName = Form.useWatch(['modelConfigs', 0, 'modelName'], form);
   const watchedPlatformUrl = Form.useWatch('platformUrl', form);
   const watchedPlatformKey = Form.useWatch('platformKey', form);
   const watchedRegistrationValues = Form.useWatch([], form);
-  const connAutoTriggerKey = useMemo(() => {
+  const connectionParamsKey = useMemo(() => {
     const mode = watchedAccessMode;
     if (mode === 'API') {
       const ep = String(watchedApiEndpoint || '').trim();
@@ -203,7 +201,7 @@ const SmartRegistrationForm = () => {
       // AI 预填字段必须先由用户明确采纳；手动修改会清除 prefillMeta，可直接测试。
       if (!ep || !ak) return '';
       if (prefillMeta.apiEndpoint?.acknowledged === false || prefillMeta.apiKey?.acknowledged === false) return '';
-      return `API::${ep}::${ak}`;
+      return `API::${ep}::${ak}::${String(watchedModelName || '').trim()}`;
     }
     if (mode === 'SDK' || mode === 'OTel') {
       const pu = String(watchedPlatformUrl || '').trim();
@@ -213,7 +211,8 @@ const SmartRegistrationForm = () => {
       return `${mode}::${pu}::${pk}`;
     }
     return '';
-  }, [watchedAccessMode, watchedApiEndpoint, watchedApiKey, watchedPlatformUrl, watchedPlatformKey, prefillMeta]);
+  }, [watchedAccessMode, watchedApiEndpoint, watchedApiKey, watchedModelName, watchedPlatformUrl, watchedPlatformKey, prefillMeta]);
+  const connectionFieldsReady = Boolean(connectionParamsKey);
 
   // §3.1.1 P1.3 语义联动填充：
   //   - 用户输入「功能描述」后,实时推断临床环节 + 所属科室
@@ -528,7 +527,7 @@ const SmartRegistrationForm = () => {
     };
   }, [fileList, runReview]);
 
-  // PRD §4.2 fix: 接入必填项完整（connAutoTriggerKey 由空变非空）瞬间,
+  // 接入必填项完整（connectionParamsKey 由空变非空）瞬间,
   //   不依赖 runReview / onValuesChange 时序, 主动触发一次材料缺失评估,
   //   确保 PDF 一次性预填后机器人旁「产品说明书缺失」提示立即出现。
   //   - 只在 signature 真正变化的瞬间跑（依赖 connAutoTriggerKey 字符串）,
@@ -539,7 +538,7 @@ const SmartRegistrationForm = () => {
     materialOfferKeyRef.current = '';
     maybePushMaterialGenerationOffer(fileList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connAutoTriggerKey]);
+  }, [connectionFieldsReady]);
 
   // §3.2.1 监听字段定位事件：保留内部审查定位能力，但不再向 Agent 对话窗口推格式校验提示。
   useEffect(() => {
@@ -666,7 +665,7 @@ const SmartRegistrationForm = () => {
       const others = prev.filter((x) => (x as any).category !== cat);
       const nextForCategory = [
         ...prev.filter((x) => (x as any).category === cat),
-        { uid: f.uid, name: f.name, size: f.size, type: f.type, status: 'done', category: cat } as UploadFile,
+        { uid: f.uid, name: f.name, size: f.size, type: f.type, status: 'done', category: cat, originFileObj: f.file } as unknown as UploadFile,
       ].slice(0, CATEGORY_MAX[cat]);
       return [...others, ...nextForCategory];
     });
@@ -740,7 +739,12 @@ const SmartRegistrationForm = () => {
           type: 'application/pdf',
           status: 'done',
           category,
-        } as UploadFile;
+          originFileObj: new File(
+            ['%PDF-1.4\n% Generated registration material\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF'],
+            `${agentName}-${label}.pdf`,
+            { type: 'application/pdf' },
+          ),
+        } as unknown as UploadFile;
         setFileList((prev) => {
           const others = prev.filter((x) => (x as any).category !== category);
           return [...others, generatedFile];
@@ -815,7 +819,15 @@ const SmartRegistrationForm = () => {
     return true;
   };
 
-  const buildRecord = (status: '草稿' | '待审核') => {
+  const uploadPendingFiles = async () => Promise.all(fileList.map(async (f) => {
+    const existingUuid = (f as UploadFile & { fileUuid?: string }).fileUuid;
+    if (existingUuid) return { name: f.name, size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`, url: '#', fileUuid: existingUuid };
+    if (!f.originFileObj) throw new Error(`无法读取备案材料：${f.name}，请重新上传`);
+    const saved = await agentAccessApi.uploadFile(f.originFileObj as File);
+    return { name: saved.name, size: `${(saved.sizeBytes / 1024 / 1024).toFixed(1)} MB`, url: saved.url, fileUuid: saved.fileUuid };
+  }));
+
+  const buildRecord = (status: '草稿' | '待审核', attachments?: Awaited<ReturnType<typeof uploadPendingFiles>>) => {
     const v = form.getFieldsValue(true);
     const id = `acc-${Date.now()}`;
     const code = v.department
@@ -856,10 +868,11 @@ const SmartRegistrationForm = () => {
       description: v.description || '',
       applicant: loginName,
       applicantRole: role,
-      attachments: fileList.map((f) => ({
+      attachments: attachments ?? fileList.map((f) => ({
         name: f.name,
         size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`,
         url: '#',
+        fileUuid: (f as UploadFile & { fileUuid?: string }).fileUuid,
       })),
       accessMode: v.accessMode,
       apiEndpoint: v.apiEndpoint,
@@ -881,8 +894,14 @@ const SmartRegistrationForm = () => {
     } catch {
       return;
     }
-    const rec = buildRecord('草稿');
-    upsertAccessRecord(rec as any);
+    try {
+      const attachments = await uploadPendingFiles();
+      const rec = buildRecord('草稿', attachments);
+      await upsertAccessRecord(rec as any);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '草稿保存失败');
+      return;
+    }
     message.success('注册表单填写记录已暂存至草稿状态列表页');
     setTimeout(() => navigate('/app/agent-center?tab=草稿'), 400);
   };
@@ -895,8 +914,15 @@ const SmartRegistrationForm = () => {
     }
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 500));
-    const rec = buildRecord('待审核');
-    upsertAccessRecord(rec as any);
+    try {
+      const attachments = await uploadPendingFiles();
+      const rec = buildRecord('待审核', attachments);
+      await upsertAccessRecord(rec as any);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '提交失败');
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(false);
     message.success('提交成功');
     // 给对话助手推一条成功反馈
@@ -908,13 +934,13 @@ const SmartRegistrationForm = () => {
     setTimeout(() => navigate('/app/agent-center?tab=待审核'), 600);
   };
 
-  // 信息完整且测试通过后，由医小知询问是否代提交。相同表单/测试签名只提示一次。
+  // 信息完整且测试通过后，由医小管询问是否代提交。相同表单/测试签名只提示一次。
   const submitPromptKeyRef = useRef('');
   useEffect(() => {
-    if (!tested || !testResult?.ok || !connAutoTriggerKey) return;
+    if (!tested || !testResult?.ok || !connectionParamsKey) return;
     const values = watchedRegistrationValues || form.getFieldsValue(true);
     if (!isRequiredRegistrationInfoComplete(values) || missingRequired.length > 0) return;
-    const key = `${connAutoTriggerKey}::${values.name}::${values.version}::${fileList.map((f) => f.uid).join(',')}`;
+    const key = `${connectionParamsKey}::${values.name}::${values.version}::${fileList.map((f) => f.uid).join(',')}`;
     if (submitPromptKeyRef.current === key) return;
     submitPromptKeyRef.current = key;
     addMessage({
@@ -922,7 +948,7 @@ const SmartRegistrationForm = () => {
       type: 'register-submit-confirm',
       content: '注册信息已完整且测试验证通过，是否需要帮你提交注册信息？',
     });
-  }, [tested, testResult, connAutoTriggerKey, watchedRegistrationValues, form, missingRequired.length, fileList, addMessage]);
+  }, [tested, testResult, connectionParamsKey, watchedRegistrationValues, form, missingRequired.length, fileList, addMessage]);
 
   useEffect(() => {
     const onConfirmSubmit = () => void submitRegister();
@@ -939,6 +965,15 @@ const SmartRegistrationForm = () => {
   // ──────────────────────────────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────────────────────────────
+  const issueInstrumentation = async (mode: 'SDK' | 'OTel') => {
+    try {
+      const issued = await agentAccessApi.issueInstrumentation(mode === 'OTel' ? 'OTEL' : mode, form.getFieldValue('agentCode'));
+      form.setFieldsValue({ platformUrl: issued.platformUrl, platformKey: issued.platformKey });
+      await navigator.clipboard?.writeText(issued.instrumentationCode);
+      message.success(`${mode} 已由平台签发，埋点代码已复制到剪贴板`);
+    } catch (error) { message.error(error instanceof Error ? error.message : `${mode}签发失败`); }
+  };
+
   return (
     <>
       <PageHeader
@@ -1433,12 +1468,7 @@ const SmartRegistrationForm = () => {
                 form.setFieldsValue({ accessMode: nextMode });
                 // SDK / OTel：点击接入方式即自动签发 URL + 密钥，并复制埋点代码
                 if (nextMode === 'SDK' || nextMode === 'OTel') {
-                  const url = `https://otel.platform-hospital.cn/agent/${form.getFieldValue('agentCode') || 'new'}`;
-                  const key = `sk-${nextMode.toLowerCase()}-${Math.random().toString(36).slice(2, 10)}`;
-                  form.setFieldsValue({ platformUrl: url, platformKey: key });
-                  const code = `// ${nextMode} 埋点代码（点击右侧复制按钮后嵌入智能体应用）\nimport { init } from '@platform/agent-${nextMode.toLowerCase()}';\ninit({\n  endpoint: '${url}',\n  apiKey: '${key}',\n});`;
-                  navigator.clipboard?.writeText(code);
-                  message.success(`${nextMode} 已签发，埋点代码已复制到剪贴板`);
+                  void issueInstrumentation(nextMode);
                   addMessage({
                     role: 'agent',
                     type: 'autofix-done',
@@ -1469,7 +1499,7 @@ const SmartRegistrationForm = () => {
                             rules={[{ required: isApi, message: '请填写接口地址' }]}
                           >
                             <Input
-                              placeholder="如：http://10.10.10.20:8080/chat"
+                              placeholder="支持任意 OpenAI 兼容 Base URL 或完整 /chat/completions 地址"
                               addonAfter={
                                 <Button
                                   type="text"
@@ -1494,7 +1524,7 @@ const SmartRegistrationForm = () => {
                           fieldKey="apiKey"
                           onUserChange={() => handleUserChange('apiKey')}
                         >
-                          <Form.Item name="apiKey" label="API key">
+                          <Form.Item name="apiKey" label="API key" rules={[{ required: isApi, message: '请填写完整的 API Key' }]}>
                             <Input.Password
                               placeholder="默认密文显示（点击 icon1 切换显示 / 隐藏）"
                               visibilityToggle={{
@@ -1538,13 +1568,7 @@ const SmartRegistrationForm = () => {
                               <Button
                                 type="link"
                                 size="small"
-                                onClick={() => {
-                                  form.setFieldsValue({
-                                    platformUrl: `https://otel.platform-hospital.cn/agent/${form.getFieldValue('agentCode') || 'new'}`,
-                                    platformKey: `sk-${mode!.toLowerCase()}-${Math.random().toString(36).slice(2, 10)}`,
-                                  });
-                                  message.success(`${mode} 已签发：URL + 密钥已生成`);
-                                }}
+                                onClick={() => { void issueInstrumentation(mode as 'SDK' | 'OTel'); }}
                               >
                                 获取 {mode}
                               </Button>
@@ -1621,7 +1645,8 @@ const SmartRegistrationForm = () => {
           {/* §3.3 智能化连通测试：替换原「测试验证」按钮 + Steps */}
           <Space direction="vertical" style={{ width: '100%' }}>
             <ConnectivityTester
-              autoTriggerKey={connAutoTriggerKey}
+              form={form}
+              parametersKey={connectionParamsKey}
               getConnectionFormValues={() => {
                 const v = form.getFieldsValue([
                   'accessMode',
@@ -1638,6 +1663,7 @@ const SmartRegistrationForm = () => {
                   platformUrl: v.platformUrl,
                   platformKey: v.platformKey,
                   agentName: v.name,
+                  modelName: form.getFieldValue(['modelConfigs', 0, 'modelName']),
                 };
               }}
               onLocateField={(fieldKey) =>
@@ -1646,6 +1672,10 @@ const SmartRegistrationForm = () => {
               onTestStart={() => {
                 // PRD §4.2: 新一次连通测试启动时,清掉上一次结果,
                 //   避免「上次通过」徽标覆盖在「正在测试」之上
+                setTested(false);
+                setTestResult(null);
+              }}
+              onTestInvalidated={() => {
                 setTested(false);
                 setTestResult(null);
               }}

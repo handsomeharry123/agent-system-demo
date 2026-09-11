@@ -307,7 +307,7 @@ const ResourceForm = () => {
         lastTestSignatureRef.current = signature;
         void runTest(true);
       } catch {
-        // 字段仍缺失或格式错误时保持等待，用户可继续通过表单或医小知补充。
+        // 字段仍缺失或格式错误时保持等待，用户可继续通过表单或医小管补充。
       }
     }, 600);
   };
@@ -355,7 +355,7 @@ const ResourceForm = () => {
       } else {
         setTestState('fail');
         setTestMsg({ code: 'CONN_TIMEOUT_504', reason: '目标地址不可达(超时 5s),请检查 IP/端口与防火墙策略。' });
-        message.error(automatic ? '自动连通测试发现问题，医小知已给出修复建议' : '访问测试失败');
+        message.error(automatic ? '自动连通测试发现问题，医小管已给出修复建议' : '访问测试失败');
         addMessage({
           role: 'agent',
           type: 'conn-test-result',

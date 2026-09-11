@@ -57,20 +57,10 @@ import { Bar, Pie, Line, Column } from '@ant-design/charts';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/PageHeader';
 import {
-  getVisibleAgents,
-  currentUser,
-  getDepartmentDistribution,
-  getDiagnosisPhaseDistribution,
-  getSourceDistribution,
-  getRiskDistribution,
-  getCallVolumeStat,
-  getAlarmStat,
-  getInstanceOnlineRateStat,
-  getCoverageStat,
   getSubscriptionHistoryReports,
-  type LedgerAgent,
-  type LedgerUser,
 } from '../../mock/ledger';
+import { useAuth } from '../../hooks/useAuth';
+import { getLedgerOverview, type LedgerOverviewData } from '../../services/ledgerApi';
 
 const { Text } = Typography;
 
@@ -84,13 +74,13 @@ const RISK_COLOR_MAP: Record<string, string> = {
 };
 
 const SOURCE_COLOR_MAP: Record<string, string> = {
-  自研: '#52B788',
+  自研: '#1677FF',
   第三方: '#13C2C2',
   合作研发: '#722ED1',
 };
 
 const TYPE_COLOR_PALETTE = [
-  '#52B788',
+  '#1677FF',
   '#13C2C2',
   '#52C41A',
   '#FA8C16',
@@ -99,10 +89,10 @@ const TYPE_COLOR_PALETTE = [
   '#FAAD14',
 ];
 
-const TREND_COLOR = '#52B788';
+const TREND_COLOR = '#1677FF';
 
 const PHASE_COLOR_PALETTE = [
-  '#52B788',
+  '#1677FF',
   '#52C41A',
   '#FA8C16',
   '#722ED1',
@@ -116,8 +106,9 @@ const PHASE_COLOR_PALETTE = [
 const Overview = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user: LedgerUser = currentUser;
-  const isPlatformAdmin = user.role === 'platform_admin';
+  const { currentUser: authUser } = useAuth();
+  const [overview, setOverview] = useState<LedgerOverviewData | null>(null);
+  const isPlatformAdmin = overview?.isPlatformAdmin ?? authUser?.roles.includes('信息科管理员') ?? false;
 
   // 顶部时间筛选（V1.6 联动所有卡片/图表，本版本仅 UI 占位）
   const [timeRange, setTimeRange] = useState<'today' | '7d' | '30d' | '90d' | 'custom'>('30d');
@@ -141,19 +132,22 @@ const Overview = () => {
     setSubDrawerOpen(true);
   };
 
-  // 数据：派生自 mock/ledger
-  const visibleList: LedgerAgent[] = useMemo(() => getVisibleAgents(user), [user]);
-  const deptDist = useMemo(() => getDepartmentDistribution(visibleList), [visibleList]);
-  const phaseDist = useMemo(() => getDiagnosisPhaseDistribution(visibleList), [visibleList]);
-  const sourceDist = useMemo(() => getSourceDistribution(visibleList), [visibleList]);
-  const riskDist = useMemo(() => getRiskDistribution(visibleList), [visibleList]);
-  const callStat = useMemo(() => getCallVolumeStat(visibleList, timeRange), [visibleList, timeRange]);
-  const alarmStat = useMemo(() => getAlarmStat(visibleList, timeRange), [visibleList, timeRange]);
-  const onlineStat = useMemo(() => getInstanceOnlineRateStat(visibleList), [visibleList]);
-  const coverageStat = useMemo(() => getCoverageStat(visibleList, user), [visibleList, user]);
-
-  const hasData = visibleList.length > 0;
-  const totalCount = visibleList.length;
+  useEffect(() => {
+    let active = true;
+    const load = () => { void getLedgerOverview().then((data) => { if (active) setOverview(data); }).catch((error) => { if (active) message.error(error instanceof Error ? error.message : '台账总览加载失败'); }); };
+    load(); window.addEventListener('focus', load); const timer = window.setInterval(load, 30_000);
+    return () => { active = false; window.removeEventListener('focus', load); window.clearInterval(timer); };
+  }, []);
+  const deptDist = overview?.departmentDistribution ?? [];
+  const phaseDist = overview?.phaseDistribution ?? [];
+  const sourceDist = overview?.sourceDistribution ?? [];
+  const riskDist = overview?.riskDistribution ?? { initial: [], review: [], summary: [] };
+  const callStat = overview?.calls ?? { total: 0, daily: 0, weekly: 0, monthly: 0 };
+  const alarmStat = overview?.alarms ?? { total: 0, daily: 0, weekly: 0, monthly: 0 };
+  const onlineStat = overview?.online ?? { online: 0, total: 0, rate: 0, daily: 0, weekly: 0, monthly: 0 };
+  const coverageStat = overview?.coverage ?? { covered: 0, total: 0, rate: 0 };
+  const hasData = (overview?.totalCount ?? 0) > 0;
+  const totalCount = overview?.totalCount ?? 0;
 
   // ===== 列表下钻 =====
   const goList = (params: Record<string, string | undefined> = {}) => {
@@ -197,8 +191,8 @@ const Overview = () => {
             width: 30,
             height: 30,
             borderRadius: 8,
-            background: '#EAF7EF',
-            color: '#52B788',
+            background: '#E6F4FF',
+            color: '#1677FF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -208,7 +202,7 @@ const Overview = () => {
           <RobotOutlined />
         </div>
       </div>
-      <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#52B788', lineHeight: 1.1 }}>
+      <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#1677FF', lineHeight: 1.1 }}>
         {totalCount}
       </div>
       <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>个</div>
@@ -423,45 +417,7 @@ const Overview = () => {
   //   - 按月：x 存 YYYY-MM，标签展示 YYYY-MM（横向 + 自动换行，避免旋转成竖排）
   //   - 按季度：x 存 YYYYQn，标签展示 YYYYQn（横向 + 自动换行）
   //   tooltip 仍直接读 x 显示，handleTrendPointClick 同步识别 yyyy-mm-dd 走下钻。
-  const trendData = useMemo(() => {
-    if (trendUnit === 'week') {
-      // 近 12 周：以 W19(2025-05-05) 为起点，每周一向后递推 12 周
-      const baseMonday = new Date(2025, 4, 5); // 月份 0 起始 → 4 = 五月
-      const vals = [2, 1, 3, 2, 4, 1, 5, 3, 2, 4, 3, 2];
-      return Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(baseMonday);
-        d.setDate(baseMonday.getDate() + i * 7);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return { x: `${yyyy}-${mm}-${dd}`, y: vals[i] };
-      });
-    }
-    if (trendUnit === 'quarter') {
-      // 近 4 季度
-      return [
-        { x: '2025Q3', y: 8 },
-        { x: '2025Q4', y: 10 },
-        { x: '2026Q1', y: 6 },
-        { x: '2026Q2', y: 6 },
-      ];
-    }
-    // 近 12 个月（默认）
-    return [
-      { x: '2025-07', y: 3 },
-      { x: '2025-08', y: 2 },
-      { x: '2025-09', y: 4 },
-      { x: '2025-10', y: 1 },
-      { x: '2025-11', y: 3 },
-      { x: '2025-12', y: 2 },
-      { x: '2026-01', y: 4 },
-      { x: '2026-02', y: 3 },
-      { x: '2026-03', y: 5 },
-      { x: '2026-04', y: 4 },
-      { x: '2026-05', y: 6 },
-      { x: '2026-06', y: 3 },
-    ];
-  }, [trendUnit]);
+  const trendData = useMemo(() => overview?.trends[trendUnit] ?? [], [overview, trendUnit]);
   const trendHasData = trendData.some((d) => d.y > 0);
   // G2 v5 默认会把 xField/yField 都渲染到 tooltip 里（标题 + 数值各一），
   //   hover 出来变成「2025-12 / 2025-12」。这里把 label 文本预标注到数据上，
@@ -479,7 +435,7 @@ const Overview = () => {
     appendPadding: [8, 24, 16, 16],
     point: { size: 5, shape: 'circle', style: { fill: TREND_COLOR, stroke: '#fff', lineWidth: 2 } },
     line: { style: { lineWidth: 2 } },
-    area: { style: { fill: 'l(270) 0:#52B78800 1:#52B78833' } },
+    area: { style: { fill: 'l(270) 0:#1677FF00 1:#1677FF33' } },
     label: {
       formatter: (datum: any) => datum?.labelText ?? '',
       style: { fill: '#595959', fontSize: 11 },
@@ -832,11 +788,11 @@ const Overview = () => {
         subTitle={
           isPlatformAdmin
             ? '全院智能体台账总览 · 数量 / 覆盖率 / 调用 / 告警 / 风险分级'
-            : `${user.department} 智能体台账总览 · 本科室数据自动收窄`
+            : `${authUser?.department ?? '本科室'} 智能体台账总览 · 本科室数据自动收窄`
         }
         extra={
           <Space size={12} align="center">
-            {/* V2:医小知 inline 状态提示(让用户进入总览页立即感知右下角 Agent 在工作)
+            {/* V2:医小管 inline 状态提示(让用户进入总览页立即感知右下角 Agent 在工作)
                 复用现有 AgentFloatHost,不新建智能体,点击直跳右下角机器人 */}
             {/* PRD §3.1.1/§4.1.1:态势汇报由 Agent 气泡承担,不再在标题区放置 chip */}
             {/* 时间筛选（V1.6 联动所有卡片，本版本仅 UI 占位）*/}
@@ -987,7 +943,7 @@ const Overview = () => {
               </Space>
             }
           >
-            {hasData && top10Dept.length > 0 ? (
+            {top10Dept.length > 0 ? (
               <Row gutter={8} style={{ height: 296 }}>
                 <Col span={14}>
                   {/* V2.7：G2Plot v2.6.7 的 Bar/Column 在 X/Y 轴上对中长中文分类标签
@@ -1104,7 +1060,7 @@ const Overview = () => {
                             borderRadius: 6,
                             cursor: 'pointer',
                             marginBottom: 8,
-                            background: i === 0 ? '#EAF7EF' : '#FAFAFA',
+                            background: i === 0 ? '#E6F4FF' : '#FAFAFA',
                             border: i === 0 ? '1px solid #91CAFF' : '1px solid #F0F0F0',
                           }}
                           onMouseEnter={(e) => {
@@ -1123,7 +1079,7 @@ const Overview = () => {
                                 lineHeight: '18px',
                                 textAlign: 'center',
                                 borderRadius: 9,
-                                background: i === 0 ? '#52B788' : '#D9D9D9',
+                                background: i === 0 ? '#1677FF' : '#D9D9D9',
                                 color: '#fff',
                                 fontSize: 11,
                                 fontWeight: 600,
@@ -1192,20 +1148,20 @@ const Overview = () => {
             }
             extra={<Text type="secondary" style={{ fontSize: 12 }}>按智能体所属环节聚合（多选智能体计入多个环节）</Text>}
           >
-            {hasData && phaseDist.length > 0 ? (
+            {phaseDist.length > 0 ? (
               <Row gutter={8} style={{ height: 296 }}>
                 <Col span={14}>
                   {/* V3.0：外层 overflow:hidden 兜底，限制标签不越出 Card body；内层 SVG overflow:visible 让标签溢出 SVG 自身边界仍可见 */}
                   <div style={{ height: 296, position: 'relative', overflow: 'hidden' }}>
-                    <Pie
-                      {...phaseConfig}
-                      onEvent={(e: any) => {
-                        if (e?.type === 'pie:click' || e?.type === 'element:click') {
-                          const name = e?.data?.data?.name as string | undefined;
-                          if (name) goList({ diagnosisPhase: name });
-                        }
-                      }}
-                    />
+                    {phaseTotal > 0 ? <Pie
+                        {...phaseConfig}
+                        onEvent={(e: any) => {
+                          if (e?.type === 'pie:click' || e?.type === 'element:click') {
+                            const name = e?.data?.data?.name as string | undefined;
+                            if (name) goList({ diagnosisPhase: name });
+                          }
+                        }}
+                      /> : <Empty description="暂无诊疗环节数据" style={{ paddingTop: 72 }} />}
                     {/* 自绘扇形外侧标签：V2.7 修复 G2 v5 formatter 偶发丢 value 导致全 0 的问题 */}
                     <svg
                       viewBox="0 0 100 100"
@@ -1272,7 +1228,7 @@ const Overview = () => {
                     }}
                   >
                     {phaseDist.map((d, i) => {
-                      const pct = ((d.value / phaseTotal) * 100).toFixed(1);
+                      const pct = phaseTotal ? ((d.value / phaseTotal) * 100).toFixed(1) : '0.0';
                       return (
                         <div
                           key={d.name}
@@ -1347,20 +1303,20 @@ const Overview = () => {
               </Space>
             }
           >
-            {hasData && sourceDist.length > 0 ? (
+            {sourceDist.length > 0 ? (
               <Row gutter={8} style={{ height: 296 }}>
                 <Col span={14}>
                   {/* V3.0：外层 overflow:hidden 兜底，限制标签不越出 Card body；内层 SVG overflow:visible 让标签溢出 SVG 自身边界仍可见 */}
                   <div style={{ height: 296, position: 'relative', overflow: 'hidden' }}>
-                    <Pie
-                      {...sourceConfig}
-                      onEvent={(e: any) => {
-                        if (e?.type === 'pie:click' || e?.type === 'element:click') {
-                          const name = e?.data?.data?.name as string | undefined;
-                          if (name) goList({ sourceType: name });
-                        }
-                      }}
-                    />
+                    {sourceTotal > 0 ? <Pie
+                        {...sourceConfig}
+                        onEvent={(e: any) => {
+                          if (e?.type === 'pie:click' || e?.type === 'element:click') {
+                            const name = e?.data?.data?.name as string | undefined;
+                            if (name) goList({ sourceType: name });
+                          }
+                        }}
+                      /> : <Empty description="暂无来源数据" style={{ paddingTop: 72 }} />}
                     {/* V2.7：自绘扇区外侧标签（避开 G2 v5 formatter 偶发丢 value） */}
                     <svg
                       viewBox="0 0 100 100"
@@ -1427,7 +1383,7 @@ const Overview = () => {
                     }}
                   >
                     {sourceDist.map((d) => {
-                      const pct = ((d.value / sourceTotal) * 100).toFixed(1);
+                      const pct = sourceTotal ? ((d.value / sourceTotal) * 100).toFixed(1) : '0.0';
                       return (
                         <div
                           key={d.name}
@@ -1458,7 +1414,7 @@ const Overview = () => {
                                   width: 10,
                                   height: 10,
                                   borderRadius: 2,
-                                  background: SOURCE_COLOR_MAP[d.name] || '#52B788',
+                                  background: SOURCE_COLOR_MAP[d.name] || '#1677FF',
                                 }}
                               />
                               <span style={{ fontSize: 12, color: '#595959' }}>{d.name}</span>
@@ -1470,7 +1426,7 @@ const Overview = () => {
                           <Progress
                             percent={Number(pct)}
                             showInfo={false}
-                            strokeColor={SOURCE_COLOR_MAP[d.name] || '#52B788'}
+                            strokeColor={SOURCE_COLOR_MAP[d.name] || '#1677FF'}
                             size="small"
                           />
                         </div>
@@ -1500,20 +1456,20 @@ const Overview = () => {
               </Space>
             }
           >
-            {hasData && riskTotal > 0 ? (
+            {riskDist.summary.length > 0 ? (
               <Row gutter={8} style={{ height: 296 }}>
                 <Col span={14}>
                   {/* V3.0：外层 overflow:hidden 兜底，限制标签不越出 Card body；内层 SVG overflow:visible 让标签溢出 SVG 自身边界仍可见 */}
                   <div style={{ height: 296, position: 'relative', overflow: 'hidden' }}>
-                    <Pie
-                      {...riskConfig}
-                      onEvent={(e: any) => {
-                        if (e?.type === 'pie:click' || e?.type === 'element:click') {
-                          const name = e?.data?.data?.name as string | undefined;
-                          if (name) handleRiskSliceClick(name);
-                        }
-                      }}
-                    />
+                    {riskTotal > 0 ? <Pie
+                        {...riskConfig}
+                        onEvent={(e: any) => {
+                          if (e?.type === 'pie:click' || e?.type === 'element:click') {
+                            const name = e?.data?.data?.name as string | undefined;
+                            if (name) handleRiskSliceClick(name);
+                          }
+                        }}
+                      /> : <Empty description="暂无已分级数据" style={{ paddingTop: 72 }} />}
                     {/* V2.7：自绘扇区外侧标签（避开 G2 v5 formatter 偶发丢 value） */}
                     <svg
                       viewBox="0 0 100 100"
@@ -1577,7 +1533,7 @@ const Overview = () => {
                     }}
                   >
                     {riskDist.summary.map((x) => {
-                      const pct = ((x.total / riskTotal) * 100).toFixed(1);
+                      const pct = riskTotal ? ((x.total / riskTotal) * 100).toFixed(1) : '0.0';
                       return (
                         <div
                           key={x.level}
@@ -1593,7 +1549,7 @@ const Overview = () => {
                             cursor: 'pointer',
                           }}
                           onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.background = '#F3FBF6';
+                            (e.currentTarget as HTMLElement).style.background = '#F0F5FF';
                           }}
                           onMouseLeave={(e) => {
                             (e.currentTarget as HTMLElement).style.background = '#FAFAFA';
@@ -1647,7 +1603,7 @@ const Overview = () => {
       >
         <Row gutter={[12, 12]}>
           {sortedDeptDist.map((d) => {
-            const pct = ((d.value / deptTotal) * 100).toFixed(1);
+            const pct = deptTotal ? ((d.value / deptTotal) * 100).toFixed(1) : '0.0';
             return (
               <Col key={d.name} span={12}>
                 <div
@@ -1666,7 +1622,7 @@ const Overview = () => {
                   }}
                 >
                   <Space size={8} align="center">
-                    <AppstoreOutlined style={{ color: '#52B788' }} />
+                    <AppstoreOutlined style={{ color: '#1677FF' }} />
                     <span style={{ fontSize: 13 }}>{d.name}</span>
                   </Space>
                   <Space size={6}>
@@ -1686,7 +1642,7 @@ const Overview = () => {
         onClose={() => setSubDrawerOpen(false)}
         title={
           <Space>
-            <BellOutlined style={{ color: '#52B788' }} />
+            <BellOutlined style={{ color: '#1677FF' }} />
             <span>{isPlatformAdmin ? '全院台账速读订阅' : '本科室台账速读订阅'}</span>
           </Space>
         }
@@ -1906,7 +1862,7 @@ const Overview = () => {
                             }
                             title={
                               <Space size={6} wrap>
-                                <FileTextOutlined style={{ fontSize: 16, color: '#52B788' }} />
+                                <FileTextOutlined style={{ fontSize: 16, color: '#1677FF' }} />
                                 {/* 报告名称：点击进入报告详情 */}
                                 <a
                                   onClick={() => navigate('/app/ledger-demo/report')}

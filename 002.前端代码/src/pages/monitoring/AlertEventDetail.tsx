@@ -192,7 +192,7 @@ const AlertEventDetail = () => {
       </Card>
 
       <Card bordered={false} style={{ marginTop: 16 }} title="触发告警内容">
-        <Card size="small" style={{ background: '#F3FBF6', borderColor: '#ADC6FF' }}>
+        <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
           <Descriptions column={1} size="small">
             <Descriptions.Item label={<Text strong>规则名称</Text>}>
               {event.triggerContent.rule_name}
@@ -273,11 +273,11 @@ const AlertEventDetail = () => {
             <div style={{ fontSize: 28, color: '#8c8c8c' }}>──→</div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                width: 100, height: 70, borderRadius: 8, border: '2px solid #52B788',
+                width: 100, height: 70, borderRadius: 8, border: '2px solid #1677FF',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: '#EAF7EF',
+                background: '#E6F4FF',
               }}>
-                <Text strong style={{ fontSize: 12, color: '#52B788' }}>{event.department}</Text>
+                <Text strong style={{ fontSize: 12, color: '#1677FF' }}>{event.department}</Text>
               </div>
               <Text type="secondary" style={{ fontSize: 11 }}>所属科室</Text>
               <br />

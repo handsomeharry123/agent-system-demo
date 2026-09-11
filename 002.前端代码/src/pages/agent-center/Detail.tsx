@@ -17,6 +17,7 @@ import {
   Modal,
   Row,
   Space,
+  Spin,
   Tag,
   Typography,
 } from 'antd';
@@ -37,6 +38,7 @@ import { ledgerAgents } from '../../mock/ledger';
 import { initialPujiangTasks } from '../evaluation/pujiang/data';
 import { ROLE_ADMIN, ROLE_DEPT } from './types';
 import type { InsightProgress, ProgressPhase } from './smart/types';
+import { agentAccessApi } from '../../services/agentAccess';
 import {
   mockEvaluationTasks,
   persistChatEvaluationTask,
@@ -72,6 +74,51 @@ const Detail = () => {
     : undefined;
 
   const [showSecret, setShowSecret] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{ name: string; url: string } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+
+  const closePreview = () => {
+    if (previewFile?.url) URL.revokeObjectURL(previewFile.url);
+    setPreviewFile(null);
+    setPreviewError('');
+    setPreviewLoading(false);
+  };
+
+  const openPreview = async (attachment: { name: string; url: string }) => {
+    setPreviewLoading(true);
+    setPreviewError('');
+    setPreviewFile({ name: attachment.name, url: '' });
+    try {
+      const blob = await agentAccessApi.fetchFile(attachment.url);
+      setPreviewFile({ name: attachment.name, url: URL.createObjectURL(new Blob([blob], { type: 'application/pdf' })) });
+    } catch (error) {
+      setPreviewError(error instanceof Error ? error.message : 'PDF 加载失败');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const downloadAttachment = async (attachment: { name: string; url: string }) => {
+    try {
+      const blob = await agentAccessApi.fetchFile(attachment.url);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = attachment.name;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      message.success(`已下载 ${attachment.name}`);
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : '文件下载失败');
+    }
+  };
+
+  useEffect(() => () => {
+    if (previewFile?.url) URL.revokeObjectURL(previewFile.url);
+  }, [previewFile]);
 
   const { pushWelcomeGreeting, addTaggedMessage, removeMessagesByTag } = useSmartDraft();
   const { currentUser } = useAuth();
@@ -437,32 +484,7 @@ const Detail = () => {
                     type="link"
                     size="small"
                     icon={<EyeOutlined />}
-                    onClick={() => {
-                      Modal.info({
-                        title: `预览：${a.name}`,
-                        width: 720,
-                        content: (
-                          <div style={{ marginTop: 8 }}>
-                            <div
-                              style={{
-                                background: '#fafafa',
-                                border: '1px solid #f0f0f0',
-                                borderRadius: 4,
-                                padding: '40px 24px',
-                                textAlign: 'center',
-                                color: '#999',
-                              }}
-                            >
-                              <FilePdfOutlined style={{ fontSize: 36, color: '#d4380d' }} />
-                              <div style={{ marginTop: 8 }}>{a.name}</div>
-                              <div style={{ marginTop: 4, fontSize: 12 }}>
-                                （{a.size}）演示文件仅展示元信息
-                              </div>
-                            </div>
-                          </div>
-                        ),
-                      });
-                    }}
+                    onClick={() => void openPreview(a)}
                   >
                     在线预览
                   </Button>
@@ -470,7 +492,7 @@ const Detail = () => {
                     type="link"
                     size="small"
                     icon={<DownloadOutlined />}
-                    onClick={() => message.success(`已下载 ${a.name}`)}
+                    onClick={() => void downloadAttachment(a)}
                   >
                     下载
                   </Button>
@@ -530,7 +552,22 @@ const Detail = () => {
         </Card>
 
         <Card title="技术信息" size="small">
-          <Descriptions column={1} size="small" bordered>
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label="参数量">
+              {record.parameterCount == null ? '--' : `${record.parameterCount} B`}
+            </Descriptions.Item>
+            <Descriptions.Item label="上下文长度">
+              {record.contextLength == null ? '--' : `${record.contextLength} K token`}
+            </Descriptions.Item>
+            <Descriptions.Item label="Temperature">
+              {record.temperature ?? '--'}
+            </Descriptions.Item>
+            <Descriptions.Item label="Top P">
+              {record.topP ?? '--'}
+            </Descriptions.Item>
+            <Descriptions.Item label="预计 API 并发量">
+              {record.concurrency ?? '--'}
+            </Descriptions.Item>
             <Descriptions.Item label="接入方式">
               <Tag
                 color={
@@ -546,10 +583,10 @@ const Detail = () => {
             </Descriptions.Item>
             {record.accessMode === 'API' && (
               <>
-                <Descriptions.Item label="接口地址">
+                <Descriptions.Item label="接口地址" span={2}>
                   <Text copyable>{record.apiEndpoint}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="API key">
+                <Descriptions.Item label="API key" span={2}>
                   <Space>
                     <Text code>
                       {showSecret
@@ -570,10 +607,10 @@ const Detail = () => {
             )}
             {(record.accessMode === 'SDK' || record.accessMode === 'OTel') && (
               <>
-                <Descriptions.Item label="平台 URL 地址">
+                <Descriptions.Item label="平台 URL 地址" span={2}>
                   <Text copyable>{record.platformUrl}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="平台密钥 key">
+                <Descriptions.Item label="平台密钥 key" span={2}>
                   <Space>
                     <Text code>{showSecret ? record.platformKey : 'sk-****'}</Text>
                     <Button
@@ -586,14 +623,14 @@ const Detail = () => {
                     </Button>
                   </Space>
                 </Descriptions.Item>
-                <Descriptions.Item label="埋点代码">
+                <Descriptions.Item label="埋点代码" span={2}>
                   <pre style={{ background: '#fafafa', padding: 8, borderRadius: 4, margin: 0 }}>
                     {`// ${record.accessMode} 埋点代码片段（点击复制后嵌入智能体应用）\nimport { init } from '@platform/agent-${record.accessMode.toLowerCase()}';\ninit({ endpoint: '${record.platformUrl}', key: '${record.platformKey}' });`}
                   </pre>
                 </Descriptions.Item>
               </>
             )}
-            <Descriptions.Item label="测试验证">
+            <Descriptions.Item label="测试验证" span={2}>
               {record.connectionTested ? (
                 <Tag color={record.connectionStatus === 'success' ? 'green' : 'red'}>
                   {record.connectionStatus === 'success' ? '联通成功' : '联通失败'}
@@ -632,6 +669,22 @@ const Detail = () => {
 
         <ApprovalTimeline items={auditTimelineItems} title="审核时间线" />
       </Space>
+      <Modal
+        title={`预览：${previewFile?.name || ''}`}
+        open={Boolean(previewFile)}
+        onCancel={closePreview}
+        footer={<Button type="primary" onClick={closePreview}>关闭</Button>}
+        width="min(1100px, 92vw)"
+        destroyOnClose
+      >
+        <div style={{ height: '72vh', minHeight: 520, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+          {previewLoading ? <Spin tip="正在加载 PDF…" /> : previewError ? (
+            <Alert type="error" showIcon message="无法预览文件" description={previewError} />
+          ) : previewFile?.url ? (
+            <iframe title={previewFile.name} src={`${previewFile.url}#toolbar=1&navpanes=0`} style={{ width: '100%', height: '100%', border: 0, background: '#fff' }} />
+          ) : null}
+        </div>
+      </Modal>
     </>
   );
 };

@@ -38,7 +38,7 @@ const capabilities = [
     icon: <RobotOutlined />,
     title: '智能辅助诊断',
     desc: '基于深度学习的医学影像分析和临床决策支持，提升诊断效率和准确率',
-    color: '#52B788',
+    color: '#1677FF',
   },
   {
     icon: <FileTextOutlined />,
@@ -85,14 +85,14 @@ const Home = () => {
       {/* Banner */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #001529 0%, #52B788 100%)',
+          background: 'linear-gradient(135deg, #001529 0%, #1677FF 100%)',
           padding: '100px 48px 120px',
           textAlign: 'center',
           color: '#fff',
         }}
       >
         <Title level={1} style={{ color: '#fff', fontSize: 48, marginBottom: 16 }}>
-          医小知
+          医疗智能体管理平台
         </Title>
         <Paragraph
           style={{
@@ -172,7 +172,7 @@ const Home = () => {
         <Row gutter={[48, 32]} justify="center">
           <Col xs={24} sm={8}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 56, fontWeight: 600, color: '#52B788' }}>
+              <div style={{ fontSize: 56, fontWeight: 600, color: '#1677FF' }}>
                 <CountUpNumber value={128} />
               </div>
               <Text type="secondary" style={{ fontSize: 16 }}>已接入智能体</Text>
@@ -232,7 +232,7 @@ const Home = () => {
                     width: 48,
                     height: 48,
                     borderRadius: '50%',
-                    background: '#52B788',
+                    background: '#1677FF',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -256,7 +256,7 @@ const Home = () => {
       <div
         style={{
           padding: '80px 48px',
-          background: 'linear-gradient(135deg, #52B788 0%, #001529 100%)',
+          background: 'linear-gradient(135deg, #1677FF 0%, #001529 100%)',
           textAlign: 'center',
           color: '#fff',
         }}
@@ -274,7 +274,7 @@ const Home = () => {
             type="primary"
             size="large"
             onClick={() => navigate('/register')}
-            style={{ background: '#fff', borderColor: '#fff', color: '#52B788' }}
+            style={{ background: '#fff', borderColor: '#fff', color: '#1677FF' }}
           >
             立即注册
           </Button>

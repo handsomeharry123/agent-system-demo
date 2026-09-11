@@ -1,0 +1,24 @@
+{
+  "admin": {
+    "titleAdmin": true,
+    "titleDept": false,
+    "adminFields": true,
+    "deptFields": false,
+    "forbidden": [],
+    "buttons": [
+      "编辑",
+      "导出"
+    ]
+  },
+  "dept": {
+    "titleAdmin": false,
+    "titleDept": true,
+    "adminFields": false,
+    "deptFields": true,
+    "forbidden": [],
+    "buttons": [
+      "编辑",
+      "导出"
+    ]
+  }
+}

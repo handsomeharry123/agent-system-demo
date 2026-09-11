@@ -452,7 +452,7 @@ const AgentMessageBubble = ({
         <div
           style={{
             maxWidth: '78%',
-            background: '#52B788',
+            background: '#1677FF',
             color: '#FFFFFF',
             padding: '10px 14px',
             borderRadius: 12,
@@ -519,7 +519,7 @@ const AgentMessageBubble = ({
                   display: 'inline-block',
                   width: 12,
                   height: 12,
-                  border: '2px solid #52B788',
+                  border: '2px solid #1677FF',
                   borderTopColor: 'transparent',
                   borderRadius: '50%',
                   animation: 'agent-antenna-spin 1s linear infinite',
@@ -680,7 +680,7 @@ const AgentMessageBubble = ({
             data-testid="pre-audit-summary-msg"
           >
             <Space size={6} style={{ marginBottom: 6 }}>
-              <ThunderboltOutlined style={{ color: '#52B788' }} />
+              <ThunderboltOutlined style={{ color: '#1677FF' }} />
               <Tag color="blue">智能预审 · 汇总</Tag>
             </Space>
             <div style={{ marginBottom: 8 }}>{msg.content}</div>
@@ -743,7 +743,7 @@ const AgentMessageBubble = ({
       const colorMap = {
         error: { border: '#FFA39E', bg: '#FFF1F0', icon: <BugOutlined style={{ color: '#FF4D4F' }} /> },
         warning: { border: '#FFE58F', bg: '#FFFBE6', icon: <WarningOutlined style={{ color: '#FAAD14' }} /> },
-        info: { border: '#91D5FF', bg: '#EAF7EF', icon: <InfoCircleOutlined style={{ color: '#52B788' }} /> },
+        info: { border: '#91D5FF', bg: '#E6F4FF', icon: <InfoCircleOutlined style={{ color: '#1677FF' }} /> },
       };
       const c = colorMap[p.severity];
       return (
@@ -824,14 +824,14 @@ const AgentMessageBubble = ({
       const stageColor = (s: string) => {
         if (s === 'ok') return <CheckCircleOutlined style={{ color: '#52C41A' }} />;
         if (s === 'fail') return <CloseCircleOutlined style={{ color: '#FF4D4F' }} />;
-        if (s === 'running') return <LoadingOutlined style={{ color: '#52B788' }} />;
+        if (s === 'running') return <LoadingOutlined style={{ color: '#1677FF' }} />;
         return <span style={{ color: '#999' }}>·</span>;
       };
       return (
         <div style={wrap}>
           <div style={bubble} data-testid="pre-audit-test-msg">
             <Space size={6} style={{ marginBottom: 6 }}>
-              <ApiOutlined style={{ color: '#52B788' }} />
+              <ApiOutlined style={{ color: '#1677FF' }} />
               <Tag color="blue">联通测试</Tag>
             </Space>
             <div style={{ marginBottom: 8 }}>{msg.content}</div>
@@ -1061,7 +1061,7 @@ const AgentMessageBubble = ({
             }}
           >
             <Space size={6} style={{ marginBottom: 6 }}>
-              <GlobalOutlined style={{ color: '#52B788' }} />
+              <GlobalOutlined style={{ color: '#1677FF' }} />
               <Tag color="blue">联网搜索 · 解决方案</Tag>
             </Space>
             <div style={{ marginBottom: 8 }}>{msg.content}</div>
@@ -1145,7 +1145,7 @@ const AgentMessageBubble = ({
       };
       const phaseColorMap: Record<InsightProgress['phase'], string> = {
         pending: '#FAAD14',
-        reviewing: '#52B788',
+        reviewing: '#1677FF',
         success: '#52C41A',
       };
       const metricBg = (tone?: 'success' | 'warning' | 'info') =>
@@ -1168,8 +1168,8 @@ const AgentMessageBubble = ({
             }}
           >
             <Space size={6} style={{ marginBottom: 8 }} wrap>
-              <ThunderboltOutlined style={{ color: '#52B788' }} />
-              <Tag color="blue">医小知 · 接入进度</Tag>
+              <ThunderboltOutlined style={{ color: '#1677FF' }} />
+              <Tag color="blue">医小管 · 接入进度</Tag>
               <Tag
                 color={p.phase === 'success' ? 'success' : p.phase === 'reviewing' ? 'processing' : 'warning'}
               >
@@ -1439,7 +1439,7 @@ const AgentMessageBubble = ({
                               style={{
                                 padding: '7px 8px',
                                 borderBottom: '1px solid #F3F4F6',
-                                color: '#52B788',
+                                color: '#1677FF',
                                 fontWeight: 600,
                                 minWidth: 230,
                                 whiteSpace: 'nowrap',
@@ -1454,7 +1454,7 @@ const AgentMessageBubble = ({
                               style={{
                                 padding: '7px 8px',
                                 borderBottom: '1px solid #F3F4F6',
-                                color: row.score >= 70 ? '#52B788' : '#FA8C16',
+                                color: row.score >= 70 ? '#1677FF' : '#FA8C16',
                                 fontWeight: 700,
                                 textAlign: 'right',
                                 whiteSpace: 'nowrap',

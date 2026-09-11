@@ -38,7 +38,7 @@ const applicationFileNamePattern = /(项目|立项).{0,8}(申报|申请)书|申�
 const evidenceFileNamePattern = /(证明|佐证|附件|证书|合同|批复|承诺函|资质|专利)/i;
 
 /**
- * 医小知统一上传入口没有固定的材料槽位，需要结合文件名和正文识别结果自动归类。
+ * 医小管统一上传入口没有固定的材料槽位，需要结合文件名和正文识别结果自动归类。
  * 文件名是用户最明确的意图；名称不明确时，包含多个申报表字段的正文才视为申报书。
  */
 export function classifyProjectMaterial(

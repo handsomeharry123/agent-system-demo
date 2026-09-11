@@ -1,0 +1,17 @@
+{
+  "visible": true,
+  "before": {
+    "x": 1352,
+    "y": 912,
+    "width": 64,
+    "height": 64
+  },
+  "after": {
+    "x": 906.4000244140625,
+    "y": 582.4000244140625,
+    "width": 67.20001220703125,
+    "height": 67.20001220703125
+  },
+  "moved": 554,
+  "chatOpenedByDrag": false
+}

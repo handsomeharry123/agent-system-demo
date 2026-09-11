@@ -103,7 +103,7 @@ const Register = () => {
     <div
       style={{
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #001529 0%, #52B788 100%)',
+        background: 'linear-gradient(135deg, #001529 0%, #1677FF 100%)',
         padding: '60px 24px',
         display: 'flex',
         justifyContent: 'center',
@@ -116,7 +116,7 @@ const Register = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={2} style={{ marginBottom: 8 }}>用户注册</Title>
-          <Text type="secondary">加入医小知</Text>
+          <Text type="secondary">加入医疗智能体管理平台</Text>
         </div>
 
         <Form

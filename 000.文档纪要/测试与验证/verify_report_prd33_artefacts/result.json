@@ -1,0 +1,27 @@
+{
+  "admin": {
+    "hasAdminTitle": true,
+    "hasDeptTitle": false,
+    "hasHospitalFields": true,
+    "hasForbidden": [
+      "报告视角"
+    ],
+    "buttons": [
+      "编辑",
+      "导出"
+    ]
+  },
+  "dept": {
+    "hasAdminTitle": true,
+    "hasDeptTitle": false,
+    "hasDeptFields": false,
+    "hasHospitalOnlyField": true,
+    "hasForbidden": [
+      "报告视角"
+    ],
+    "buttons": [
+      "编辑",
+      "导出"
+    ]
+  }
+}

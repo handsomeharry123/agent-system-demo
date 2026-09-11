@@ -252,7 +252,7 @@ const ProgressDetail = () => {
                 type="circle"
                 percent={task.status === '评测中' ? overallPercent : 100}
                 size={140}
-                strokeColor={task.status === '撤销' ? '#BFBFBF' : '#52B788'}
+                strokeColor={task.status === '撤销' ? '#BFBFBF' : '#1677FF'}
               />
               <div style={{ marginTop: 16 }}>
                 {task.status === '评测中' ? (
@@ -260,7 +260,7 @@ const ProgressDetail = () => {
                     <Statistic
                       prefix={<ClockCircleOutlined />}
                       value={`${remainingMin} 分钟`}
-                      valueStyle={{ fontSize: 16, color: '#52B788' }}
+                      valueStyle={{ fontSize: 16, color: '#1677FF' }}
                     />
                     <Text type="secondary" style={{ fontSize: 12 }}>预计剩余时间</Text>
                   </Space>
@@ -330,7 +330,7 @@ const ProgressDetail = () => {
 
                   <Progress
                     percent={dim.percent}
-                    strokeColor={dim.status === '已完成' ? '#52C41A' : dim.status === '失败' ? '#FF4D4F' : '#52B788'}
+                    strokeColor={dim.status === '已完成' ? '#52C41A' : dim.status === '失败' ? '#FF4D4F' : '#1677FF'}
                     showInfo={false}
                   />
 

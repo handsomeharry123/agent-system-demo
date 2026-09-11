@@ -1,11 +1,13 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { User, UserRole } from '../types/user';
 import { mockUsers } from '../mock/users';
+import { authApi } from '../services/auth';
 
 interface AuthContextValue {
   currentUser: User | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<boolean>;
+  loginBySms: (phone: string, verificationCode: string) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: UserRole, userName?: string) => void;
   hasPermission: (module: string, action: string) => boolean;
@@ -13,30 +15,47 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const defaultAdmin =
-  mockUsers.find((u) => u.roles.includes('信息科管理员')) || mockUsers[0];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(defaultAdmin);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const cached = localStorage.getItem('auth_user');
+    try { return cached ? JSON.parse(cached) as User : null; } catch { return null; }
+  });
 
   const isAuthenticated = currentUser !== null;
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const result = await authApi.passwordLogin(username, password);
+    localStorage.setItem('auth_token', result.token);
+    localStorage.setItem('auth_user', JSON.stringify(result.user));
+    setCurrentUser(result.user);
+    return true;
+  }, []);
 
-    const user = mockUsers.find(
-      (u) => (u.name === username || u.employeeId === username) && u.password === password
-    );
-
-    if (user) {
-      setCurrentUser(user);
-      return true;
-    }
-    return false;
+  const loginBySms = useCallback(async (phone: string, verificationCode: string): Promise<boolean> => {
+    const result = await authApi.smsLogin(phone, verificationCode);
+    localStorage.setItem('auth_token', result.token);
+    localStorage.setItem('auth_user', JSON.stringify(result.user));
+    setCurrentUser(result.user);
+    return true;
   }, []);
 
   const logout = useCallback(() => {
+    void authApi.logout().catch(() => undefined);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
     setCurrentUser(null);
+  }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem('auth_token')) return;
+    void authApi.me().then((user) => {
+      setCurrentUser(user);
+      localStorage.setItem('auth_user', JSON.stringify(user));
+    }).catch(() => {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      setCurrentUser(null);
+    });
   }, []);
 
   const switchRole = useCallback((role: UserRole, userName?: string) => {
@@ -56,40 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const hasPermission = useCallback(
     (module: string, action: string): boolean => {
       if (!currentUser) return false;
-
-      const roles = currentUser.roles;
-
-      const permissions: Record<UserRole, Record<string, string[]>> = {
-        医院领导: {
-          home: ['view'],
-          assistant: ['view'],
-          ledger: ['view'],
-          monitoring: ['view'],
-        },
-        信息科管理员: {
-          '*': ['*'],
-        },
-        // 科室管理员：仅本科室记录 + 发起注册
-        科室管理员: {
-          agentCenter: ['view', 'create'],
-          ledger: ['view'],
-          monitoring: ['view'],
-          audit: ['view'],
-        },
-      };
-
-      // 多角色：任一角色命中即放行
-      for (const role of roles) {
-        const rolePerms = permissions[role];
-        if (rolePerms['*'] && rolePerms['*'].includes('*')) {
-          return true;
-        }
-        const modulePerms = rolePerms[module];
-        if (modulePerms && modulePerms.includes(action)) {
-          return true;
-        }
-      }
-      return false;
+      const codes = currentUser.permissionCodes ?? [];
+      const candidates = [
+        `${module}:${action}`,
+        module,
+      ];
+      return candidates.some((prefix) =>
+        codes.some((code) => code === prefix || code.startsWith(`${prefix}:`)),
+      );
     },
     [currentUser]
   );
@@ -100,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         currentUser,
         isAuthenticated,
         login,
+        loginBySms,
         logout,
         switchRole,
         hasPermission,

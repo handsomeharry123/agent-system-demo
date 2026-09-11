@@ -15,7 +15,7 @@ export const TOPO_THEME = {
 
   // 中心核心渐变
   coreInner: '#35f2ff',
-  coreOuter: '#52B788',
+  coreOuter: '#1677ff',
 
   // 装饰环配色
   ringSolid: 'rgba(53, 242, 255, 0.22)',

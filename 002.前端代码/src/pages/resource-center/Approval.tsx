@@ -225,11 +225,11 @@ const Approval = () => {
   useEffect(() => {
     if (!isAdmin || !it) return undefined;
     const onApprove = () => {
-      form.setFieldsValue({ conclusion: 'approved', comment: '医小知预审：资源信息与技术配置完整，访问测试通过；最终结论由审核人确认。' });
+      form.setFieldsValue({ conclusion: 'approved', comment: '医小管预审：资源信息与技术配置完整，访问测试通过；最终结论由审核人确认。' });
       window.setTimeout(() => void handleSubmit(), 0);
     };
     const onReject = () => {
-      form.setFieldsValue({ conclusion: 'rejected', comment: '医小知预审发现资源申请信息或技术配置存在疑似问题，请申请人核对并补充后重新提交。' });
+      form.setFieldsValue({ conclusion: 'rejected', comment: '医小管预审发现资源申请信息或技术配置存在疑似问题，请申请人核对并补充后重新提交。' });
       window.setTimeout(() => void handleSubmit(), 0);
     };
     window.addEventListener('resource-approval-approve', onApprove);

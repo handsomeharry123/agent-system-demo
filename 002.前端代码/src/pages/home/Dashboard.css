@@ -1235,7 +1235,7 @@
   height: 5px;
   border-radius: 50%;
   background: #81f6ff;
-  box-shadow: 0 0 9px #21cfff, 0 0 22px #52B788;
+  box-shadow: 0 0 9px #21cfff, 0 0 22px #1677ff;
   opacity: .7;
   animation: topology-float 5s ease-in-out infinite;
 }

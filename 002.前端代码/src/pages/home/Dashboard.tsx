@@ -29,6 +29,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDemoSettings } from "../../hooks/useDemoSettings";
+import { mvpFeatures } from "../../config/mvpFeatures";
 import "./Dashboard.css";
 
 const { Text, Title } = Typography;
@@ -36,7 +37,7 @@ const panelStyle = {
   border: "1px solid #dce8f7",
   boxShadow: "0 5px 18px rgba(22,119,255,.055)",
 };
-const colors = ["#52B788", "#13c2c2", "#722ed1", "#fa8c16", "#eb2f96"];
+const colors = ["#1677ff", "#13c2c2", "#722ed1", "#fa8c16", "#eb2f96"];
 
 const month = ["02月", "03月", "04月", "05月", "06月", "07月"];
 const spark = (values: number[]) =>
@@ -122,7 +123,7 @@ const adminMetrics = [
     "较昨日 +3",
     [88, 96, 104, 110, 119, 128],
     "/app/ledger/list",
-    "#52B788",
+    "#1677ff",
   ],
   [
     "异常智能体数量",
@@ -178,7 +179,7 @@ const deptMetrics = [
     "较昨日 +8.2%",
     [18, 21, 23, 26, 29, 32.6],
     "/app/monitoring/business",
-    "#52B788",
+    "#1677ff",
   ],
   [
     "智能体成功调用率",
@@ -514,7 +515,7 @@ function CyberPie({
 
 function SimpleBars({
   data,
-  color = "#52B788",
+  color = "#1677ff",
   onClick,
 }: {
   data: { name: string; value: number }[];
@@ -599,7 +600,7 @@ function ResourceTopology({ isAdmin }: { isAdmin: boolean }) {
       >
         <defs>
           <linearGradient id="topology-link-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#52B788" stopOpacity=".15" />
+            <stop offset="0" stopColor="#1677ff" stopOpacity=".15" />
             <stop offset=".5" stopColor="#58efff" stopOpacity=".9" />
             <stop offset="1" stopColor="#13c2c2" stopOpacity=".15" />
           </linearGradient>
@@ -630,8 +631,8 @@ function ResourceTopology({ isAdmin }: { isAdmin: boolean }) {
           padding: "25px 8px",
           color: "#fff",
           borderRadius: 18,
-          background: "linear-gradient(135deg,#52B788,#13c2c2)",
-          boxShadow: "0 10px 28px #52B78855",
+          background: "linear-gradient(135deg,#1677ff,#13c2c2)",
+          boxShadow: "0 10px 28px #1677ff55",
         }}
       >
         <CloudServerOutlined style={{ fontSize: 30 }} />
@@ -668,7 +669,7 @@ function ResourceTopology({ isAdmin }: { isAdmin: boolean }) {
                 boxShadow: "0 4px 12px #94a9c733",
               }}
             >
-              <ApiOutlined style={{ color: online ? "#52B788" : "#fa541c" }} />{" "}
+              <ApiOutlined style={{ color: online ? "#1677ff" : "#fa541c" }} />{" "}
               <b>{code}</b>
               <div
                 style={{
@@ -863,7 +864,7 @@ export default function Dashboard() {
               <ChartCard className="dashboard-bar-card" title="高频调用智能体 TOP5">
                 <SimpleBars data={topAgents.slice(0, 4)} color="#13c2c2" />
               </ChartCard>
-              <ChartCard className="dashboard-pie-card" title="智能体风险分级">
+              {mvpFeatures.ledgerRiskLevel && <ChartCard className="dashboard-pie-card" title="智能体风险分级">
                 <CyberPie
                   data={risks}
                   color={["#ff416c", "#ffb21c", "#32e59b"]}
@@ -877,7 +878,7 @@ export default function Dashboard() {
                     )
                   }
                 />
-              </ChartCard>
+              </ChartCard>}
             </>
           ) : (
             <>

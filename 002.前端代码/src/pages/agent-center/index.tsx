@@ -16,7 +16,8 @@
  *   - 5 个非「全部/草稿」Tab 继续走平铺(编辑/删除/审核/撤销),列宽按 Tab 贴合最宽按钮组合
  *     并取充足余量,保证按钮一行内展示完、按钮文字不被截切、右侧不留过多空白:
  *       撤销修改 → 230(最多 3 按钮:查看+编辑+删除)
- *       待审核 / 审核中 / 退回修改 → 180(最多 2 按钮:查看+审核/撤销/编辑)
+ *       待审核 / 审核中 → 280(最多 3 按钮:查看+审核+撤销)
+ *       退回修改 → 200(最多 2 按钮:查看+编辑)
  *       审核通过 → 110(仅查看详情)
  *   - Table scroll.x 保持 1900,覆盖各 Tab 平铺列宽
  *
@@ -73,7 +74,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../hooks/useAuth';
 import { useDemoSettings } from '../../hooks/useDemoSettings';
-import { departmentOptions } from '../../mock/departments';
+import { useDepartmentOptions } from './useDepartmentOptions';
 import PageHeader from '../../components/PageHeader';
 import NewUserConsole from '../../components/NewUserConsole';
 import {
@@ -91,6 +92,7 @@ import {
   nowISO,
   patchAccessRecord,
   removeAccessRecord,
+  withdrawAccessRecord,
   useAccessRecords,
 } from './store';
 import { useSmartDraft } from './smart/store.tsx';
@@ -104,12 +106,18 @@ import type { WelcomePageKey, WelcomeRole, WelcomeReplacer, WelcomeMiniList, Wel
 const { Text } = Typography;
 
 const AgentCenterContent = () => {
+  const departmentOptions = useDepartmentOptions();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentUser } = useAuth();
+  const { currentUser, hasPermission } = useAuth();
   const role = currentUser?.roles[0] || '科室管理员';
   const isPlatformAdmin = role === ROLE_ADMIN;
   const loginName = currentUser?.name || '当前用户';
+  // 功能权限配置中的操作项才是按钮展示依据。审核操作在各页面权限树中
+  // 均为第 4 个 action（index 3）；页面级授权则代表拥有该页全部操作。
+  const canAuditPending = hasPermission('access:pending', 'action:3');
+  const canAuditReviewing = hasPermission('access:reviewing', 'action:3');
+  const canAuditFromList = hasPermission('access:list', 'action:3');
 
   const records = useAccessRecords();
   const { pushWelcomeGreeting } = useSmartDraft();
@@ -186,9 +194,11 @@ const AgentCenterContent = () => {
         if (isMine) actions.push({ key: 'edit', label: '编辑', kind: 'navigate-edit' });
       } else if (tab === '待审核') {
         actions.push({ key: 'detail', label: '查看详情', kind: 'navigate-detail' });
+        if (canAuditPending) actions.push({ key: 'audit', label: '审核', kind: 'navigate-audit' });
         actions.push({ key: 'cancel', label: '撤销', kind: 'confirm-cancel' });
       } else if (tab === '审核中') {
         actions.push({ key: 'detail', label: '查看详情', kind: 'navigate-detail' });
+        if (canAuditReviewing) actions.push({ key: 'audit', label: '审核', kind: 'navigate-audit' });
         actions.push({ key: 'cancel', label: '撤销', kind: 'confirm-cancel' });
       } else if (tab === '退回修改') {
         actions.push({ key: 'edit', label: '编辑', kind: 'navigate-edit' });
@@ -464,27 +474,15 @@ const AgentCenterContent = () => {
   // ──────────────────────────────────────────────────────────────────
   // 删除 / 撤销
   // ──────────────────────────────────────────────────────────────────
-  const doDelete = () => {
+  const doDelete = async () => {
     if (!pendingDelete) return;
-    removeAccessRecord(pendingDelete.id);
-    message.success('删除成功');
-    setPendingDelete(null);
+    try { await removeAccessRecord(pendingDelete.id); message.success('删除成功'); setPendingDelete(null); }
+    catch (error) { message.error(error instanceof Error ? error.message : '删除失败'); }
   };
-  const doCancel = () => {
+  const doCancel = async () => {
     if (!pendingCancel) return;
-    patchAccessRecord(pendingCancel.id, {
-      status: '撤销修改',
-      cancelTime: nowISO(0),
-    });
-    appendAuditNode(pendingCancel.id, {
-      label: '撤销',
-      time: nowISO(0),
-      status: 'wait',
-      operator: loginName,
-      desc: '申请人主动撤销',
-    });
-    message.success('撤销成功');
-    setPendingCancel(null);
+    try { await withdrawAccessRecord(pendingCancel.id); message.success('撤销成功'); setPendingCancel(null); }
+    catch (error) { message.error(error instanceof Error ? error.message : '撤销失败'); }
   };
 
   // ──────────────────────────────────────────────────────────────────
@@ -670,7 +668,7 @@ const AgentCenterContent = () => {
       // 列宽按 Tab 贴合「最宽按钮组合 + 充足余量」,保证按钮一行内展示完、不被截字、右侧不过空:
       // - 「全部」/「草稿」Tab 走「查看详情 + 更多」下拉,固定 160
       // - 撤销修改:最多 3 按钮(查看+编辑+删除) → 230
-      // - 待审核 / 审核中:最多 2 按钮(查看+审核/撤销) → 180
+      // - 待审核 / 审核中:最多 3 按钮(查看+审核+撤销) → 280
       // - 退回修改:2 按钮(查看+编辑) → 200(给两个带图标 link 按钮留足一行展开空间)
       // - 审核通过:3 按钮(查看详情+立即评测+查看台账)→ 260
       // 数值含 8px 单元格左右 padding + 8px 视觉余量;fixed:right 列的实际列宽由列定义宽度决定
@@ -680,12 +678,16 @@ const AgentCenterContent = () => {
         activeStatus === '撤销修改' ? 230 :
         activeStatus === '审核通过' ? 260 :
         activeStatus === '退回修改' ? 200 :
-        180, // 待审核 / 审核中
+        280, // 待审核 / 审核中
       fixed: 'right',
       render: (_v, r) => {
         const isMine = r.applicant === loginName;
         const canOwnerEdit = isMine;
-        const canAdminAudit = isPlatformAdmin && !isMine;
+        const canAudit = r.status === '待审核'
+          ? (activeStatus === '全部' ? canAuditFromList : canAuditPending)
+          : r.status === '审核中'
+            ? (activeStatus === '全部' ? canAuditFromList : canAuditReviewing)
+            : false;
         const canOwnerCancel = isMine;
 
         // 收集该记录在当前身份下可执行的操作菜单项(用于「全部」Tab 的「更多」下拉)
@@ -694,14 +696,19 @@ const AgentCenterContent = () => {
           moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
           moreItems.push({ key: 'del', label: '删除', icon: <DeleteOutlined />, danger: true, onClick: () => setPendingDelete(r) });
         } else if (r.status === '待审核') {
-          if (canAdminAudit) {
+          if (canAudit) {
             moreItems.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
           }
           if (canOwnerCancel) {
             moreItems.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
           }
-        } else if (r.status === '审核中' && canOwnerCancel) {
-          moreItems.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
+        } else if (r.status === '审核中') {
+          if (canAudit) {
+            moreItems.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
+          }
+          if (canOwnerCancel) {
+            moreItems.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
+          }
         } else if (r.status === '退回修改' && canOwnerEdit) {
           moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
         } else if (r.status === '撤销修改' && canOwnerEdit) {
@@ -751,7 +758,7 @@ const AgentCenterContent = () => {
             </Space>
           );
         } else if (r.status === '待审核') {
-          if (canAdminAudit) {
+          if (canAudit) {
             buttons.push(
               <Button key="audit" type="link" size="small" icon={<AuditOutlined />} onClick={() => goAudit(r)}>
                 审核
@@ -765,12 +772,21 @@ const AgentCenterContent = () => {
               </Button>,
             );
           }
-        } else if (r.status === '审核中' && canOwnerCancel) {
-          buttons.push(
-            <Button key="cancel" type="link" size="small" icon={<UndoOutlined />} onClick={() => setPendingCancel(r)}>
-              撤销
-            </Button>,
-          );
+        } else if (r.status === '审核中') {
+          if (canAudit) {
+            buttons.push(
+              <Button key="audit" type="link" size="small" icon={<AuditOutlined />} onClick={() => goAudit(r)}>
+                审核
+              </Button>,
+            );
+          }
+          if (canOwnerCancel) {
+            buttons.push(
+              <Button key="cancel" type="link" size="small" icon={<UndoOutlined />} onClick={() => setPendingCancel(r)}>
+                撤销
+              </Button>,
+            );
+          }
         } else if (r.status === '退回修改' && canOwnerEdit) {
           buttons.push(
             <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => goEdit(r)}>
@@ -815,7 +831,7 @@ const AgentCenterContent = () => {
             </Button>,
           );
         }
-        return <Space size={4}>{buttons}</Space>;
+        return <Space size={4} wrap={false} style={{ whiteSpace: 'nowrap' }}>{buttons}</Space>;
       },
     };
     return [...base, ...statusCol, actionCol];
@@ -852,7 +868,7 @@ const AgentCenterContent = () => {
               icon={<ThunderboltFilled />}
               onClick={() => navigate('/app/agent-center/smart-register')}
               style={{
-                background: 'linear-gradient(90deg,#52B788 0%,#4096FF 100%)',
+                background: 'linear-gradient(90deg,#1677FF 0%,#4096FF 100%)',
                 border: 'none',
                 boxShadow: '0 2px 8px rgba(22,119,255,0.25)',
               }}

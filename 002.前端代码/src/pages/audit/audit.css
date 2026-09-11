@@ -98,7 +98,7 @@
 
 .project-detail-summary-item { display: flex; min-width: 0; align-items: center; gap: 16px; padding: 20px 22px; }
 .project-detail-summary-item + .project-detail-summary-item { border-left: 1px solid #edf1f6; }
-.project-detail-summary-item > span { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 50%; background: #eef5ff; color: #52B788; font-size: 17px; font-weight: 700; }
+.project-detail-summary-item > span { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 50%; background: #eef5ff; color: #1677ff; font-size: 17px; font-weight: 700; }
 .project-detail-summary-item:nth-child(2) > span { background: #ecfbfa; color: #14a6a4; }
 .project-detail-summary-item:nth-child(3) > span { background: #f4f0ff; color: #7358e8; }
 .project-detail-summary-item > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
@@ -232,7 +232,7 @@
 }
 
 .economic-stat-card {
-  --card-accent: #52B788;
+  --card-accent: #1677ff;
   --card-accent-rgb: 22, 119, 255;
   position: relative;
   isolation: isolate;
@@ -279,12 +279,8 @@
   box-shadow: 0 18px 38px rgba(var(--card-accent-rgb), .16), inset 0 1px 0 #fff;
 }
 
-.economic-stat-card-budget { --card-accent: #6955d9; --card-accent-rgb: 105, 85, 217; }
-.economic-stat-card-token { --card-accent: #08a88a; --card-accent-rgb: 8, 168, 138; }
-.economic-stat-card-roi { --card-accent: #e58b22; --card-accent-rgb: 229, 139, 34; }
-
-/* 项目审计沿用经济审计的卡片语言，以连续的蓝青色谱突出运行成效属性。 */
-.project-stat-card-efficiency { --card-accent: #52B788; --card-accent-rgb: 22, 119, 255; }
+/* 项目审计使用连续的蓝青色谱突出运行成效属性。 */
+.project-stat-card-efficiency { --card-accent: #1677ff; --card-accent-rgb: 22, 119, 255; }
 .project-stat-card-quality { --card-accent: #5766d8; --card-accent-rgb: 87, 102, 216; }
 .project-stat-card-benefit { --card-accent: #0c9e9a; --card-accent-rgb: 12, 158, 154; }
 .project-stat-card-safety { --card-accent: #18a06a; --card-accent-rgb: 24, 160, 106; }
@@ -582,7 +578,7 @@
 }
 
 .audit-calculated-rate .ant-typography-strong {
-  color: #52B788;
+  color: #1677ff;
   font-size: 16px;
 }
 
@@ -593,6 +589,10 @@
 .filter-grid {
   grid-template-columns: repeat(5, minmax(150px, 1fr));
   gap: 12px;
+}
+
+.operation-log-filter-grid {
+  grid-template-columns: repeat(6, minmax(150px, 1fr));
 }
 
 .sticky-actions {
@@ -777,7 +777,7 @@
 
 .session-role-icon-user {
   background: #eaf3ff;
-  color: #52B788;
+  color: #1677ff;
 }
 
 .session-role-icon-agent {
@@ -841,7 +841,7 @@
 
 .session-process-tool .session-process-icon {
   background: #eaf3ff;
-  color: #52B788;
+  color: #1677ff;
 }
 
 .session-process-title {

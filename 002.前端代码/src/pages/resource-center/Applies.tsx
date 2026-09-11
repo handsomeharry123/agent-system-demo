@@ -724,7 +724,7 @@ const ApplyList = () => {
             style={{
               marginBottom: 12,
               padding: '8px 12px',
-              background: '#EAF7EF',
+              background: '#E6F4FF',
               border: '1px solid #91CAFF',
               borderRadius: 4,
               fontSize: 13,

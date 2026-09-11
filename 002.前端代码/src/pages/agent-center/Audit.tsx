@@ -2,7 +2,7 @@
  * 智能体接入中心 - 审核注册（独立下转页）
  *
  * V3.0 调整：
- *  - §4.1.1 进入审核页时由医小知主动汇报关键态势
+ *  - §4.1.1 进入审核页时由医小管主动汇报关键态势
  *  - §4.2  智能预审：在基本信息 / 技术信息 字段上直接标注疑似问题
  *    + 在技术信息区执行连通测试 + 给出预审结论（建议通过 / 建议退回）
  *  - §4.3  二次审核：管理在「人工意见」基础上作出最终结论，退回时使用汇总草稿
@@ -10,7 +10,7 @@
  * V2.2：从原 Drawer 转为下转页面 + 底部固定审核操作栏。
  * 顶部为只读记录详情，底部为审核结论（Radio）+ 说明 + 二次确认。
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
@@ -39,7 +39,6 @@ import {
   FilePdfOutlined,
   InfoCircleOutlined,
   ReloadOutlined,
-  ThunderboltFilled,
   ThunderboltOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
@@ -51,8 +50,11 @@ import {
   appendAuditNode,
   nowISO,
   patchAccessRecord,
+  startAccessReview,
+  reviewAccessRecord,
   useAccessRecords,
 } from './store';
+import { agentAccessApi } from '../../services/agentAccess';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -74,22 +76,22 @@ const FieldFlag: React.FC<{
     : problems.some((p) => p.severity === 'warning')
       ? 'warning'
       : 'info';
-  const color = worst === 'error' ? '#FF4D4F' : worst === 'warning' ? '#FAAD14' : '#52B788';
-  const bg = worst === 'error' ? '#FFF1F0' : worst === 'warning' ? '#FFFBE6' : '#EAF7EF';
+  const color = worst === 'error' ? '#FF4D4F' : worst === 'warning' ? '#FAAD14' : '#1677FF';
+  const bg = worst === 'error' ? '#FFF1F0' : worst === 'warning' ? '#FFFBE6' : '#E6F4FF';
   const icon =
     worst === 'error' ? (
       <BugOutlined style={{ color: '#FF4D4F' }} />
     ) : worst === 'warning' ? (
       <WarningOutlined style={{ color: '#FAAD14' }} />
     ) : (
-      <InfoCircleOutlined style={{ color: '#52B788' }} />
+      <InfoCircleOutlined style={{ color: '#1677FF' }} />
     );
   const tip = (
     <div style={{ maxWidth: 320 }}>
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{icon} {fieldKey} · {problems.length} 项</div>
       {problems.map((p) => (
         <div key={p.id} style={{ fontSize: 12, marginBottom: 2 }}>
-          <span style={{ color: p.severity === 'error' ? '#FF4D4F' : p.severity === 'warning' ? '#FAAD14' : '#52B788' }}>●</span>
+          <span style={{ color: p.severity === 'error' ? '#FF4D4F' : p.severity === 'warning' ? '#FAAD14' : '#1677FF' }}>●</span>
           {' '}{p.title}（{p.reason}）
         </div>
       ))}
@@ -153,46 +155,30 @@ const Audit = () => {
       return [String(errors), verdictLabel];
     }, {
       actions: [
-        { key: 'audit-pass', label: '审核通过', event: 'agent-audit-verdict-pass', enabled: true },
-        { key: 'audit-return', label: '退回修改', event: 'agent-audit-verdict-return', enabled: true },
         { key: 'test', label: '测试验证', event: 'agent-audit-run-test', enabled: true },
       ],
     });
   }, [isPlatformAdmin, pushWelcomeGreeting]);
   const [verdict, setVerdict] = useState<'通过' | '退回' | null>(null);
-  const [aiPreAuditFields, setAiPreAuditFields] = useState({ verdict: false, explanation: false });
   const [confirming, setConfirming] = useState<'通过' | '退回' | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [testStage, setTestStage] = useState<number>(-1);
   const [testResult, setTestResult] = useState<null | { ok: boolean; message: string }>(null);
   const [showSecret, setShowSecret] = useState(false);
 
-  // PRD §3.1.1 审核页气泡「审核通过 / 退回修改」直接操作：预选结论 + 滚动到结论区
+  // 对话区仅保留手动触发测试验证，不再代替用户选择或填写审核结论。
   useEffect(() => {
-    const select = (v: '通过' | '退回') => {
-      setVerdict(v);
-      setAiPreAuditFields((prev) => ({ ...prev, verdict: false }));
-      confirmForm.setFieldValue('verdict', v);
-      document.querySelector('[data-testid="audit-verdict-section"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
-    const onPass = () => select('通过');
-    const onReturn = () => select('退回');
     const onRunTest = () => {
       const btn = document.querySelector('[data-testid="audit-test-button"]') as HTMLButtonElement | null;
       btn?.click();
     };
-    window.addEventListener('agent-audit-verdict-pass', onPass);
-    window.addEventListener('agent-audit-verdict-return', onReturn);
     window.addEventListener('agent-audit-run-test', onRunTest);
     return () => {
-      window.removeEventListener('agent-audit-verdict-pass', onPass);
-      window.removeEventListener('agent-audit-verdict-return', onReturn);
       window.removeEventListener('agent-audit-run-test', onRunTest);
     };
-  }, [confirmForm]);
+  }, []);
 
   // §4.2 智能预审状态：管理员进入页面时,运行预审并展示
-  const [preAuditDone, setPreAuditDone] = useState(false);
   const [connRunning, setConnRunning] = useState(false);
   // §4.2.1 问题严重度筛选（all / error / warning / info）
   const [severityFilter, setSeverityFilter] = useState<'all' | 'error' | 'warning' | 'info'>('all');
@@ -227,6 +213,16 @@ const Audit = () => {
       probs.push({ id: 'model-version-format', fieldKey: 'modelVersion', severity: 'error', title: '使用模型版本格式不符', reason: '应符合「数字.数字」，如 1.1 / 2.1' });
     if (!record.modelDeploymentMode)
       probs.push({ id: 'model-deployment-missing', fieldKey: 'modelDeploymentMode', severity: 'error', title: '模型部署方式为空', reason: '必填字段缺失' });
+    if (record.parameterCount == null || record.parameterCount <= 0)
+      probs.push({ id: 'parameter-count-invalid', fieldKey: 'parameterCount', severity: 'error', title: '参数量未正确填写', reason: '参数量须大于 0' });
+    if (record.contextLength == null || !Number.isInteger(record.contextLength) || record.contextLength <= 0)
+      probs.push({ id: 'context-length-invalid', fieldKey: 'contextLength', severity: 'error', title: '上下文长度未正确填写', reason: '须为正整数' });
+    if (record.temperature == null || record.temperature < 0 || record.temperature > 2)
+      probs.push({ id: 'temperature-invalid', fieldKey: 'temperature', severity: 'error', title: 'Temperature 未正确填写', reason: '须在 0–2 之间' });
+    if (record.topP != null && (record.topP < 0 || record.topP > 1))
+      probs.push({ id: 'top-p-invalid', fieldKey: 'topP', severity: 'error', title: 'Top P 填写不正确', reason: '须在 0–1 之间' });
+    if (record.concurrency != null && (!Number.isInteger(record.concurrency) || record.concurrency <= 0))
+      probs.push({ id: 'concurrency-invalid', fieldKey: 'concurrency', severity: 'error', title: '预计 API 并发量填写不正确', reason: '须为正整数' });
     if (!record.contactPhone || !/^1[3-9]\d{9}$/.test(record.contactPhone))
       probs.push({ id: 'phone-format', fieldKey: 'contactPhone', severity: 'error', title: '手机号格式不符', reason: '限制 11 位 1[3-9] 开头的手机号' });
     if (record.accessMode === 'API' && record.apiEndpoint && !/^https?:\/\//.test(record.apiEndpoint))
@@ -306,13 +302,9 @@ const Audit = () => {
   // 进入审核：状态变为「审核中」（若仍为「待审核」）
   useEffect(() => {
     if (record && record.status === '待审核') {
-      patchAccessRecord(record.id, { status: '审核中' });
-      appendAuditNode(record.id, {
-        label: '审核中',
-        time: nowISO(0),
-        status: 'process',
-        operator: loginName,
-      });
+      // “进入审核”是辅助状态流转；失败时仍允许管理员阅读并提交最终结论，
+      // 避免页面初始化阶段用非关键请求错误打断审核。
+      void startAccessReview(record.id).catch(() => undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record?.id]);
@@ -355,45 +347,20 @@ const Audit = () => {
       payload: { preAuditTest: initialTest, __placeholder: true } as any,
     });
 
-    for (let i = 0; i < TEST_STAGES.length; i++) {
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((r) => setTimeout(r, 350));
-      setTestStage(i);
-      (window as any).__preAuditTest = {
-        steps: TEST_STAGES.map((label, j) => ({
-          stage: ['dns', 'connect', 'auth', 'request', 'response'][j],
-          label,
-          status: j < i ? 'ok' : j === i ? 'running' : 'pending',
-          latencyMs: j <= i ? Math.floor(20 + Math.random() * 80) : undefined,
-        })),
-        result: null,
-      };
-      // 触发 React 刷新
-      setBubbleRefreshTick((t) => t + 1);
+    let finalResult: { ok: boolean; message: string };
+    let realTest;
+    try {
+      realTest = await agentAccessApi.reviewConnectionTest(record.id);
+      finalResult = { ok: realTest.ok, message: realTest.message };
+    } catch (error) {
+      finalResult = { ok: false, message: error instanceof Error ? error.message : '审核复测失败' };
+      realTest = { ok: false, latencyMs: Date.now() - total0, errorCode: 'TEST_FAILED', stages: TEST_STAGES.map((label, i) => ({ stage: ['dns', 'connect', 'auth', 'request', 'response'][i], label, status: i === 0 ? 'fail' : 'pending' })) };
     }
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise((r) => setTimeout(r, 200));
-    const ok = Math.random() > 0.2;
-    const totalMs = Date.now() - total0;
-    const finalResult = ok
-      ? { ok: true, message: '联通成功，技术信息配置正确。' }
-      : {
-          ok: false,
-          message: '联通失败：接口超时（错误码 504），请检查网络与认证信息。',
-        };
+    const ok = finalResult.ok;
+    const totalMs = realTest.latencyMs;
     setTestResult(finalResult);
     (window as any).__preAuditTest = {
-      steps: TEST_STAGES.map((label, j) => {
-        const last = j === TEST_STAGES.length - 1;
-        return {
-          stage: ['dns', 'connect', 'auth', 'request', 'response'][j],
-          label,
-          status: ok ? 'ok' : last ? 'fail' : 'ok',
-          latencyMs: Math.floor(20 + Math.random() * 80),
-          errorCode: !ok && last ? '504' : undefined,
-          errorReason: !ok && last ? '接口超时' : undefined,
-        };
-      }),
+      steps: realTest.stages,
       result: finalResult,
       totalMs,
     };
@@ -527,70 +494,6 @@ const Audit = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [record?.id]);
 
-  // §4.2 智能预审：进入审核页立刻执行（与 runTest 并行，模拟"已跑连通测试"）
-  useEffect(() => {
-    if (!record || !isPlatformAdmin || preAuditDone) return;
-    const t = setTimeout(() => {
-      runTest();
-      setPreAuditDone(true);
-    }, 1500);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [record?.id, isPlatformAdmin]);
-
-  // §4.2.1 医小知自动预审结论：runTest 完成且出现 verdict 标签时, 自动填入 Radio + TextArea
-  //   - 仅 admin + 仅首次进页(老审核通过 / 退回修改记录不重填) + 仅跑一次(由 autoFilledRef 守护)
-  //   - 保留管理员编辑能力: 填值后仍可手动改 Radio / TextArea / 点"重新采纳预审草稿"
-  //   - 触发链: preAuditVerdict 由"信息待补"切到"建议通过/建议退回"时重算 → effect 重跑
-  //             returnDraft 在 testResult + activeProblems 稳定后才非空 → 避免空草稿提前占位
-  const autoFilledRef = useRef(false);
-  useEffect(() => {
-    if (!record || !isPlatformAdmin) return;
-    if (record.status !== '待审核' && record.status !== '审核中') return;
-    if (autoFilledRef.current) return;
-    // 直接读 useMemo 的 preAuditVerdict,与 runTest 末尾写 window.__preAuditVerdictLabel 同源;
-    // 之前读 window 是有 bug 的: setTestResult 在 React commit 阶段触发 re-render 时,
-    // window.__preAuditVerdictLabel 还没在 runTest 内被写入,导致 effect 重跑时拿不到值
-    if (preAuditVerdict === '信息待补') return; // 待定不自动选,让管理员决策
-    // 退回分支要求 returnDraft 就绪(否则先等下一次 effect 重跑)
-    if (preAuditVerdict === '建议退回' && !returnDraft) return;
-    const v: '通过' | '退回' = preAuditVerdict === '建议通过' ? '通过' : '退回';
-    setVerdict(v);
-    setAiPreAuditFields({ verdict: true, explanation: true });
-    confirmForm.setFieldsValue({
-      verdict: v,
-      // 退回时一并把预审草稿(预审问题 + 连通失败)写进 returnReason; 通过时写一句自动备注
-      ...(v === '退回'
-        ? { returnReason: returnDraft }
-        : { passNote: '医小知预审通过：基本信息完整、字段格式合规、连通测试正常。' }),
-    });
-    // 提示气泡播报一条(让 chat panel 与结论区状态一致)
-    addMessage({
-      role: 'agent',
-      type: 'text',
-      content:
-        v === '通过'
-          ? '我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。'
-          : `我已根据预审结论自动选「退回修改」，并把预审问题 + 连通结果汇总到退回说明里（共 ${preAuditProblems.length} 项标注）。如需调整，可直接修改或点「重新采纳预审草稿」重写。`,
-    });
-    // 滚动到结论区
-    setTimeout(() => {
-      document
-        .querySelector('[data-testid="audit-verdict-section"]')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 80);
-    autoFilledRef.current = true;
-  }, [
-    record?.id,
-    record?.status,
-    isPlatformAdmin,
-    preAuditVerdict, // 触发: preAuditVerdict 由"信息待补"切到"建议通过/建议退回"时重算
-    returnDraft, // 退回草稿就绪后才填,避免空 returnDraft 提前占位
-    preAuditProblems, // 仅用于退回提示气泡读"共 N 项标注"
-    confirmForm,
-    addMessage,
-  ]);
-
   const submitAudit = async () => {
     if (!verdict) return;
     let v: { returnReason?: string; passNote?: string } = {};
@@ -605,42 +508,12 @@ const Audit = () => {
     }
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 400));
-    const node: TimelineNode =
-      verdict === '通过'
-        ? {
-            label: '审核通过',
-            time: nowISO(0),
-            status: 'finish',
-            operator: loginName,
-            desc: v.passNote || '已审核通过，自动同步台账',
-          }
-        : {
-            label: '退回修改',
-            time: nowISO(0),
-            status: 'error',
-            operator: loginName,
-            desc: v.returnReason,
-          };
-    appendAuditNode(record.id, node);
-    if (verdict === '通过') {
-      patchAccessRecord(record.id, {
-        status: '审核通过',
-        passTime: nowISO(0),
-        passNote: v.passNote,
-        ledgerSynced: true,
-      });
-      appendAuditNode(record.id, {
-        label: '台账同步',
-        time: nowISO(0),
-        status: 'finish',
-        desc: '已同步至统一台账中心',
-      });
-    } else {
-      patchAccessRecord(record.id, {
-        status: '退回修改',
-        returnTime: nowISO(0),
-        returnReason: v.returnReason,
-      });
+    try {
+      await reviewAccessRecord(record.id, verdict === '通过' ? 'APPROVED' : 'RETURNED', v.passNote || v.returnReason);
+    } catch (error) {
+      setSubmitting(false);
+      message.error(error instanceof Error ? error.message : '审核失败');
+      return;
     }
     setSubmitting(false);
     setConfirming(null);
@@ -787,16 +660,31 @@ const Audit = () => {
           size="small"
           extra={<Button data-testid="audit-test-button" onClick={runTest} size="small" icon={<ReloadOutlined />} loading={testStage >= 0}>测试验证</Button>}
         >
-          <Descriptions column={1} size="small" bordered>
+          <Descriptions column={2} size="small" bordered>
+            <Descriptions.Item label={<FieldFlag fieldKey="parameterCount" problems={problemsByField.parameterCount || []} label="参数量（单位：十亿）" />}>
+              {record.parameterCount != null ? `${record.parameterCount} B` : <Text type="secondary">（未填）</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={<FieldFlag fieldKey="contextLength" problems={problemsByField.contextLength || []} label="上下文长度（单位：token）" />}>
+              {record.contextLength != null ? `${record.contextLength} K` : <Text type="secondary">（未填）</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={<FieldFlag fieldKey="temperature" problems={problemsByField.temperature || []} label="Temperature" />}>
+              {record.temperature != null ? record.temperature : <Text type="secondary">（未填）</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={<FieldFlag fieldKey="topP" problems={problemsByField.topP || []} label="Top P" />}>
+              {record.topP != null ? record.topP : <Text type="secondary">（未填）</Text>}
+            </Descriptions.Item>
+            <Descriptions.Item label={<FieldFlag fieldKey="concurrency" problems={problemsByField.concurrency || []} label="预计 API 并发量" />}>
+              {record.concurrency != null ? record.concurrency : <Text type="secondary">（未填）</Text>}
+            </Descriptions.Item>
             <Descriptions.Item label="接入方式">
               <Tag color="blue">{record.accessMode} 接入</Tag>
             </Descriptions.Item>
             {record.accessMode === 'API' ? (
               <>
-                <Descriptions.Item label={<FieldFlag fieldKey="apiEndpoint" problems={problemsByField.apiEndpoint || []} label="接口地址" />}>
+                <Descriptions.Item span={2} label={<FieldFlag fieldKey="apiEndpoint" problems={problemsByField.apiEndpoint || []} label="接口地址" />}>
                   <Text copyable>{record.apiEndpoint || <Text type="secondary">（未填）</Text>}</Text>
                 </Descriptions.Item>
-                <Descriptions.Item label="API key">
+                <Descriptions.Item span={2} label="API key">
                   <Space>
                     <Text code>
                       {showSecret
@@ -816,8 +704,8 @@ const Audit = () => {
               </>
             ) : (
               <>
-                <Descriptions.Item label="平台 URL 地址"><Text copyable>{record.platformUrl}</Text></Descriptions.Item>
-                <Descriptions.Item label="平台密钥 key">
+                <Descriptions.Item span={2} label="平台 URL 地址"><Text copyable>{record.platformUrl}</Text></Descriptions.Item>
+                <Descriptions.Item span={2} label="平台密钥 key">
                   <Space>
                     <Text code>
                       {showSecret
@@ -850,26 +738,14 @@ const Audit = () => {
           style={{ marginTop: 16, marginBottom: 16 }}
         >
           <Form form={confirmForm} layout="vertical">
-            <div
-              data-testid="audit-verdict-ai-field"
-              data-ai-prefilled={aiPreAuditFields.verdict ? 'true' : 'false'}
-            >
+            <div data-testid="audit-verdict-field">
               <Form.Item
                 name="verdict"
-                label={aiPreAuditFields.verdict ? <span>审核结论<Tag color="green" icon={<ThunderboltFilled />} style={{ marginLeft: 6, fontSize: 11, lineHeight: '18px', padding: '0 6px', borderRadius: 4 }}>AI 预审</Tag></span> : '审核结论'}
+                label="审核结论"
                 rules={[{ required: true, message: '请选择审核结论' }]}
               >
                 <Radio.Group
-                  className={aiPreAuditFields.verdict ? 'audit-ai-preaudit-radio' : undefined}
-                  onChange={(e) => {
-                    setVerdict(e.target.value);
-                    setAiPreAuditFields((prev) => ({ ...prev, verdict: false }));
-                    // §4.3 退回时,自动汇总预审标注 + 连通结果草稿
-                    if (e.target.value === '退回' && returnDraft) {
-                      confirmForm.setFieldsValue({ returnReason: returnDraft });
-                      setAiPreAuditFields((prev) => ({ ...prev, explanation: true }));
-                    }
-                  }}
+                  onChange={(e) => setVerdict(e.target.value)}
                   options={[
                     { label: '审核通过', value: '通过' },
                     { label: '退回修改', value: '退回' },
@@ -878,38 +754,31 @@ const Audit = () => {
               </Form.Item>
             </div>
             {verdict === '退回' && (
-              <div
-                data-testid="audit-explanation-ai-field"
-                data-ai-prefilled={aiPreAuditFields.explanation ? 'true' : 'false'}
-              >
+              <div data-testid="audit-explanation-field">
                 <Form.Item
                   name="returnReason"
-                  label={aiPreAuditFields.explanation ? <span>退回说明<Tag color="green" icon={<ThunderboltFilled />} style={{ marginLeft: 6, fontSize: 11, lineHeight: '18px', padding: '0 6px', borderRadius: 4 }}>AI 预审</Tag></span> : '退回说明'}
+                  label="退回说明"
                   rules={[{ required: true, message: '请填写退回说明' }, { max: 500, message: '≤ 500 字' }]}
                   tooltip="明确指出需修改的字段或材料问题"
-                  extra={returnDraft ? <Space><Text type="secondary" style={{ fontSize: 12 }}>预审已自动汇总 {preAuditProblems.length} 项标注 + 连通结果，可编辑后下发。</Text><Button size="small" type="link" onClick={() => { confirmForm.setFieldsValue({ returnReason: returnDraft }); setAiPreAuditFields((prev) => ({ ...prev, explanation: true })); }}>重新采纳预审草稿</Button></Space> : null}
                 >
-                  <TextArea className={aiPreAuditFields.explanation ? 'ai-prefill-highlight' : undefined} onChange={() => setAiPreAuditFields((prev) => ({ ...prev, explanation: false }))} rows={4} maxLength={500} showCount placeholder="明确指出需修改的字段或材料问题" />
+                  <TextArea rows={4} maxLength={500} showCount placeholder="请手动填写需修改的字段或材料问题" />
                 </Form.Item>
               </div>
             )}
             {verdict === '通过' && (
-              <div
-                data-testid="audit-explanation-ai-field"
-                data-ai-prefilled={aiPreAuditFields.explanation ? 'true' : 'false'}
-              >
+              <div data-testid="audit-explanation-field">
                 <Form.Item
                   name="passNote"
-                  label={aiPreAuditFields.explanation ? <span>具体说明<Tag color="green" icon={<ThunderboltFilled />} style={{ marginLeft: 6, fontSize: 11, lineHeight: '18px', padding: '0 6px', borderRadius: 4 }}>AI 预审</Tag></span> : '具体说明'}
+                  label="具体说明"
                   rules={[{ max: 500, message: '≤ 500 字' }]}
                   tooltip="如有条件通过的备注或通过意见"
                 >
-                  <TextArea className={aiPreAuditFields.explanation ? 'ai-prefill-highlight' : undefined} onChange={() => setAiPreAuditFields((prev) => ({ ...prev, explanation: false }))} rows={4} maxLength={500} showCount placeholder="如有条件通过的备注或通过意见，≤ 500 字" />
+                  <TextArea rows={4} maxLength={500} showCount placeholder="请手动填写通过意见，≤ 500 字" />
                 </Form.Item>
               </div>
             )}
             <Space>
-              <Button onClick={() => { setVerdict(null); setAiPreAuditFields({ verdict: false, explanation: false }); confirmForm.resetFields(); }}>重置</Button>
+              <Button onClick={() => { setVerdict(null); confirmForm.resetFields(); }}>重置</Button>
               <Button
                 type="primary"
                 danger={verdict === '退回'}

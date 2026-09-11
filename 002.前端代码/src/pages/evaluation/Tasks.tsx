@@ -97,6 +97,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
 import PujiangTaskList from './pujiang/PujiangTaskList';
 import ThirdPartyTaskList from './third-party/ThirdPartyTaskList';
+import { mvpFeatures } from '../../config/mvpFeatures';
 import { enabledEvaluationPlatforms, evaluationName, specFor, type ThirdPartyPlatformKey } from './third-party/platforms';
 
 const { Text } = Typography;
@@ -168,7 +169,7 @@ const Tasks = () => {
 
   // 本地任务（支持操作后修改）
   const [tasks, setTasks] = useState<EvaluationTask[]>(mockEvaluationTasks);
-  const enabledPlatforms = enabledEvaluationPlatforms();
+  const enabledPlatforms = mvpFeatures.thirdPartyEvaluation ? enabledEvaluationPlatforms() : [];
   const requestedModule = searchParams.get('module');
   const availableModuleKeys = new Set(enabledPlatforms.map((platform) => platform.id));
   const initialModule: EvaluationModule = requestedModule === 'medbench' && availableModuleKeys.has('medbench')
@@ -245,7 +246,7 @@ const Tasks = () => {
     return () => consumeWelcome();
   }, [consumeWelcome, evaluationModule, isAdmin, pushWelcomeGreeting, scopedTasks, tabCount]);
 
-  // 第三方平台沿用浦江实验室的医小知交互：进入平台列表即展示统计欢迎语，
+  // 第三方平台沿用浦江实验室的医小管交互：进入平台列表即展示统计欢迎语，
   // 并通过状态气泡派发 agent-jump-tab 事件切换列表 Tab。
   useEffect(() => {
     if (evaluationModule !== 'cp-env' && evaluationModule !== 'medagentbench') return;
@@ -496,7 +497,7 @@ const Tasks = () => {
                 percent={percent}
                 size="small"
                 showInfo
-                strokeColor="#52B788"
+                strokeColor="#1677FF"
                 format={(p) => `${p}%`}
               />
               <Text type="secondary" style={{ fontSize: 12 }}>
@@ -957,7 +958,7 @@ const Tasks = () => {
             style={{
               marginTop: 12,
               padding: '8px 12px',
-              background: '#EAF7EF',
+              background: '#E6F4FF',
               border: '1px solid #91CAFF',
               borderRadius: 4,
               fontSize: 13,

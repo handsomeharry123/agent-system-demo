@@ -139,8 +139,8 @@ const DatasetDetail = () => {
           <div
             style={{
               fontSize: 40,
-              color: '#52B788',
-              background: '#EAF7EF',
+              color: '#1677FF',
+              background: '#E6F4FF',
               width: 64,
               height: 64,
               borderRadius: 12,
@@ -175,7 +175,7 @@ const DatasetDetail = () => {
               title="记录总数"
               value={dataset.recordTotal}
               suffix="条"
-              prefix={<ProfileOutlined style={{ color: '#52B788' }} />}
+              prefix={<ProfileOutlined style={{ color: '#1677FF' }} />}
             />
           </Card>
         </Col>

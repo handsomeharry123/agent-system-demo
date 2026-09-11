@@ -1,0 +1,459 @@
+{
+  "ts": "2026-07-04T14:14:37.768Z",
+  "tester": "C",
+  "total": 90,
+  "passed": 90,
+  "failed": 0,
+  "results": [
+    {
+      "name": "[C1.1] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.1] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.1] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.1] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.1] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.1] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=0 after=530"
+    },
+    {
+      "name": "[C1.1] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.2] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.2] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.2] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.2] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.2] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.2] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.2] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.3] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.3] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.3] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.3] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.3] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.3] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.3] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.4] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.4] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.4] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.4] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.4] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.4] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.4] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.5] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.5] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.5] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.5] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.5] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.5] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.5] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.6] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.6] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.6] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.6] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.6] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.6] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.6] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.7] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.7] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.7] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.7] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.7] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.7] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.7] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.8] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.8] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.8] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.8] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.8] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.8] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.8] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.9] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.9] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.9] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.9] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.9] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.9] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.9] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.10] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.10] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[退回]"
+    },
+    {
+      "name": "[C1.10] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[退回]"
+    },
+    {
+      "name": "[C1.10] 退回时 returnReason 非空",
+      "pass": true,
+      "detail": "len=107"
+    },
+    {
+      "name": "[C1.10] 退回说明含【预审标注问题】/【连通测试异常】",
+      "pass": true,
+      "detail": "【预审标注问题】\n1. 来源 = 自研, 不应填供应商（前后不一致），请检查「supplier」字段\n【连通测试异常】联通失败：接口超时（错误码 504），请检"
+    },
+    {
+      "name": "[C1.10] passNote 应为空",
+      "pass": true,
+      "detail": "passNote=[]"
+    },
+    {
+      "name": "[C1.10] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=554"
+    },
+    {
+      "name": "[C1.10] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「退回修改」，并把预审问题 + 连通结果汇总到退回说明里（共 1 项标注）。如"
+    },
+    {
+      "name": "[C1.11] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.11] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.11] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.11] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.11] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.11] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=554 after=530"
+    },
+    {
+      "name": "[C1.11] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.12] verdict-section DOM 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C1.12] verdict Radio 已自动勾选(非空)",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.12] verdict 是合法值",
+      "pass": true,
+      "detail": "value=[通过]"
+    },
+    {
+      "name": "[C1.12] passNote 以\"医小管预审通过\"开头",
+      "pass": true,
+      "detail": "医小管预审通过：基本信息完整、字段格式合规、连通测试正常。"
+    },
+    {
+      "name": "[C1.12] returnReason 应为空",
+      "pass": true,
+      "detail": "returnReason=[]"
+    },
+    {
+      "name": "[C1.12] 自动滚动到结论区(scrollY 增长 或 已 >= 200)",
+      "pass": true,
+      "detail": "before=530 after=530"
+    },
+    {
+      "name": "[C1.12] chat panel 含\"我已根据预审结论自动选\"提示",
+      "pass": true,
+      "detail": "我已根据预审结论自动选「审核通过」，并预填了具体说明。如需调整，可直接修改或点重置。</div></"
+    },
+    {
+      "name": "[C1.5] 12 次重试中至少一次\"退回\"分支(信息性)",
+      "pass": true,
+      "detail": "sawReturn=true"
+    },
+    {
+      "name": "[C2.1] 管理员手动切换 Radio 后, 状态被记录",
+      "pass": true,
+      "detail": "verdict=[退回]"
+    },
+    {
+      "name": "[C2.2] 刷新后再次自动填(允许两种 verdict)",
+      "pass": true,
+      "detail": "verdict=[通过]"
+    },
+    {
+      "name": "[C3.1] 审核通过的记录(已结束)不进 audit 详情页或 Radio 未自动勾",
+      "pass": true,
+      "detail": "verdict=[null]"
+    },
+    {
+      "name": "[C4.1] 撤销修改的记录不进 audit 详情页或 Radio 未自动勾",
+      "pass": true,
+      "detail": "verdict=[null]"
+    }
+  ]
+}

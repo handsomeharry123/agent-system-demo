@@ -54,8 +54,8 @@ const SEVERITY_META: Record<
     label: '警告',
   },
   info: {
-    color: '#52B788',
-    bg: '#EAF7EF',
+    color: '#1677FF',
+    bg: '#E6F4FF',
     icon: <InfoCircleOutlined />,
     label: '提示',
   },

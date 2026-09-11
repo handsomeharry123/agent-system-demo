@@ -501,7 +501,7 @@ const EventManage = () => {
                   <Badge
                     count={tabCounts.allActive}
                     showZero
-                    color={tab === 'all' ? '#52B788' : undefined}
+                    color={tab === 'all' ? '#1677FF' : undefined}
                     overflowCount={99}
                   />
                 </Space>
@@ -515,7 +515,7 @@ const EventManage = () => {
                   <Badge
                     count={tabCounts.myActive}
                     showZero
-                    color={tab === 'my' ? '#52B788' : undefined}
+                    color={tab === 'my' ? '#1677FF' : undefined}
                     overflowCount={99}
                   />
                 </Space>

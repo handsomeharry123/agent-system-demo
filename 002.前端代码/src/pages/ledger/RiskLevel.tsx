@@ -270,7 +270,7 @@ const RiskLevelPage = () => {
       Modal.confirm({
         title: (
           <Space>
-            <SafetyCertificateOutlined style={{ color: '#52B788' }} />
+            <SafetyCertificateOutlined style={{ color: '#1677FF' }} />
             <span>风险等级评定结果</span>
           </Space>
         ),
@@ -282,7 +282,7 @@ const RiskLevelPage = () => {
               style={{
                 marginBottom: 12,
                 padding: 16,
-                background: '#F3FBF6',
+                background: '#F0F5FF',
                 border: '1px solid #ADC6FF',
                 borderRadius: 6,
               }}
@@ -376,7 +376,7 @@ const RiskLevelPage = () => {
       bordered={false}
       title={
         <Space>
-          <InfoCircleOutlined style={{ color: '#52B788' }} />
+          <InfoCircleOutlined style={{ color: '#1677FF' }} />
           <span style={{ fontSize: 14, fontWeight: 600 }}>智能体信息</span>
         </Space>
       }
@@ -426,7 +426,7 @@ const RiskLevelPage = () => {
       bordered={false}
       title={
         <Space>
-          <SafetyCertificateOutlined style={{ color: '#52B788' }} />
+          <SafetyCertificateOutlined style={{ color: '#1677FF' }} />
           <span style={{ fontSize: 14, fontWeight: 600 }}>风险分级问卷</span>
         </Space>
       }

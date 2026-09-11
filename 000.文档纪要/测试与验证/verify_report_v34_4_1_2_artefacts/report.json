@@ -1,0 +1,112 @@
+{
+  "cases": [
+    {
+      "name": "需求 2: 左右各预留 20% 间距 (相对 .ant-layout-content)",
+      "pass": true,
+      "detail": "left=24.2% right=24.2%"
+    },
+    {
+      "name": "需求 2: 报告宽度大幅收窄 (card < 70% content)",
+      "pass": true,
+      "detail": "card=701 content=1200"
+    },
+    {
+      "name": "需求 1: 编辑模式启用大量 Input (>=80, 覆盖 KPI/表格/矩阵/标题等)",
+      "pass": true,
+      "detail": "inputs=164 textareas=28"
+    },
+    {
+      "name": "需求 1: 编辑模式启用 TextArea (>=28, 段落)",
+      "pass": true,
+      "detail": "textareas=28"
+    },
+    {
+      "name": "需求 1: KPI / chart / table 节点渲染为 Input",
+      "pass": true,
+      "detail": "count=164"
+    },
+    {
+      "name": "需求 1: 找到 KPI 数值 input (value=42)",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "需求 1: KPI 数值 42→99 修改后页面 (编辑模式) 渲染 99",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "需求 1: 改 h2 标题后 localStorage 草稿已落盘",
+      "pass": true,
+      "detail": "[{\"k\":\"ledger_demo_report_v34_draft::user-000::platform_admin\",\"hasH2Edit\":true}]"
+    },
+    {
+      "name": "需求 1: 找到 表 4-1 表头 input (监控维度)",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "需求 1: 找到 矩阵行名 input",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "需求 1: 矩阵行名原值是\"影像报告解读助手\"或其他智能体名",
+      "pass": true,
+      "detail": "value=影像报告解读助手"
+    },
+    {
+      "name": "需求 1: 改矩阵行名后 localStorage 落盘",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "需求 1: 改 KPI 数值后 localStorage 落盘",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "需求 1: 改表头后 localStorage 落盘",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "完成编辑后 KPI 新值 99 仍渲染",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "完成编辑后 h2 新标题仍渲染",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "完成编辑后 表头新文字仍渲染",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "完成编辑后 矩阵新行名仍渲染",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "导出下拉含 PDF 项",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "PDF 导出文件名后缀 .pdf",
+      "pass": true,
+      "detail": "全院智能体运行管理情况报告_2026-07-06.pdf"
+    },
+    {
+      "name": "PDF 文件 size > 50KB",
+      "pass": true,
+      "detail": "size=1673962"
+    }
+  ],
+  "passed": 21,
+  "failed": 0,
+  "total": 21
+}

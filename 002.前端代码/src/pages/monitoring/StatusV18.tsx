@@ -251,7 +251,7 @@ const StatusV18 = () => {
             <Card bordered={false} styles={{ body: { padding: 20 } }}>
               <Space direction="vertical" size={6}>
                 <Space><Text>平均故障恢复时间</Text>{liveBadge}</Space>
-                <Text strong style={{ fontSize: 34, color: '#52B788' }}>{kpi.mttr}</Text>
+                <Text strong style={{ fontSize: 34, color: '#1677FF' }}>{kpi.mttr}</Text>
                 <Text type="secondary">MTTR · 从故障发生到恢复的平均耗时</Text>
               </Space>
             </Card>
@@ -373,7 +373,7 @@ const StatusV18 = () => {
                                   width: 10,
                                   height: 10,
                                   borderRadius: 2,
-                                  background: STATUS_COLOR_MAP[d.type] || '#52B788',
+                                  background: STATUS_COLOR_MAP[d.type] || '#1677FF',
                                 }}
                               />
                               <span style={{ fontSize: 13, color: '#595959' }}>{d.type}</span>
@@ -385,7 +385,7 @@ const StatusV18 = () => {
                           <Progress
                             percent={Number(pct)}
                             showInfo={false}
-                            strokeColor={STATUS_COLOR_MAP[d.type] || '#52B788'}
+                            strokeColor={STATUS_COLOR_MAP[d.type] || '#1677FF'}
                             size="small"
                           />
                         </div>

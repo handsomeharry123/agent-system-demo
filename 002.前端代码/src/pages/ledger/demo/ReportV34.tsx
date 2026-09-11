@@ -105,7 +105,7 @@ const MiniBar: React.FC<{ data: Array<{ name: string; value: number }> }> = ({ d
         const w = barW * 0.64;
         return (
           <g key={d.name}>
-            <rect x={x} y={pad.top + innerH - h} width={w} height={h} fill="#52B788" rx={2} />
+            <rect x={x} y={pad.top + innerH - h} width={w} height={h} fill="#1677FF" rx={2} />
             <text x={x + w / 2} y={pad.top + innerH - h - 4} fontSize={10} fill="#262626" textAnchor="middle">
               {d.value}
             </text>
@@ -145,8 +145,8 @@ const MiniLine: React.FC<{ data: Array<{ name: string; value: number }> }> = ({ 
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
       <defs>
         <linearGradient id="line-grad-r34" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#52B788" stopOpacity={0.3} />
-          <stop offset="100%" stopColor="#52B788" stopOpacity={0.02} />
+          <stop offset="0%" stopColor="#1677FF" stopOpacity={0.3} />
+          <stop offset="100%" stopColor="#1677FF" stopOpacity={0.02} />
         </linearGradient>
       </defs>
       {[0, 0.25, 0.5, 0.75, 1].map((p) => {
@@ -161,10 +161,10 @@ const MiniLine: React.FC<{ data: Array<{ name: string; value: number }> }> = ({ 
         );
       })}
       <path d={areaD} fill="url(#line-grad-r34)" />
-      <path d={pathD} fill="none" stroke="#52B788" strokeWidth={2} />
+      <path d={pathD} fill="none" stroke="#1677FF" strokeWidth={2} />
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#52B788" strokeWidth={2} />
+          <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#1677FF" strokeWidth={2} />
           <text x={p.x} y={p.y - 8} fontSize={10} fill="#262626" textAnchor="middle">
             {p.value}
           </text>
@@ -179,7 +179,7 @@ const MiniLine: React.FC<{ data: Array<{ name: string; value: number }> }> = ({ 
 
 const MiniPie: React.FC<{ data: Array<{ name: string; value: number }> }> = ({ data }) => {
   const total = data.reduce((s, d) => s + d.value, 0);
-  const palette = ['#52B788', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
+  const palette = ['#1677FF', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
   let cursor = -Math.PI / 2;
   const cx = 90;
   const cy = 90;
@@ -299,13 +299,13 @@ const MatrixHeatmap: React.FC<{
         >
           <thead>
             <tr>
-              <th style={{ width: labelW, background: '#F3FBF6', border: '1px solid #D9D9D9', padding: 6, color: '#52B788' }}>
+              <th style={{ width: labelW, background: '#F0F5FF', border: '1px solid #D9D9D9', padding: 6, color: '#1677FF' }}>
                 智能体 \ 系统
               </th>
               {cols.map((c, j) => (
                 <th
                   key={`h-${j}`}
-                  style={{ background: '#F3FBF6', border: '1px solid #D9D9D9', padding: 4, color: '#52B788' }}
+                  style={{ background: '#F0F5FF', border: '1px solid #D9D9D9', padding: 4, color: '#1677FF' }}
                 >
                   <Input
                     size="small"
@@ -320,7 +320,7 @@ const MatrixHeatmap: React.FC<{
           <tbody>
             {rows.map((rname, i) => (
               <tr key={`r-${i}`}>
-                <td style={{ background: '#F3FBF6', border: '1px solid #D9D9D9', padding: 4, color: '#52B788' }}>
+                <td style={{ background: '#F0F5FF', border: '1px solid #D9D9D9', padding: 4, color: '#1677FF' }}>
                   <Input
                     size="small"
                     value={rname}
@@ -515,9 +515,9 @@ const NodeRenderer: React.FC<{
         style={{
           textAlign: 'center',
           padding: '64px 32px 56px',
-          borderBottom: '3px double #52B788',
+          borderBottom: '3px double #1677FF',
           marginBottom: 24,
-          background: 'linear-gradient(180deg, #F3FBF6 0%, #ffffff 100%)',
+          background: 'linear-gradient(180deg, #F0F5FF 0%, #ffffff 100%)',
         }}
       >
         <EditableText
@@ -532,8 +532,8 @@ const NodeRenderer: React.FC<{
             editable={editable}
             value={c.reportTitle}
             onChange={(v) => patch({ cover: { ...c, reportTitle: v } })}
-            textStyle={{ fontSize: 32, color: '#52B788', fontWeight: 600, lineHeight: 1.2 }}
-            inputProps={{ size: 'large', style: { maxWidth: 520, fontSize: 24, textAlign: 'center', color: '#52B788' } as React.ComponentProps<typeof Input>['style'] }}
+            textStyle={{ fontSize: 32, color: '#1677FF', fontWeight: 600, lineHeight: 1.2 }}
+            inputProps={{ size: 'large', style: { maxWidth: 520, fontSize: 24, textAlign: 'center', color: '#1677FF' } as React.ComponentProps<typeof Input>['style'] }}
           />
         </div>
         <Space direction="vertical" size={6} style={{ fontSize: 14, color: '#262626', alignItems: 'center' }}>
@@ -576,7 +576,7 @@ const NodeRenderer: React.FC<{
         style={{ marginBottom: 24, border: '1px solid #D6E4FF' }}
         bodyStyle={{ padding: '16px 24px' }}
       >
-        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#52B788' }}>
+        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#1677FF' }}>
           目  录
         </Title>
         <div style={{ columns: 2, columnGap: 24 }}>
@@ -617,7 +617,7 @@ const NodeRenderer: React.FC<{
           style={{
             marginTop: 0,
             marginBottom: 12,
-            borderBottom: '2px solid #52B788',
+            borderBottom: '2px solid #1677FF',
             paddingBottom: 6,
           }}
         >
@@ -625,8 +625,8 @@ const NodeRenderer: React.FC<{
             editable={editable}
             value={node.text || ''}
             onChange={(v) => onTextChange(node.id, v)}
-            textStyle={{ fontSize: 22, fontWeight: 600, color: '#52B788' }}
-            inputProps={{ size: 'large', style: { fontSize: 20, fontWeight: 600, color: '#52B788' } as React.ComponentProps<typeof Input>['style'] }}
+            textStyle={{ fontSize: 22, fontWeight: 600, color: '#1677FF' }}
+            inputProps={{ size: 'large', style: { fontSize: 20, fontWeight: 600, color: '#1677FF' } as React.ComponentProps<typeof Input>['style'] }}
           />
         </div>
       </div>
@@ -640,8 +640,8 @@ const NodeRenderer: React.FC<{
             editable={editable}
             value={node.text || ''}
             onChange={(v) => onTextChange(node.id, v)}
-            textStyle={{ fontSize: 15, fontWeight: 600, color: '#52B788' }}
-            inputProps={{ size: 'small', style: { fontSize: 15, fontWeight: 600, color: '#52B788' } as React.ComponentProps<typeof Input>['style'] }}
+            textStyle={{ fontSize: 15, fontWeight: 600, color: '#1677FF' }}
+            inputProps={{ size: 'small', style: { fontSize: 15, fontWeight: 600, color: '#1677FF' } as React.ComponentProps<typeof Input>['style'] }}
           />
         </div>
       </div>
@@ -690,7 +690,7 @@ const NodeRenderer: React.FC<{
                 style={{
                   fontSize: 24,
                   fontWeight: 700,
-                  color: k.color || '#52B788',
+                  color: k.color || '#1677FF',
                   marginTop: 4,
                   display: 'flex',
                   justifyContent: 'center',
@@ -783,11 +783,11 @@ const NodeRenderer: React.FC<{
                 <th
                   key={`${h}-${ci}`}
                   style={{
-                    background: '#F3FBF6',
+                    background: '#F0F5FF',
                     border: '1px solid #D9D9D9',
                     padding: 0,
                     textAlign: 'left',
-                    color: '#52B788',
+                    color: '#1677FF',
                     fontWeight: 600,
                   }}
                 >
@@ -891,13 +891,13 @@ const NodeRenderer: React.FC<{
         style={{
           marginTop: 32,
           padding: 20,
-          background: '#F3FBF6',
-          borderLeft: '4px solid #52B788',
+          background: '#F0F5FF',
+          borderLeft: '4px solid #1677FF',
           borderRadius: 4,
           scrollMarginTop: 16,
         }}
       >
-        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#52B788' }}>
+        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#1677FF' }}>
           附:编制说明
         </Title>
         <Paragraph style={{ fontSize: 13, lineHeight: 1.85, marginBottom: 6 }}>
@@ -1067,11 +1067,11 @@ const ReportV34: React.FC = () => {
           .replace(/"/g, '&quot;');
       const kpiHtml = (kpis: NonNullable<ReportNode['kpis']>) => `
         <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;">
-          <tr>${kpis.map((k) => `<th style="background:#F3FBF6;color:#52B788;">${esc(k.label)}</th>`).join('')}</tr>
+          <tr>${kpis.map((k) => `<th style="background:#F0F5FF;color:#1677FF;">${esc(k.label)}</th>`).join('')}</tr>
           <tr>${kpis
             .map(
               (k) =>
-                `<td style="text-align:center;color:${esc(k.color || '#52B788')};font-weight:600;font-size:18px;">${esc(k.value)}${
+                `<td style="text-align:center;color:${esc(k.color || '#1677FF')};font-weight:600;font-size:18px;">${esc(k.value)}${
                   k.unit ? `<span style="font-size:12px;color:#8C8C8C;font-weight:400;">&nbsp;${esc(k.unit)}</span>` : ''
                 }</td>`,
             )
@@ -1080,7 +1080,7 @@ const ReportV34: React.FC = () => {
       const tableHtml = (t: NonNullable<ReportNode['table']>) => `
         <h4>${esc(t.title)}</h4>
         <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;">
-          <tr>${t.headers.map((h) => `<th style="background:#F3FBF6;color:#52B788;">${esc(h)}</th>`).join('')}</tr>
+          <tr>${t.headers.map((h) => `<th style="background:#F0F5FF;color:#1677FF;">${esc(h)}</th>`).join('')}</tr>
           ${t.rows
             .map(
               (r) =>
@@ -1095,9 +1095,9 @@ const ReportV34: React.FC = () => {
             case 'cover': {
               const c = n.cover!;
               return `
-                <div style="text-align:center;padding:48px 0;border-bottom:2px double #52B788;">
+                <div style="text-align:center;padding:48px 0;border-bottom:2px double #1677FF;">
                   <div style="color:#8C8C8C;letter-spacing:4px;">${esc(c.hospital)}</div>
-                  <h1 style="color:#52B788;margin:24px 0;">${esc(c.reportTitle)}</h1>
+                  <h1 style="color:#1677FF;margin:24px 0;">${esc(c.reportTitle)}</h1>
                   <p>${esc(c.deptName)}<br/>${esc(c.period)}<br/>${esc(c.generatedBy)}<br/>${esc(c.reportDate)}</p>
                   <p style="background:#FFF7E6;padding:10px;border:1px solid #FFD591;color:#874D00;text-align:left;">${esc(c.templateNote)}</p>
                 </div>`;
@@ -1109,9 +1109,9 @@ const ReportV34: React.FC = () => {
               return `<h3>目  录</h3><ol>${items}</ol>`;
             }
             case 'h2':
-              return `<h2 style="border-bottom:2px solid #52B788;padding-bottom:4px;">${esc(n.text)}</h2>`;
+              return `<h2 style="border-bottom:2px solid #1677FF;padding-bottom:4px;">${esc(n.text)}</h2>`;
             case 'h3':
-              return `<h3 style="color:#52B788;">${esc(n.text)}</h3>`;
+              return `<h3 style="color:#1677FF;">${esc(n.text)}</h3>`;
             case 'p':
               return `<p>${esc(n.text)}</p>`;
             case 'kpi':
@@ -1174,7 +1174,7 @@ const ReportV34: React.FC = () => {
       {
         key: 'word',
         label: exporting ? '导出中…' : '导出 Word (.doc)',
-        icon: <FileWordOutlined style={{ color: '#52B788' }} />,
+        icon: <FileWordOutlined style={{ color: '#1677FF' }} />,
         disabled: exporting,
       },
       {
@@ -1271,7 +1271,7 @@ const ReportV34: React.FC = () => {
             style={{
               marginTop: 32,
               paddingTop: 16,
-              borderTop: '2px solid #52B788',
+              borderTop: '2px solid #1677FF',
               textAlign: 'right',
               color: '#8C8C8C',
               fontSize: 12,

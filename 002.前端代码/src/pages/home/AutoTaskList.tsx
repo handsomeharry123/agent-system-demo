@@ -366,14 +366,14 @@ const AutoTaskList = ({
                   <FilterOutlined
                     style={{
                       fontSize: 20,
-                      color: runFilter === 'all' ? '#595959' : '#52B788',
+                      color: runFilter === 'all' ? '#595959' : '#1677FF',
                     }}
                   />
                 }
                 style={{
                   width: 40,
                   height: 40,
-                  background: runFilter === 'all' ? undefined : '#EAF7EF',
+                  background: runFilter === 'all' ? undefined : '#E6F4FF',
                 }}
               />
             </Dropdown>

@@ -400,7 +400,7 @@ export const AgentFloatHost: React.FC = () => {
         //   - sit: 收起对话后 0.7s 内播放挫手→坐下→回站
         //   - 与 hover transform 互斥 (bounce 优先于 hover)
         className={animClass}
-        aria-label="唤起医小知(台账助手)"
+        aria-label="唤起医小管(台账助手)"
         role="button"
         style={{
           position: 'fixed',
@@ -445,7 +445,7 @@ export const AgentFloatHost: React.FC = () => {
               pointerEvents: 'none',
             }}
           >
-            医小知 · 台账助手
+            医小管 · 台账助手
           </div>
         )}
       </div>

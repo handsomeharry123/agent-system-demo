@@ -49,8 +49,8 @@ const NewUserConsole = ({ kind }: NewUserConsoleProps) => {
               borderRadius: 20,
               display: 'grid',
               placeItems: 'center',
-              color: '#52B788',
-              background: 'linear-gradient(135deg, #EAF7EF 0%, #F3FBF6 100%)',
+              color: '#1677ff',
+              background: 'linear-gradient(135deg, #e6f4ff 0%, #f0f5ff 100%)',
               fontSize: 34,
             }}
           >

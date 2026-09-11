@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+.DS_Store
+*.log
+.playwright-screenshots/
+.verify-downloads/
+tmp/pdfs/.venv/
+__pycache__/
+*.pyc

@@ -1,0 +1,72 @@
+{
+  "url": "http://localhost:3001/app/ledger/detail/AGT-2024-001",
+  "trendTextCount": 3,
+  "trendTexts": [
+    {
+      "x": 758,
+      "y": 873,
+      "width": 126,
+      "height": 18,
+      "text": "多次评测得分趋势"
+    },
+    {
+      "x": 780,
+      "y": 873,
+      "width": 104,
+      "height": 18,
+      "text": "多次评测得分趋势"
+    },
+    {
+      "x": 780,
+      "y": 874,
+      "width": 104,
+      "height": 16,
+      "text": "多次评测得分趋势"
+    }
+  ],
+  "trendPanels": [
+    {
+      "x": 262,
+      "y": 154,
+      "width": 1636,
+      "height": 840,
+      "text": "基本信息风险分级智能体编号AskMed-INFO-3.0 智能体名称互联网医院智能问诊助手版本3.0风险分级中度关注运行状态在线所属科室INFO · 信息中心诊"
+    },
+    {
+      "x": 739,
+      "y": 154,
+      "width": 682,
+      "height": 840,
+      "text": "关联资源拓扑地图· 互联网医院智能问诊助手 (AskMed-INFO-3.0)业务域 4系统 5接口/数据 9已连接 14异常 4L1 业务域L2 系统/平台L"
+    },
+    {
+      "x": 745,
+      "y": 862,
+      "width": 670,
+      "height": 132,
+      "text": "多次评测得分趋势EVAL-2024-001"
+    }
+  ],
+  "topoText": {
+    "x": 782,
+    "y": 167,
+    "width": 72,
+    "height": 40,
+    "text": "关联资源拓扑地图"
+  },
+  "evalText": {
+    "x": 281,
+    "y": 677,
+    "width": 84,
+    "height": 21,
+    "text": "准入评测"
+  },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "bodyScroll": {
+    "width": 1920,
+    "height": 1072
+  }
+}

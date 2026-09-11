@@ -2,7 +2,7 @@ import type { LedgerAgent } from '../mock/ledger';
 
 const STORAGE_PREFIX = 'ledger-agent-avatar:';
 const PALETTES = [
-  ['#52B788', '#36cfc9'],
+  ['#1677ff', '#36cfc9'],
   ['#722ed1', '#2f54eb'],
   ['#08979c', '#52c41a'],
   ['#d46b08', '#fa8c16'],
@@ -59,7 +59,7 @@ export const generateAgentAvatar = (agent: Pick<LedgerAgent, 'name' | 'descripti
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
         <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%">
-          <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#52B788" flood-opacity=".2"/>
+          <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#1677ff" flood-opacity=".2"/>
         </filter>
       </defs>
       <g filter="url(#shadow)">

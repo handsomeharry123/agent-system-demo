@@ -225,7 +225,7 @@ const buildApplicationHtml = (record: ProjectRecord) => `
   <div style="width:720px;padding:36px 44px;box-sizing:border-box;background:#fff;color:#1f1f1f;font-family:'Microsoft YaHei','PingFang SC',sans-serif;">
     <h1 style="margin:0 0 8px;text-align:center;font-size:24px;">项目申报书</h1>
     <p style="margin:0 0 28px;text-align:center;color:#888;">${escapeHtml(record.id)}</p>
-    <h2 style="font-size:16px;border-left:4px solid #52B788;padding-left:8px;">一、项目基本信息</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677ff;padding-left:8px;">一、项目基本信息</h2>
     <table border="1" cellpadding="8" cellspacing="0" bordercolor="#e5e5e5" style="width:100%;border-collapse:collapse;font-size:14px;">
       <tr><td style="width:140px;background:#fafafa;">项目名称</td><td>${escapeHtml(record.name)}</td></tr>
       <tr><td style="background:#fafafa;">申报科室</td><td>${escapeHtml(record.department)}</td></tr>
@@ -235,14 +235,14 @@ const buildApplicationHtml = (record: ProjectRecord) => `
       <tr><td style="background:#fafafa;">项目联系人</td><td>${escapeHtml(record.contact)}（${escapeHtml(record.phone)}）</td></tr>
       <tr><td style="background:#fafafa;">希望获取的支持</td><td>${escapeHtml(record.supports.join('、'))}</td></tr>
     </table>
-    <h2 style="margin-top:24px;font-size:16px;border-left:4px solid #52B788;padding-left:8px;">二、项目内容</h2>
+    <h2 style="margin-top:24px;font-size:16px;border-left:4px solid #1677ff;padding-left:8px;">二、项目内容</h2>
     <p><b>项目概述：</b>${escapeHtml(record.overview)}</p>
     <p><b>痛点问题：</b>${escapeHtml(record.painPoints)}</p>
     <p><b>核心技术：</b>${escapeHtml(record.technologies.join('、'))}</p>
     <p><b>使用的大模型：</b>${escapeHtml(record.models.join('、'))}</p>
     <p><b>项目完成形式：</b>${escapeHtml(record.deliverables)}</p>
     <p><b>考核指标：</b>${escapeHtml(record.indicators)}</p>
-    <h2 style="margin-top:24px;font-size:16px;border-left:4px solid #52B788;padding-left:8px;">三、项目经费预算</h2>
+    <h2 style="margin-top:24px;font-size:16px;border-left:4px solid #1677ff;padding-left:8px;">三、项目经费预算</h2>
     <p><b>经费合计：</b>${escapeHtml(record.totalBudget)} 万元</p>
     <p><b>来源明细：</b>${escapeHtml(record.fundingDetail)}</p>
     <p><b>使用明细：</b>${escapeHtml(record.spendingDetail)}</p>
@@ -891,7 +891,7 @@ export function ProjectApplicationForm() {
         content: `${materialLabel ? `已自动归入“${materialLabel}”，` : ''}已从文件正文识别并预填 ${filled.length} 个字段。请勾选需要采纳的字段后确认。`,
         payload: { fileName: file.name, fileSize: file.size, detectedFields: fields },
       });
-      message.success(`${materialLabel ? `文件已归入“${materialLabel}”，` : ''}医小知已从正文识别并预填 ${filled.length} 个字段`);
+      message.success(`${materialLabel ? `文件已归入“${materialLabel}”，` : ''}医小管已从正文识别并预填 ${filled.length} 个字段`);
     } catch (error) {
       const materialLabel = attachToForm
         ? attachAssistantFile(file, classifyProjectMaterial(file.name))
@@ -1246,7 +1246,7 @@ function RecordContent({ record }: { record: ProjectRecord }) {
           return (
             <Space key={`${file}-${index}`}>
               {isApplication
-                ? <FileWordOutlined style={{ color: '#52B788' }} />
+                ? <FileWordOutlined style={{ color: '#1677ff' }} />
                 : <FilePdfOutlined style={{ color: '#ff4d4f' }} />}
               <Button
                 type="link"

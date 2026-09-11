@@ -29,7 +29,7 @@ const { TextArea } = Input;
 // ============ Node Type Config ============
 const nodeTypeConfig: Record<NodeType, { label: string; icon: React.ReactNode; color: string; bgColor: string; description: string }> = {
   start: { label: '开始节点', icon: <PlayCircleOutlined />, color: '#1890FF', bgColor: '#E6F7FF', description: '流程入口，定义开场白和全局变量' },
-  input: { label: '输入节点', icon: <InfoCircleOutlined />, color: '#52B788', bgColor: '#EAF7EF', description: '等待用户输入（对话框/表单）' },
+  input: { label: '输入节点', icon: <InfoCircleOutlined />, color: '#1677FF', bgColor: '#E6F4FF', description: '等待用户输入（对话框/表单）' },
   output: { label: '输出节点', icon: <CheckCircleOutlined />, color: '#52C41A', bgColor: '#F6FFED', description: '向用户展示处理结果' },
   agent: { label: 'Agent节点', icon: <RobotOutlined />, color: '#722ED1', bgColor: '#F9F0FF', description: '调用已注册智能体' },
   condition: { label: '条件分支', icon: <NodeIndexOutlined />, color: '#FA8C16', bgColor: '#FFF7E6', description: '根据条件分流' },
@@ -1749,7 +1749,7 @@ const FlowEditor = () => {
                   <path
                     d={getConnectionPath(conn)}
                     fill="none"
-                    stroke={isSelected ? '#52B788' : '#1890FF'}
+                    stroke={isSelected ? '#1677FF' : '#1890FF'}
                     strokeWidth={isSelected ? 3 : 2}
                     strokeDasharray="8,4"
                     marker-end="url(#arrowhead)"
@@ -1849,7 +1849,7 @@ const FlowEditor = () => {
                   top: node.y,
                   width: nodeWidth,
                   background: config.bgColor,
-                  border: `2px solid ${isError ? '#FF4D4F' : isSelected ? '#52B788' : isDebugging ? '#52c41a' : config.color}`,
+                  border: `2px solid ${isError ? '#FF4D4F' : isSelected ? '#1677FF' : isDebugging ? '#52c41a' : config.color}`,
                   borderRadius: 8,
                   cursor: draggingNodeId === node.id ? 'grabbing' : 'grab',
                   boxShadow: isSelected ? '0 4px 12px rgba(24,144,255,0.3)' : (draggingNodeId === node.id ? '0 8px 16px rgba(0,0,0,0.2)' : 'none'),

@@ -32,7 +32,7 @@ const { Text } = Typography;
 
 // 最近使用场景数据
 const recentlyUsedScenes = [
-  { id: 1, name: '门诊智能分诊', agent: '智能导诊系统', icon: <MedicineBoxOutlined />, color: '#52B788', description: '根据主诉智能分诊至对应科室' },
+  { id: 1, name: '门诊智能分诊', agent: '智能导诊系统', icon: <MedicineBoxOutlined />, color: '#1677FF', description: '根据主诉智能分诊至对应科室' },
   { id: 2, name: '处方审核', agent: '用药安全系统', icon: <SafetyOutlined />, color: '#52C41A', description: '实时审核处方用药安全' },
   { id: 3, name: '病历生成', agent: '病历智能生成', icon: <FileTextOutlined />, color: '#FA8C16', description: '自动生成门诊病历文档' },
   { id: 4, name: '影像分析', agent: 'CT影像分析', icon: <CameraOutlined />, color: '#722ED1', description: '胸部CT智能影像分析' },
@@ -42,15 +42,15 @@ const recentlyUsedScenes = [
 
 // 我的收藏场景数据
 const favoriteScenes = [
-  { id: 101, name: '门诊病历', agent: '病历智能生成系统', icon: <FileTextOutlined />, color: '#52B788', description: '自动生成门诊病历文档' },
+  { id: 101, name: '门诊病历', agent: '病历智能生成系统', icon: <FileTextOutlined />, color: '#1677FF', description: '自动生成门诊病历文档' },
   { id: 102, name: 'CT分析', agent: 'CT影像分析平台', icon: <CameraOutlined />, color: '#722ED1', description: '胸部CT智能影像分析' },
 ];
 
 // 诊疗场景数据
 const clinicalScenes = [
-  { id: 1, name: '门诊分诊', type: '门诊', stage: '分诊', agent: '智能导诊系统', icon: <MedicineBoxOutlined />, color: '#52B788', description: '根据主诉智能分诊至对应科室' },
-  { id: 2, name: '门诊病历', type: '门诊', stage: '病历', agent: '病历智能生成系统', icon: <FileTextOutlined />, color: '#52B788', description: '自动生成门诊病历文档' },
-  { id: 3, name: '处方审核', type: '门诊', stage: '处方', agent: '用药安全系统', icon: <SafetyOutlined />, color: '#52B788', description: '实时审核处方用药安全' },
+  { id: 1, name: '门诊分诊', type: '门诊', stage: '分诊', agent: '智能导诊系统', icon: <MedicineBoxOutlined />, color: '#1677FF', description: '根据主诉智能分诊至对应科室' },
+  { id: 2, name: '门诊病历', type: '门诊', stage: '病历', agent: '病历智能生成系统', icon: <FileTextOutlined />, color: '#1677FF', description: '自动生成门诊病历文档' },
+  { id: 3, name: '处方审核', type: '门诊', stage: '处方', agent: '用药安全系统', icon: <SafetyOutlined />, color: '#1677FF', description: '实时审核处方用药安全' },
   { id: 4, name: '急诊分诊', type: '急诊', stage: '分诊', agent: '智能导诊系统', icon: <FireOutlined />, color: '#FF4D4F', description: '急诊患者快速分诊评估' },
   { id: 5, name: '急诊检查', type: '急诊', stage: '检查', agent: 'CT影像分析平台', icon: <CameraOutlined />, color: '#FF4D4F', description: '快速影像检查与诊断' },
   { id: 6, name: '住院评估', type: '住院', stage: '评估', agent: '心电诊断系统', icon: <MedicineBoxOutlined />, color: '#52C41A', description: '入院综合评估与风险识别' },

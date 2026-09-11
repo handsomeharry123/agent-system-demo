@@ -124,7 +124,9 @@ export const DemoSettingsProvider = ({ children }: { children: ReactNode }) => {
 
   // 启动时如果 localStorage 里的角色与 currentUser 不一致，校正 currentUser
   useEffect(() => {
-    if (currentUser && !currentUser.roles.includes(settings.demoRole as UserRole)) {
+    // 真实登录用户的角色和权限必须以后端 /auth/me 为准。
+    // 演示切换只服务于无 token 的旧 mock 验证脚本，避免把登录用户替换为 mock 用户。
+    if (!localStorage.getItem('auth_token') && currentUser && !currentUser.roles.includes(settings.demoRole as UserRole)) {
       switchRole(settings.demoRole as UserRole);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,7 +140,7 @@ export const DemoSettingsProvider = ({ children }: { children: ReactNode }) => {
   const setDemoRole = useCallback(
     (role: DemoRole) => {
       setSettings((prev) => ({ ...prev, demoRole: role }));
-      switchRole(role as UserRole);
+      if (!localStorage.getItem('auth_token')) switchRole(role as UserRole);
     },
     [switchRole],
   );

@@ -1,0 +1,91 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for src/pages/system-config/ModelForm.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../../prettify.css" />
+    <link rel="stylesheet" href="../../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/pages/system-config</a> ModelForm.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>0/2</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>0/1</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">0% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>0/2</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import{useEffect,useState}from'react';import{Alert,Button,Card,Form,Input,Modal,Select,Space,Spin,message}from'antd';import{ApiOutlined}from'@ant-design/icons';import{useNavigate,useParams}from'react-router-dom';import PageHeader from'../../components/PageHeader';import{modelApi,type ModelPayload}from'../../services/modelApi';</span></span></span>
+<span class="cstat-no" title="statement not covered" >export default function ModelForm(){const nav=useNavigate();const{id}=useParams();const editing=Boolean(id);const[connected,setConnected]=useState(false);const[testing,setTesting]=useState(false);const[loading,setLoading]=useState(false);const[saving,setSaving]=useState(false);const[form]=Form.useForm&lt;ModelPayload&gt;();useEffect(()=&gt;{if(!id)return;let active=true;setLoading(true);modelApi.detail(id).then(data=&gt;{if(active)form.setFieldsValue(data)}).catch(e=&gt;message.error(e instanceof Error?e.message:'模型详情加载失败')).finally(()=&gt;{if(active)setLoading(false)});return()=&gt;{active=false}},[form,id]);const test=async()=&gt;{try{const values=await form.validateFields(['name','version','deployment','apiUrl','apiKey','phone','remark']);setTesting(true);const result=await modelApi.test({...values,id});setConnected(true);Modal.success({title:'测试验证正常',content:`API 地址、鉴权信息与模型响应均验证通过，响应耗时 ${result.latencyMs}ms。`})}catch(e){if(e instanceof Error)Modal.error({title:'测试验证异常',content:e.message});else message.warning('请先完善必填信息')}finally{setTesting(false)}};const submit=()=&gt;Modal.confirm({title:'确认是否提交？',content:'提交后该模型将接入平台统一模型能力。',okText:'确认提交',cancelText:'取消',onOk:async()=&gt;{const values=await form.validateFields();setSaving(true);try{if(id)await modelApi.update(id,{...values,connected:true});else await modelApi.create({...values,connected:true});message.success('提交成功');nav('/app/system-config/models')}catch(e){message.error(e instanceof Error?e.message:'提交失败');throw e}finally{setSaving(false)}}});return &lt;div style={{padding:24,background:'#f5f7fa',minHeight:'100%'}}&gt;&lt;PageHeader title={editing?'编辑模型配置':'新增模型配置'} showBack onBack={()=&gt;nav('/app/system-config/models')} breadcrumb={[{path:'/app/system-config/models',breadcrumbName:'模型配置'},{path:'',breadcrumbName:editing?'编辑模型':'新增模型'}]}/&gt;&lt;Card style={{marginTop:16}}&gt;&lt;Spin spinning={loading}&gt;&lt;Form form={form} layout="vertical" style={{maxWidth:760}} initialValues={{deployment:'本地化部署'}} onValuesChange={()=&gt;setConnected(false)}&gt;&lt;Form.Item name="name" label="模型名称" rules={[{required:true,message:'请输入模型名称'}]}&gt;&lt;Input placeholder="例如：DeepSeek-R1"/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="version" label="模型版本号" rules={[{required:true,message:'请输入模型版本号'}]}&gt;&lt;Input placeholder="例如：V3.1"/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="deployment" label="部署方式" rules={[{required:true}]}&gt;&lt;Select options={['本地化部署','云端部署','混合部署'].map(value=&gt;({value,label:value}))}/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="apiUrl" label="API地址" rules={[{required:true,message:'请输入 API 地址'},{type:'url',message:'请输入正确的 URL'}]}&gt;&lt;Input placeholder="https://example.com/v1"/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="apiKey" label="API key" rules={[{required:true,message:'请输入 API key'}]}&gt;&lt;Input.Password placeholder="请输入 API key"/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="provider" label="提供方"&gt;&lt;Input/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="phone" label="联系方式" rules={[{pattern:/^1\d{10}$/,message:'请输入正确的 11 位手机号'}]}&gt;&lt;Input maxLength={11}/&gt;&lt;/Form.Item&gt;&lt;Form.Item name="remark" label="其他说明"&gt;&lt;Input.TextArea rows={4} maxLength={500} showCount/&gt;&lt;/Form.Item&gt;{connected&amp;&amp;&lt;Alert showIcon type="success" message="联通验证已通过，可以提交" style={{marginBottom:20}}/&gt;}&lt;Space&gt;&lt;Button icon={&lt;ApiOutlined/&gt;} loading={testing} onClick={()=&gt;void test()}&gt;测试联通&lt;/Button&gt;&lt;Button type="primary" loading={saving} disabled={!connected} onClick={submit}&gt;提交&lt;/Button&gt;&lt;Button onClick={()=&gt;nav('/app/system-config/models')}&gt;返回&lt;/Button&gt;&lt;/Space&gt;&lt;/Form&gt;&lt;/Spin&gt;&lt;/Card&gt;&lt;/div&gt;}</span>
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-02T07:27:25.109Z
+            </div>
+        <script src="../../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../../sorter.js"></script>
+        <script src="../../../block-navigation.js"></script>
+    </body>
+</html>
+    

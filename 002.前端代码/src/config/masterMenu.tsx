@@ -16,6 +16,7 @@ import {
   ProjectOutlined,
 } from '@ant-design/icons';
 import type { ReactNode } from 'react';
+import { mvpFeatures, mvpModuleKeys, mvpSubPageKeys } from './mvpFeatures';
 
 /**
  * 一级模块的单一配置源
@@ -80,7 +81,7 @@ export const masterMenu: MasterModule[] = [
   },
   {
     key: 'assistant',
-    name: '医小知',
+    name: '医小管',
     path: '/app/home/overview',
     icon: <RobotOutlined />,
     defaultVisible: true,
@@ -243,15 +244,12 @@ export const masterMenu: MasterModule[] = [
   {
     key: 'audit',
     name: '审计中心',
-    path: '/app/audit/project',
+    path: '/app/audit/logs',
     icon: <AuditOutlined />,
     defaultVisible: true,
     defaultRoleVisible: 'both',
-    children: [
-      { key: 'audit:project', name: '项目审计', path: '/app/audit/project', defaultVisible: true },
-      { key: 'audit:behavior', name: '智能体行为审计', path: '/app/audit/behavior', defaultVisible: true },
-      { key: 'audit:logs', name: '操作日志', path: '/app/audit/logs', defaultVisible: true },
-    ],
+    // MVP 与「智能体接入中心」一致：一级入口直达业务页，不展示二级菜单。
+    // 项目审计和智能体行为审计仅从 MVP 导航隐藏，页面代码仍保留便于后续恢复。
   },
   // 环境配置（V1.1）：沙盒/正式两套运行环境的参数配置 + 环境内智能体；仅平台管理员
   {
@@ -299,6 +297,73 @@ export interface ResolvedModule {
 
 export type MenuRoleKey = 'itAdmin' | 'itUser' | 'hospitalLeader';
 
+/**
+ * 菜单 key 与功能权限中心 permission_code 的映射。
+ * 两套 key 的命名早于彼此存在，不能直接用菜单 key 做前缀判断。
+ */
+const MODULE_PERMISSION_KEYS: Record<ModuleKey, string> = {
+  home: 'home',
+  assistant: 'assistant',
+  workbench: 'workbench',
+  'agent-needs': 'needs',
+  'project-application': 'project',
+  'agent-center': 'access',
+  ledger: 'ledger',
+  'resource-center': 'resource',
+  evaluation: 'evaluation',
+  orchestration: 'orchestration',
+  monitoring: 'monitor',
+  security: 'security',
+  'data-asset': 'data-asset',
+  environment: 'environment',
+  'user-center': 'user',
+  audit: 'audit',
+  'system-config': 'system',
+};
+
+const SUB_PAGE_PERMISSION_KEYS: Record<string, string> = {
+  'evaluation:tasks': 'evaluation:task',
+  'evaluation:indicators': 'evaluation:index',
+  'evaluation:datasets': 'evaluation:data',
+  'monitoring:overview': 'monitor:overview',
+  'monitoring:business': 'monitor:business',
+  'monitoring:status': 'monitor:status',
+  'monitoring:cost': 'monitor:cost',
+  'monitoring:security': 'monitor:security',
+  'monitoring:alert-rules': 'monitor:rules',
+  'monitoring:alert-events': 'monitor:event',
+  'user-center:list': 'user:list',
+  'user-center:roles': 'user:role',
+  'user-center:function': 'user:function',
+  'audit:project': 'audit:project',
+  'audit:behavior': 'audit:agent',
+  'audit:logs': 'audit:log',
+  'system-config:dictionaries': 'system:dict',
+  'system-config:models': 'system:model',
+  'system-config:evaluation-platforms': 'system:evaluation-platform',
+};
+
+const hasPermissionPrefix = (permissionCodes: string[], prefix: string): boolean =>
+  permissionCodes.some((code) => code === prefix || code.startsWith(`${prefix}:`));
+
+/** 功能权限配置是菜单展示的最终依据。 */
+export const hasMenuModulePermission = (
+  permissionCodes: string[] | undefined,
+  moduleKey: ModuleKey,
+): boolean => permissionCodes !== undefined && hasPermissionPrefix(
+  permissionCodes,
+  moduleKey === 'audit' && !mvpFeatures.auditProject ? 'audit:log' : MODULE_PERMISSION_KEYS[moduleKey],
+);
+
+/** 二级入口至少需要拥有该页面本身或其任一操作权限。 */
+export const hasMenuSubPagePermission = (
+  permissionCodes: string[] | undefined,
+  subPageKey: string,
+): boolean => permissionCodes !== undefined && hasPermissionPrefix(
+  permissionCodes,
+  SUB_PAGE_PERMISSION_KEYS[subPageKey] ?? subPageKey,
+);
+
 const HOSPITAL_LEADER_MODULES = new Set<ModuleKey>([
   'home',
   'assistant',
@@ -333,6 +398,9 @@ export const isModuleVisible = (
   visibleModules: Record<string, boolean>,
   demoRole: MenuRoleKey,
 ): boolean => {
+  if (!mvpModuleKeys.has(module.key)) return false;
+  // MVP 暂不提供医小管；忽略历史 localStorage 中可能残留的“显示”偏好。
+  if (module.key === 'assistant' && !mvpFeatures.medicalAssistant) return false;
   if (demoRole === 'hospitalLeader' && !isHospitalLeaderModule(module.key)) return false;
   // 角色基线：管理员专属模块对普通用户永远不可见
   if (module.defaultRoleVisible === 'itAdmin' && demoRole === 'itUser') return false;
@@ -350,6 +418,7 @@ export const isSubPageVisible = (
   visibleSubPages: Record<string, boolean>,
   demoRole: MenuRoleKey,
 ): boolean => {
+  if (!mvpSubPageKeys.has(sub.key)) return false;
   // 【关键】父模块不可见时，子页面一律不可见
   // 否则会出现"父未勾 + 子仍在 checkedKeys"→ antd Tree 联动模式下父又被标为已勾
   if (!isModuleVisible(module, visibleModules, demoRole)) return false;

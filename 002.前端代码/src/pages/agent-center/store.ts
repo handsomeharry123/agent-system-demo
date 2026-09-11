@@ -4,8 +4,9 @@
  * 注册管理列表页 / 新建注册页 / 编辑注册页 / 审核注册页 多页面共享同一份
  * AccessRecord 数据，因此使用 useSyncExternalStore 暴露读取 + 写操作。
  */
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import type { AccessRecord, TimelineNode } from './types';
+import { agentAccessApi } from '../../services/agentAccess';
 
 // ──────────────────────────────────────────────────────────────────────
 // 初始 mock 数据（与原 V2.1 单文件实现保持一致）
@@ -95,7 +96,7 @@ const initialRecords: AccessRecord[] = [
     lastEditTime: '2026-07-13 13:32:00',
     submitTime: '2026-07-13 13:32:00',
     auditHistory: [
-      { label: '智能识别接入材料', time: '2026-07-13 13:31:00', status: 'finish', operator: '医小知' },
+      { label: '智能识别接入材料', time: '2026-07-13 13:31:00', status: 'finish', operator: '医小管' },
       { label: '联通测试通过', time: '2026-07-13 13:31:20', status: 'finish', desc: '接口 320ms 返回 200' },
       { label: '提交注册申请', time: '2026-07-13 13:32:00', status: 'finish', operator: 'admin' },
     ],
@@ -493,7 +494,8 @@ const initialRecords: AccessRecord[] = [
 // ──────────────────────────────────────────────────────────────────────
 // 共享 store
 // ──────────────────────────────────────────────────────────────────────
-let recordsState: AccessRecord[] = [...initialRecords];
+let recordsState: AccessRecord[] = [];
+let loadingPromise: Promise<void> | null = null;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -504,20 +506,42 @@ const subscribe = (l: Listener) => {
 };
 const getRecords = () => recordsState;
 
-export const useAccessRecords = () =>
-  useSyncExternalStore(subscribe, getRecords, getRecords);
+export const reloadAccessRecords = async () => {
+  if (loadingPromise) return loadingPromise;
+  loadingPromise = agentAccessApi.list().then((records) => { recordsState = records; notify(); }).finally(() => { loadingPromise = null; });
+  return loadingPromise;
+};
+
+export const useAccessRecords = () => {
+  const records = useSyncExternalStore(subscribe, getRecords, getRecords);
+  useEffect(() => {
+    const reload = () => { void reloadAccessRecords().catch(() => undefined); };
+    const onVisibilityChange = () => { if (document.visibilityState === 'visible') reload(); };
+    reload();
+    window.addEventListener('focus', reload);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    const timer = window.setInterval(reload, 15_000);
+    return () => {
+      window.removeEventListener('focus', reload);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.clearInterval(timer);
+    };
+  }, []);
+  return records;
+};
 
 /** 取出一条记录（不订阅变更） */
 export const getAccessRecord = (id: string): AccessRecord | undefined =>
   recordsState.find((r) => r.id === id);
 
 /** 新增 / 替换一条记录 */
-export const upsertAccessRecord = (rec: AccessRecord) => {
-  const exists = recordsState.find((p) => p.id === rec.id);
-  recordsState = exists
-    ? recordsState.map((p) => (p.id === rec.id ? rec : p))
-    : [rec, ...recordsState];
+export const upsertAccessRecord = async (rec: AccessRecord) => {
+  const saved = rec.status === '待审核' ? await agentAccessApi.submit(rec) : await agentAccessApi.save(rec);
+  recordsState = recordsState.some((p) => p.id === saved.id || p.id === rec.id)
+    ? recordsState.map((p) => (p.id === saved.id || p.id === rec.id ? saved : p))
+    : [saved, ...recordsState];
   notify();
+  return saved;
 };
 
 /** 局部更新（状态机流转 / 审核结论等） */
@@ -535,9 +559,16 @@ export const appendAuditNode = (id: string, node: TimelineNode) => {
 };
 
 /** 删除记录 */
-export const removeAccessRecord = (id: string) => {
+export const removeAccessRecord = async (id: string) => {
+  await agentAccessApi.remove(id);
   recordsState = recordsState.filter((r) => r.id !== id);
   notify();
+};
+
+export const withdrawAccessRecord = async (id: string) => { await agentAccessApi.withdraw(id); await reloadAccessRecords(); };
+export const startAccessReview = async (id: string) => { await agentAccessApi.startReview(id); await reloadAccessRecords(); };
+export const reviewAccessRecord = async (id: string, result: 'APPROVED' | 'RETURNED', comment?: string) => {
+  await agentAccessApi.review(id, result, comment); await reloadAccessRecords();
 };
 
 /** 暴露工具给页面 */

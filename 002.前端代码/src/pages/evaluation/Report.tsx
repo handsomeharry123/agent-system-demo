@@ -650,7 +650,7 @@ const EvaluationReport = () => {
                       elementHighlight: { background: true },
                     }}
                     state={{
-                      active: { fill: '#52B788' },
+                      active: { fill: '#1677FF' },
                       inactive: { fillOpacity: 0.25, strokeOpacity: 0.25 },
                     }}
                     onReady={(plot) => {

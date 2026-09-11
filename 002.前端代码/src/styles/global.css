@@ -102,6 +102,42 @@ html, body {
   background: #fff;
 }
 
+.permission-scope-readonly {
+  width: 100%;
+  min-height: 420px;
+}
+
+.permission-scope-readonly .permission-module-nav {
+  overflow: visible;
+}
+
+.permission-scope-readonly .permission-detail-panel {
+  overflow: visible;
+}
+
+/* Keep the two detail columns stable regardless of label/content length. */
+.role-detail-descriptions .ant-descriptions-view table {
+  table-layout: fixed;
+}
+
+.role-detail-descriptions .ant-descriptions-item-label {
+  width: 23%;
+}
+
+.permission-scope-readonly .ant-checkbox-wrapper-disabled,
+.permission-scope-readonly .ant-checkbox-wrapper-disabled span {
+  color: #595959;
+}
+
+.permission-scope-readonly .ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner {
+  border-color: #91caff;
+  background: #e6f4ff;
+}
+
+.permission-scope-readonly .ant-checkbox-disabled.ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: #1677ff;
+}
+
 .permission-module-nav {
   padding: 12px 0;
   border-right: 1px solid #e8eef7;
@@ -137,9 +173,9 @@ html, body {
 }
 
 .permission-module-item.is-active {
-  border-left-color: #52B788;
+  border-left-color: #1677ff;
   background: #eaf3ff;
-  color: #52B788;
+  color: #1677ff;
   font-weight: 600;
 }
 
@@ -285,7 +321,7 @@ html, body {
   }
 
   .permission-module-item.is-active {
-    border-bottom-color: #52B788;
+    border-bottom-color: #1677ff;
   }
 
   .permission-action-list,
@@ -660,7 +696,7 @@ html, body {
    §3.1.1 对话窗口拖拽高亮
    ============================================================ */
 .agent-chat-dropzone {
-  border: 2px dashed #52B788 !important;
+  border: 2px dashed #1677FF !important;
   background: #F0F8FF !important;
   transition: background 150ms ease-out;
 }
@@ -672,7 +708,7 @@ html, body {
   animation: agent-drop-flash 0.9s ease-in-out infinite;
 }
 
-/* V2:医小知浮窗徽章绿点呼吸 */
+/* V2:医小管浮窗徽章绿点呼吸 */
 @keyframes agentFloatPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%      { transform: scale(1.35); opacity: 0.55; }
@@ -1398,7 +1434,7 @@ body[data-app-theme='tech'] ::-webkit-scrollbar-track { background: transparent;
 }
 
 .ledger-phase-tabs .ant-segmented-item:hover {
-  color: #52B788;
+  color: #1677ff;
 }
 
 .ledger-phase-tabs .ant-segmented-item-selected {
@@ -1429,7 +1465,7 @@ body[data-app-theme='tech'] ::-webkit-scrollbar-track { background: transparent;
   inset: 0 0 auto;
   z-index: 1;
   height: 3px;
-  background: linear-gradient(90deg, #52B788, #36cfc9, #9254de);
+  background: linear-gradient(90deg, #1677ff, #36cfc9, #9254de);
   opacity: 0.8;
 }
 
@@ -1461,7 +1497,7 @@ body[data-app-theme='tech'] ::-webkit-scrollbar-track { background: transparent;
 }
 
 .ledger-agent-card.is-selected {
-  border-color: #52B788 !important;
+  border-color: #1677ff !important;
   box-shadow: 0 12px 34px rgba(22, 119, 255, 0.18);
 }
 
@@ -1531,7 +1567,7 @@ body[data-app-theme='tech'] ::-webkit-scrollbar-track { background: transparent;
 }
 
 .ledger-profile-action:hover {
-  background: #EAF7EF !important;
+  background: #e6f4ff !important;
   transform: translateX(2px);
 }
 

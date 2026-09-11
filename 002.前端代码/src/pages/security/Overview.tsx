@@ -91,7 +91,7 @@ const allDimensions: SecurityDimension[] = ['系统', '网络', '身份', '数�
 const levelColorToken: Record<EventLevel, string> = {
   紧急: '#FF4D4F',
   重要: '#FA8C16',
-  一般: '#52B788',
+  一般: '#1677FF',
 };
 const levelStatKey: Record<EventLevel, 'urgent' | 'important' | 'normal'> = {
   紧急: 'urgent',
@@ -126,8 +126,8 @@ const Overview = () => {
     data: dimensionScores.map((d) => ({ dimension: d.dimension, value: d.score })),
     xField: 'dimension',
     yField: 'value',
-    color: '#52B788',
-    area: { style: { fill: '#52B78833' } },
+    color: '#1677FF',
+    area: { style: { fill: '#1677FF33' } },
     yAxis: { min: 0, max: 100 },
   };
   const trendConfig = {
@@ -241,15 +241,15 @@ const Overview = () => {
               <div
                 style={{
                   width: 56, height: 56, borderRadius: 8,
-                  background: '#EAF7EF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: '#E6F4FF', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 24,
                 }}
               >
-                <AlertOutlined style={{ color: '#52B788' }} />
+                <AlertOutlined style={{ color: '#1677FF' }} />
               </div>
               <div>
                 <Text type="secondary">全部事件</Text>
-                <div style={{ fontSize: 28, fontWeight: 600, color: '#52B788' }}>{overviewStats.total}</div>
+                <div style={{ fontSize: 28, fontWeight: 600, color: '#1677FF' }}>{overviewStats.total}</div>
               </div>
             </div>
           </Card>

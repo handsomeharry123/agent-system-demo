@@ -1232,7 +1232,8 @@ const AgentAssistant = () => {
     // 同 uid 走 store 内部去重，避免重复入列。
     if (isPdf) {
       const uid = (file.uid as string) || `agent-up-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      syncUploadedFile({ uid, name: file.name, size, type: file.type });
+      const rawFile = (file.originFileObj || file) as File;
+      syncUploadedFile({ uid, name: file.name, size, type: file.type, file: rawFile });
     }
     runRecognitionFlow(() => (isDocument ? recognizeFile(file.name) : recognizeImage(file.name)), {
       fileName: file.name,
@@ -1347,7 +1348,7 @@ const AgentAssistant = () => {
         fileSize?: number;
         source?: 'form' | 'assistant';
       }>).detail;
-      // 医小知入口已在 handleUpload 中启动识别，只监听表单上传，避免生成两份识别结果。
+      // 医小管入口已在 handleUpload 中启动识别，只监听表单上传，避免生成两份识别结果。
       if (!detail?.fileName || detail.source === 'assistant') return;
       addMessage({
         role: 'user',
@@ -1481,7 +1482,7 @@ const AgentAssistant = () => {
   // V2.6 修复(2026-07-03):台账页面(/app/ledger 与 /app/ledger/*)由 AgentFloatHost
   //   独家负责机器人 icon + 气泡 + 对话窗口,接入中心 AgentAssistant 在该路径家族下
   //   整体隐藏(连浮层/气泡 DOM 都不挂),避免右下角出现「两个机器人」视觉重复。
-  // 首页模块(/app/home 与 /app/home/*)自身已经承载医小知工作台,不展示右下角全局入口。
+  // 首页模块(/app/home 与 /app/home/*)自身已经承载医小管工作台,不展示右下角全局入口。
   //   ⚠️ 此 early return 必须在所有 hooks 之后,避免 React 18 StrictMode 下
   //   hooks 顺序漂移(参考 [[alert-event-list-pending-assign-hooks-crash]] 教训)。
   const shouldHideFloatEntry = useMemo(() => {
@@ -1577,7 +1578,7 @@ const AgentAssistant = () => {
             }
           }}
           role="dialog"
-          aria-label="医小知态势汇报"
+          aria-label="医小管态势汇报"
         >
           <button
             type="button"
@@ -1590,7 +1591,7 @@ const AgentAssistant = () => {
           >
             ×
           </button>
-          <strong style={{ color: '#52B788', fontSize: 13 }}>医小知</strong>
+          <strong style={{ color: '#1677FF', fontSize: 13 }}>医小管</strong>
           <span
             style={{ marginLeft: 4, display: 'inline-block', marginTop: 4 }}
             data-testid="status-bubble-content"
@@ -1659,8 +1660,8 @@ const AgentAssistant = () => {
                 <Progress
                   percent={activeWelcome.evaluationSummary.progress}
                   size="small"
-                  strokeColor="#52B788"
-                  trailColor="#EAF7EF"
+                  strokeColor="#1677FF"
+                  trailColor="#E6F4FF"
                   format={(percent) => `${percent}%`}
                 />
                 <Text type="secondary" style={{ fontSize: 11 }}>
@@ -1698,7 +1699,7 @@ const AgentAssistant = () => {
                           ? '#F6FFED'
                           : c.tone === 'error'
                             ? '#FFF1F0'
-                            : '#EAF7EF',
+                            : '#E6F4FF',
                     color: '#1F1F1F',
                     cursor: 'pointer',
                   }}
@@ -1763,7 +1764,7 @@ const AgentAssistant = () => {
                     ? { border: '#FFA39E', bg: '#FFF1F0', text: '#CF1322', dot: '#FF4D4F' }
                     : p.severity === 'warning'
                       ? { border: '#FFE58F', bg: '#FFFBE6', text: '#D48806', dot: '#FAAD14' }
-                      : { border: '#91D5FF', bg: '#EAF7EF', text: '#52B788', dot: '#52B788' };
+                      : { border: '#91D5FF', bg: '#E6F4FF', text: '#1677FF', dot: '#1677FF' };
                 return (
                   <div
                     key={p.id}
@@ -2077,7 +2078,7 @@ const AgentAssistant = () => {
           onClick={(e) => e.stopPropagation()}
         >
           <div>
-            <strong style={{ color: '#52B788', fontSize: 13 }}>医小知</strong>
+            <strong style={{ color: '#1677FF', fontSize: 13 }}>医小管</strong>
             <span
               style={{ marginLeft: 4 }}
               data-testid="material-offer-bubble-content"
@@ -2146,7 +2147,7 @@ const AgentAssistant = () => {
               return;
             }
             setOpen(true);
-            // 唤起浮层时主动问候一次（医小知 通用开场白）
+            // 唤起浮层时主动问候一次（医小管 通用开场白）
             // —— 真正的页面欢迎语已由 SmartRegistrationForm 推过, 这里仅补一次轻量问候
             setMood('happy');
             setTimeout(() => setMood('idle'), 600);
@@ -2183,7 +2184,7 @@ const AgentAssistant = () => {
                 ? 'translateY(-4px) scale(1.05)'
                 : 'translateY(0) scale(1)',
           }}
-          aria-label="唤起智能填写助手（医小知），可拖拽到任意位置"
+          aria-label="唤起智能填写助手（医小管），可拖拽到任意位置"
           role="button"
         >
           <RobotIcon
@@ -2211,7 +2212,7 @@ const AgentAssistant = () => {
                 pointerEvents: 'none',
               }}
             >
-              医小知
+              医小管
               <div
                 style={{
                   position: 'absolute',
@@ -2243,7 +2244,7 @@ const AgentAssistant = () => {
             background: '#FFFFFF',
             borderRadius: 12,
             boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-            border: `1px solid ${draggingFile ? '#52B788' : '#E8E8E8'}`,
+            border: `1px solid ${draggingFile ? '#1677FF' : '#E8E8E8'}`,
             display: 'flex',
             flexDirection: 'column',
             zIndex: 1001,
@@ -2270,7 +2271,7 @@ const AgentAssistant = () => {
               </div>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#1F1F1F' }}>
-                  医小知
+                  医小管
                 </div>
                 <Text type="secondary" style={{ fontSize: 11 }}>
                   接入全程陪伴 · 可随时呼出
@@ -2303,7 +2304,7 @@ const AgentAssistant = () => {
                 justifyContent: 'center',
                 gap: 8,
                 background: 'rgba(22, 119, 255, 0.04)',
-                color: '#52B788',
+                color: '#1677FF',
                 fontSize: 14,
                 fontWeight: 500,
                 pointerEvents: 'none',
@@ -2409,7 +2410,7 @@ const AgentAssistant = () => {
               />
             </Space.Compact>
             <div style={{ marginTop: 6, fontSize: 11, color: '#999', textAlign: 'center' }}>
-              <ThunderboltOutlined /> 医小知仅在您授权下处理数据, 全程仅操作本人表单（单文件 ≤ 30M）
+              <ThunderboltOutlined /> 医小管仅在您授权下处理数据, 全程仅操作本人表单（单文件 ≤ 30M）
             </div>
           </div>
         </div>

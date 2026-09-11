@@ -13,7 +13,8 @@ const generateUsers = (): User[] => {
       roles: ['信息科管理员'],
       phone: '138****0000',
       email: 'admin@system.com',
-      password: 'admin',
+      // 仅用于演示角色切换数据；登录认证已由后端负责。保持与本地开发账号一致，避免旧缓存误导。
+      password: 'admin123',
       status: '在职',
       lastLoginAt: '2026-05-20 10:00:00',
       syncTime: '2026-06-09 02:00:00',

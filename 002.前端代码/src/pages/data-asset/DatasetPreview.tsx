@@ -356,7 +356,7 @@ const DatasetPreview = () => {
                             width: 32,
                             height: 32,
                             borderRadius: 16,
-                            background: t.role === 'user' ? '#52B788' : '#52C41A',
+                            background: t.role === 'user' ? '#1677FF' : '#52C41A',
                             color: '#fff',
                             display: 'flex',
                             alignItems: 'center',
@@ -368,7 +368,7 @@ const DatasetPreview = () => {
                         </div>
                         <div
                           style={{
-                            background: t.role === 'user' ? '#52B788' : '#fff',
+                            background: t.role === 'user' ? '#1677FF' : '#fff',
                             color: t.role === 'user' ? '#fff' : 'inherit',
                             border: t.role === 'user' ? 'none' : '1px solid #f0f0f0',
                             borderRadius: 8,

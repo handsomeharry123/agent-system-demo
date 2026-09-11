@@ -20,7 +20,7 @@ interface StatCardProps {
 }
 
 const colorMap: Record<string, { main: string; tint: string }> = {
-  blue: { main: '#52B788', tint: '#EAF7EF' },
+  blue: { main: '#1677FF', tint: '#E6F4FF' },
   green: { main: '#52C41A', tint: '#F6FFED' },
   red: { main: '#FF4D4F', tint: '#FFF1F0' },
   orange: { main: '#FA8C16', tint: '#FFF7E6' },

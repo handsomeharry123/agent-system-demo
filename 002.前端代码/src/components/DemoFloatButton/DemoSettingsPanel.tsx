@@ -33,6 +33,7 @@ import {
   type MenuRoleKey,
   type ModuleKey,
 } from '../../config/masterMenu';
+import { mvpFeatures } from '../../config/mvpFeatures';
 // V1.2: 同步切换 mock/resource-center 内部的英文 demoRole + currentUser 账号,
 //   让资源管理中心申请/审核/资源/申请表单四个页面的角色分支正确分发
 import { setDemoRole as setMockDemoRole, setCurrentUser as setMockCurrentUser } from '../../mock/resource-center';
@@ -123,41 +124,43 @@ const DemoSettingsPanel = ({ open, onClose }: DemoSettingsPanelProps) => {
 
   // 树形数据：每个节点附带"角色基线是否禁止"，用于在标题上提示并禁用勾选
   const treeData = useMemo<DataNode[]>(() => {
-    return masterMenu.map((m) => {
-      const roleBlocked =
-        (roleKey === 'hospitalLeader' && !isHospitalLeaderModule(m.key)) ||
-        (m.defaultRoleVisible === 'itAdmin' && roleKey === 'itUser');
-      const children: DataNode[] | undefined = m.children
-        ? m.children.map<DataNode>((sub) => {
-            const subRole = sub.defaultRoleVisible || m.defaultRoleVisible;
-            const subRoleBlocked =
-              (roleKey === 'hospitalLeader' && !isHospitalLeaderSubPage(sub.key)) ||
-              (subRole === 'itAdmin' && roleKey === 'itUser');
-            return {
-              key: sub.key,
-              title: subRoleBlocked ? (
-                <span style={{ color: '#bbb' }}>{sub.name}（当前角色不可见）</span>
-              ) : (
-                sub.name
-              ),
-              // 角色基线屏蔽的子项不可勾选
-              disableCheckbox: subRoleBlocked,
-              checkable: !subRoleBlocked,
-            };
-          })
-        : undefined;
-      return {
-        key: m.key,
-        title: roleBlocked ? (
-          <span style={{ color: '#bbb' }}>{m.name}（当前角色不可见）</span>
-        ) : (
-          m.name
-        ),
-        children,
-        disableCheckbox: roleBlocked,
-        checkable: !roleBlocked,
-      };
-    });
+    return masterMenu
+      .filter((m) => mvpFeatures.medicalAssistant || m.key !== 'assistant')
+      .map((m) => {
+        const roleBlocked =
+          (roleKey === 'hospitalLeader' && !isHospitalLeaderModule(m.key)) ||
+          (m.defaultRoleVisible === 'itAdmin' && roleKey === 'itUser');
+        const children: DataNode[] | undefined = m.children
+          ? m.children.map<DataNode>((sub) => {
+              const subRole = sub.defaultRoleVisible || m.defaultRoleVisible;
+              const subRoleBlocked =
+                (roleKey === 'hospitalLeader' && !isHospitalLeaderSubPage(sub.key)) ||
+                (subRole === 'itAdmin' && roleKey === 'itUser');
+              return {
+                key: sub.key,
+                title: subRoleBlocked ? (
+                  <span style={{ color: '#bbb' }}>{sub.name}（当前角色不可见）</span>
+                ) : (
+                  sub.name
+                ),
+                // 角色基线屏蔽的子项不可勾选
+                disableCheckbox: subRoleBlocked,
+                checkable: !subRoleBlocked,
+              };
+            })
+          : undefined;
+        return {
+          key: m.key,
+          title: roleBlocked ? (
+            <span style={{ color: '#bbb' }}>{m.name}（当前角色不可见）</span>
+          ) : (
+            m.name
+          ),
+          children,
+          disableCheckbox: roleBlocked,
+          checkable: !roleBlocked,
+        };
+      });
   }, [roleKey]);
 
   // 当前勾选的 keys（Tree.checkable 用）
@@ -306,10 +309,10 @@ const DemoSettingsPanel = ({ open, onClose }: DemoSettingsPanelProps) => {
         <div
           style={{
             fontSize: 12,
-            color: '#52B788',
+            color: '#1677ff',
             marginTop: 8,
             padding: '6px 10px',
-            background: '#F3FBF6',
+            background: '#f0f5ff',
             border: '1px solid #adc6ff',
             borderRadius: 4,
           }}

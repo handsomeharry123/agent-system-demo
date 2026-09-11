@@ -1,6 +1,6 @@
 /**
  * 环境配置 Mock 数据 V1.3
- * 对应需求文档：/Users/harry/Desktop/CC_TEST/agent-system/环境配置-需求说明文档V1.3.md
+ * 对应需求文档：/Users/harry/Desktop/CC_TEST/agent-system/001.产品文档/环境配置-需求说明文档V1.3.md
  *
  * V1.1 → V1.2 变更点：
  *   1) 删除「运行环境管理」分组

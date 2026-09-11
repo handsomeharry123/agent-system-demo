@@ -67,7 +67,7 @@ const buildTop5BarConfig = (
     // Tableau 10 高区分度配色，固定顺序保证各图视觉一致
     scale: {
       color: {
-        range: ['#52B788', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96'],
+        range: ['#1677FF', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96'],
       },
     },
     // 类目轴：横向显示，不旋转、不截断、tooltip 提供完整名称
@@ -166,7 +166,7 @@ const CostV18 = () => {
       total: isAdmin ? costKpiV18.cpu.total : costTop5V18.cpu.filter((row) => row.department === currentUser?.department).reduce((sum, row) => sum + row.value, 0),
       totalUnit: costKpiV18.cpu.unit,
       today: isAdmin ? costKpiV18.cpu.today : Math.round(costTop5V18.cpu.filter((row) => row.department === currentUser?.department).reduce((sum, row) => sum + row.value, 0) * 0.08),
-      color: '#52B788',
+      color: '#1677FF',
       icon: '⚙️',
       top5: isAdmin ? costTop5V18.cpu : costTop5V18.cpu.filter((row) => row.department === currentUser?.department),
       topUnit: '核·时',

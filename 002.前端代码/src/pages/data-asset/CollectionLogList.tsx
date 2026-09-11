@@ -390,7 +390,7 @@ const CollectionLogList = () => {
           <div
             style={{
               padding: '8px 16px',
-              background: '#EAF7EF',
+              background: '#E6F4FF',
               borderBottom: '1px solid #91CAFF',
               display: 'flex',
               alignItems: 'center',

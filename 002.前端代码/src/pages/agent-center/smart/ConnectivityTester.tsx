@@ -39,15 +39,17 @@ import {
 import type { FormInstance } from 'antd';
 import { useSmartDraft } from './store';
 import type { ConnDiagnostics, ConnStage, ConnStep, HistoricalPlan } from './types';
+import { agentAccessApi, AgentAccessApiError } from '../../../services/agentAccess';
 
 const { Text, Paragraph } = Typography;
 
 interface Props {
   form?: FormInstance;
   onLocateField?: (fieldKey: string) => void;
-  /** 连通必填项完整后由父级传入稳定签名，变化时自动发起测试 */
-  autoTriggerKey?: string;
+  /** 当前接入参数签名，仅用于在参数变化后使旧测试结果失效，不包含在 DOM 中 */
+  parametersKey?: string;
   onTestStart?: () => void;
+  onTestInvalidated?: () => void;
   /** 用户填写的接口信息 */
   getConnectionFormValues: () => {
     accessMode?: string;
@@ -56,6 +58,7 @@ interface Props {
     platformUrl?: string;
     platformKey?: string;
     agentName?: string;
+    modelName?: string;
   };
 }
 
@@ -171,11 +174,14 @@ const STAGE_META: Record<ConnStage, { label: string; icon: React.ReactNode }> = 
 };
 
 const STAGE_ORDER: ConnStage[] = ['dns', 'connect', 'auth', 'request', 'response'];
+const CONNECTIVITY_MESSAGE_KEY = 'agent-access-connectivity-result';
 
 const ConnectivityTester: React.FC<Props> = ({
+  form,
   onLocateField,
-  autoTriggerKey,
+  parametersKey = '',
   onTestStart,
+  onTestInvalidated,
   getConnectionFormValues,
 }) => {
   const {
@@ -192,7 +198,11 @@ const ConnectivityTester: React.FC<Props> = ({
   // 本地状态镜像 + 写 store：保证 functional update 类型安全
   const [localSteps, setLocalSteps] = useState<ConnStep[]>([]);
   const [localDiagnostics, setLocalDiagnostics] = useState<ConnDiagnostics | null>(null);
-  const lastAutoTriggerRef = useRef<string>('');
+  const [needsRetest, setNeedsRetest] = useState(false);
+  const previousParametersKeyRef = useRef(parametersKey);
+  const completedTestRef = useRef(false);
+  const requestSequenceRef = useRef(0);
+  const requestAbortRef = useRef<AbortController | null>(null);
 
   // 模拟故障注入：当 apiKey 包含 "expired" 或 endpoint 含 "timeout" 时在指定阶段失败
   const decideOutcome = (vals: ReturnType<Props['getConnectionFormValues']>) => {
@@ -231,7 +241,7 @@ const ConnectivityTester: React.FC<Props> = ({
         { idx: 3, title: '检查网络代理 / 防火墙', detail: '联系信息科确认目标端口是否在出站白名单中' },
       ],
       auth: [
-        { idx: 1, title: '确认 API Key 是否有效', detail: '在请求头添加 X-Api-Key，并通过平台重新签发密钥', fieldKey: 'apiKey' },
+        { idx: 1, title: '确认 API Key 是否有效', detail: '平台会依次尝试 Bearer、X-API-Key 与 api-key 鉴权；仍失败时请重新签发密钥', fieldKey: 'apiKey' },
         { idx: 2, title: '检查密钥字段是否密文粘贴', detail: '密钥包含前缀 sk- 时，请完整复制而非截取', fieldKey: 'apiKey' },
         { idx: 3, title: '确认账号未被禁用', detail: '错误 401 也可能由账号停用引起，可在监控告警台账查询该 Key 状态' },
       ],
@@ -257,135 +267,115 @@ const ConnectivityTester: React.FC<Props> = ({
       message.error('请先填写接口地址');
       return;
     }
+    if (v.accessMode === 'API' && !v.apiKey) {
+      message.error('请完整填写 API Key');
+      return;
+    }
     if ((v.accessMode === 'SDK' || v.accessMode === 'OTel') && !v.platformUrl) {
       message.error('请先获取 SDK / OTel 平台 URL');
       return;
     }
 
     onTestStart?.();
+    setNeedsRetest(false);
+    completedTestRef.current = false;
     setRunning(true);
     setLocalDiagnostics(null);
     setConnDiagnostics(null);
 
-    const outcomes = decideOutcome(v);
-    const initSteps: ConnStep[] = STAGE_ORDER.map((stage) => ({
-      stage,
-      label: STAGE_META[stage].label,
-      status: 'pending',
-    }));
-    setLocalSteps(initSteps);
-    setConnSteps(initSteps);
-
-    // 逐步推进
-    for (let i = 0; i < STAGE_ORDER.length; i += 1) {
-      // eslint-disable-next-line no-await-in-loop
-      await new Promise((r) => setTimeout(r, 600));
-      const stage = STAGE_ORDER[i];
-      const isFailStage = outcomes.failStage === stage;
-      // 通过 setLocalSteps 的 functional update 推进 (本地副本决定 UI 渲染)
-      setLocalSteps((prev) => {
-        const next = [...prev];
-        const target = next.find((s) => s.stage === stage);
-        if (!target) return prev;
-        target.status = isFailStage ? 'fail' : 'running';
-        target.latencyMs = 80 + Math.floor(Math.random() * 120);
-        if (isFailStage && outcomes.code && outcomes.reason) {
-          target.errorCode = outcomes.code;
-          target.errorReason = outcomes.reason;
-        }
-        return next;
-      });
-      if (isFailStage) {
-        // 把后续阶段 mark pending 并停止
-        setLocalSteps((prev) =>
-          prev.map((s) =>
-            STAGE_ORDER.indexOf(s.stage) > i ? { ...s, status: 'pending' } : s,
-          ),
-        );
-        // 生成诊断
-        const diag: ConnDiagnostics = {
-          failureStage: outcomes.failStage!,
-          errorCode: outcomes.code!,
-          errorReason: outcomes.reason!,
-          hintFieldKey:
-            outcomes.failStage === 'auth' ? 'apiKey' :
-            outcomes.failStage === 'dns' ? 'apiEndpoint' :
-            outcomes.failStage === 'request' ? 'apiEndpoint' :
-            outcomes.failStage === 'connect' ? 'platformUrl' : undefined,
-          steps: buildSteps(outcomes.failStage!, outcomes.code),
-        };
-        setLocalDiagnostics(diag);
-        setRunning(false);
-        message.error(`测试验证异常（${outcomes.code}）`);
-        // §4.2.3 PRD：连通测试失败 → 1) 先在对话窗口推送「测试验证异常」结果气泡；
-        //                  2) Agent 联网搜索解决方案（按错误码匹配 Top2），气泡中给出修改建议
-        //   - 同 source 的旧消息会在 store 层被替换, 不堆叠
-        //   - 不再推送 'historical-plan'（PRD §3.3.2 知识库/方案复用已下线）
-        addMessage({
-          role: 'agent',
-          type: 'conn-test-result',
-          content: `测试验证异常（${outcomes.code}）`,
-          payload: {
-            connTestResult: {
-              ok: false,
-              errorCode: outcomes.code!,
-              errorReason: outcomes.reason!,
-              failureStage: outcomes.failStage!,
-              totalMs: undefined,
-            },
-          },
-        });
-        addMessage({
-          role: 'agent',
-          type: 'web-search-solution',
-          content: '我正在联网搜索解决方案……',
-          payload: {
-            webSearchSolutions: fetchWebSearchSolutions(
-              outcomes.failStage!,
-              outcomes.code!,
-              outcomes.reason!,
-            ),
-          },
-        });
-        // 同步清掉同 source 的旧 historical-plan（防止切换页面后遗留）
+    // 连通过程和耗时均以后端实际网络请求结果为准。
+    requestAbortRef.current?.abort();
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
+    const requestSequence = ++requestSequenceRef.current;
+    try {
+      const result = await agentAccessApi.testConnection(v, controller.signal);
+      if (requestSequence !== requestSequenceRef.current) return;
+      if (result.ok && (result.modelCorrected || result.modelDiscovered) && result.resolvedModel && form) {
+        // 服务端已用 /models 找到有效模型并重试成功：同步回填，确保后续
+        // 提交使用的参数与通过连通测试的参数完全一致。
+        previousParametersKeyRef.current = `API::${v.apiEndpoint?.trim()}::${v.apiKey?.trim()}::${result.resolvedModel}`;
+        form.setFieldValue(['modelConfigs', 0, 'modelName'], result.resolvedModel);
+      }
+      const realSteps = result.stages.map((step) => ({
+        stage: step.stage as ConnStage,
+        label: step.label,
+        status: step.status as ConnStep['status'],
+        latencyMs: step.latencyMs,
+        errorCode: step.status === 'fail' ? result.errorCode : undefined,
+        errorReason: step.status === 'fail' ? result.message : undefined,
+      }));
+      setLocalSteps(realSteps);
+      setConnSteps(realSteps);
+      if (!result.ok) {
+        const failureStage = (result.failureStage || 'connect') as ConnStage;
+        const errorCode = result.errorCode || 'CONNECTION_FAILED';
+        const diag: ConnDiagnostics = { failureStage, errorCode, errorReason: result.message,
+          hintFieldKey: failureStage === 'auth' ? 'apiKey' : v.accessMode === 'API' ? 'apiEndpoint' : 'platformUrl',
+          steps: buildSteps(failureStage, errorCode) };
+        setLocalDiagnostics(diag); setConnDiagnostics(diag); setRunning(false); completedTestRef.current = true;
+        message.error({ key: CONNECTIVITY_MESSAGE_KEY, content: result.message });
+        addMessage({ role: 'agent', type: 'conn-test-result', content: `测试验证异常（${errorCode}）`, payload: { connTestResult: { ok: false, errorCode, errorReason: result.message, failureStage, totalMs: result.latencyMs } } });
+        addMessage({ role: 'agent', type: 'web-search-solution', content: '我正在联网搜索解决方案……', payload: { webSearchSolutions: fetchWebSearchSolutions(failureStage, errorCode, result.message) } });
         pushHistoricalPlans([], 'test-fail');
         return;
       }
-      // 当前阶段成功 → 标 ok
-      setLocalSteps((prev) => {
-        const next = [...prev];
-        const target = next.find((s) => s.stage === stage);
-        if (target) target.status = 'ok';
-        return next;
+      setRunning(false); completedTestRef.current = true;
+      message.success({
+        key: CONNECTIVITY_MESSAGE_KEY,
+        content: result.modelCorrected
+          ? `模型名称已自动修正为 ${result.resolvedModel}，测试验证正常（${result.latencyMs}ms）`
+          : result.modelDiscovered
+          ? `已自动识别模型 ${result.resolvedModel}，测试验证正常（${result.latencyMs}ms）`
+          : result.endpointAdjusted
+          ? `连接测试通过（${result.latencyMs}ms），系统已自动适配接口地址`
+          : `测试验证正常（${result.latencyMs}ms）`,
       });
+      addMessage({ role: 'agent', type: 'conn-test-result', content: '✓ 测试验证正常', payload: { connTestResult: { ok: true, totalMs: result.latencyMs } } });
+      pushHistoricalPlans([], 'test-pass');
+    } catch (error) {
+      if (controller.signal.aborted || requestSequence !== requestSequenceRef.current) return;
+      const reason = error instanceof Error ? error.message : '接入参数校验失败';
+      if (error instanceof AgentAccessApiError && error.status === 400) {
+        setLocalSteps([]);
+        setLocalDiagnostics(null);
+        setConnSteps([]);
+        setConnDiagnostics(null);
+        setRunning(false);
+        completedTestRef.current = false;
+        message.error({ key: CONNECTIVITY_MESSAGE_KEY, content: reason });
+        return;
+      }
+      const failedSteps: ConnStep[] = STAGE_ORDER.map((stage, index) => ({
+        stage, label: STAGE_META[stage].label, status: index === 0 ? 'fail' : 'pending',
+        ...(index === 0 ? { errorCode: 'PARAM_INVALID', errorReason: reason } : {}),
+      }));
+      setLocalSteps(failedSteps);
+      setLocalDiagnostics({ failureStage: 'dns', errorCode: 'PARAM_INVALID', errorReason: reason, hintFieldKey: 'apiEndpoint', steps: buildSteps('dns', 'PARAM_INVALID') });
+      setRunning(false); completedTestRef.current = true;
+      message.error({ key: CONNECTIVITY_MESSAGE_KEY, content: reason });
+      return;
+    } finally {
+      if (requestSequence === requestSequenceRef.current) requestAbortRef.current = null;
     }
-    // 全程通过
-    setRunning(false);
-    message.success('测试验证正常');
-    // §4.2.3 PRD：连通测试成功 → 仅弹"测试验证正常"，不再推送历史方案/知识库沉淀
-    //   - PRD §3.3.2「知识库沉淀 / 方案复用」已下线, 不再调用 saveHistoricalPlan
-    //   - 也不推送 historical-plan 气泡, 避免误导用户在成功后再做"复用"动作
-    addMessage({
-      role: 'agent',
-      type: 'conn-test-result',
-      content: '✓ 测试验证正常',
-      payload: {
-        connTestResult: {
-          ok: true,
-          totalMs: undefined,
-        },
-      },
-    });
-    // 清掉同 source 的旧 historical-plan（防止页面内历史方案残留）
-    pushHistoricalPlans([], 'test-pass');
   }, [running, getConnectionFormValues, onTestStart, setConnSteps, setConnDiagnostics, addMessage, pushHistoricalPlans, historicalPlans]);
 
+  // 编辑接入参数时不自动发请求；仅清除旧结果并提示用户主动重新验证。
   useEffect(() => {
-    if (!autoTriggerKey || running) return;
-    if (lastAutoTriggerRef.current === autoTriggerKey) return;
-    lastAutoTriggerRef.current = autoTriggerKey;
-    void startTest();
-  }, [autoTriggerKey, running, startTest]);
+    if (previousParametersKeyRef.current === parametersKey) return;
+    previousParametersKeyRef.current = parametersKey;
+    requestAbortRef.current?.abort();
+    requestSequenceRef.current += 1;
+    setRunning(false);
+    setNeedsRetest(completedTestRef.current);
+    completedTestRef.current = false;
+    setLocalSteps([]);
+    setLocalDiagnostics(null);
+    setConnSteps([]);
+    setConnDiagnostics(null);
+    message.destroy(CONNECTIVITY_MESSAGE_KEY);
+    onTestInvalidated?.();
+  }, [parametersKey, onTestInvalidated, setConnSteps, setConnDiagnostics]);
 
   // 当组件 mount 时把历史匹配度排个序
   useEffect(() => {
@@ -431,6 +421,15 @@ const ConnectivityTester: React.FC<Props> = ({
       : okCount === totalSteps && totalSteps > 0
         ? 100
         : Math.round((okCount / totalSteps) * 100);
+  const currentConnectionValues = getConnectionFormValues();
+  const canStartTest = currentConnectionValues.accessMode === 'API'
+    ? Boolean(currentConnectionValues.apiEndpoint?.trim() && currentConnectionValues.apiKey?.trim())
+    : currentConnectionValues.accessMode === 'SDK' || currentConnectionValues.accessMode === 'OTel'
+      ? Boolean(currentConnectionValues.platformUrl?.trim() && currentConnectionValues.platformKey?.trim())
+      : false;
+  const readinessHint = currentConnectionValues.accessMode === 'SDK' || currentConnectionValues.accessMode === 'OTel'
+    ? '获取完整的平台 URL 和平台密钥后，可点击“测试验证”。输入过程中不会自动发起请求。'
+    : '填写接口地址和 API Key 后即可测试；未填模型名称时会尝试从服务商的 /models 接口自动获取。';
   // 同步本地 steps / diagnostics 到 store (供 Registration 提交门控读取)
   useEffect(() => {
     setConnSteps(localSteps);
@@ -440,7 +439,7 @@ const ConnectivityTester: React.FC<Props> = ({
   }, [localDiagnostics, setConnDiagnostics]);
 
   return (
-    <div data-testid="connectivity-tester" data-auto-trigger-key={autoTriggerKey || ''}>
+    <div data-testid="connectivity-tester">
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
         {/* 测试控制条 */}
         <div
@@ -450,7 +449,7 @@ const ConnectivityTester: React.FC<Props> = ({
             justifyContent: 'space-between',
             padding: '8px 12px',
             background: running
-              ? 'linear-gradient(90deg, #EAF7EF 0%, #FFFFFF 100%)'
+              ? 'linear-gradient(90deg, #E6F4FF 0%, #FFFFFF 100%)'
               : '#FAFAFA',
             border: `1px solid ${running ? '#91CAFF' : '#F0F0F0'}`,
             borderRadius: 6,
@@ -458,9 +457,9 @@ const ConnectivityTester: React.FC<Props> = ({
         >
           <Space>
             {running ? (
-              <LoadingOutlined style={{ color: '#52B788' }} />
+              <LoadingOutlined style={{ color: '#1677FF' }} />
             ) : (
-              <ThunderboltOutlined style={{ color: '#52B788' }} />
+              <ThunderboltOutlined style={{ color: '#1677FF' }} />
             )}
             <Text strong>
               {running
@@ -476,12 +475,14 @@ const ConnectivityTester: React.FC<Props> = ({
                     : `已通过 ${okCount}/${totalSteps}`}
               </Tag>
             )}
+            {needsRetest && <Tag color="orange">参数已修改，请重新验证</Tag>}
           </Space>
           <Space>
             <Button
               type="primary"
               icon={running ? <LoadingOutlined /> : <PlayCircleOutlined />}
               loading={running}
+              disabled={!canStartTest}
               onClick={startTest}
             >
               {running ? '测试中…' : '测试验证'}
@@ -489,8 +490,16 @@ const ConnectivityTester: React.FC<Props> = ({
             <Button
               icon={<ReloadOutlined />}
               onClick={() => {
+                requestAbortRef.current?.abort();
+                requestSequenceRef.current += 1;
+                completedTestRef.current = false;
+                setNeedsRetest(false);
+                setLocalSteps([]);
+                setLocalDiagnostics(null);
                 setConnSteps([]);
                 setConnDiagnostics(null);
+                message.destroy(CONNECTIVITY_MESSAGE_KEY);
+                onTestInvalidated?.();
               }}
               disabled={running}
             >
@@ -498,6 +507,12 @@ const ConnectivityTester: React.FC<Props> = ({
             </Button>
           </Space>
         </div>
+
+        {!canStartTest && !running && (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {readinessHint}
+          </Text>
+        )}
 
         {/* 进度条 */}
         {localSteps.length > 0 && (
@@ -526,7 +541,7 @@ const ConnectivityTester: React.FC<Props> = ({
                   color,
                   dot:
                     s.status === 'running' ? (
-                      <LoadingOutlined style={{ color: '#52B788' }} />
+                      <LoadingOutlined style={{ color: '#1677FF' }} />
                     ) : (
                       meta.icon
                     ),

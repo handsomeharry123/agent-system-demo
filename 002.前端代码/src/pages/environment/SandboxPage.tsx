@@ -1,6 +1,6 @@
 /**
  * 沙盒环境页 V1.3
- * 对应需求文档：环境配置-需求说明文档V1.3.md §1
+ * 对应需求文档：001.产品文档/环境配置-需求说明文档V1.3.md §1
  *
  * 路由：/app/environment/sandbox
  * 结构：PageHeader + 内部 Tabs
@@ -153,7 +153,7 @@ const SandboxPage = () => {
         <div>
           <Text>
             本次保存将对当前沙盒环境内{' '}
-            <Text strong style={{ color: '#52B788' }}>{agentCount}</Text>{' '}
+            <Text strong style={{ color: '#1677FF' }}>{agentCount}</Text>{' '}
             个智能体生效；对当前及后续载入沙盒环境的智能体均生效；操作归档审计中心。
           </Text>
         </div>

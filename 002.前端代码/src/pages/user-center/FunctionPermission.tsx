@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button, Card, Checkbox, Select, Space, Typography, message } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { DownOutlined, FolderFilled, ReloadOutlined, RightOutlined, SaveOutlined } from '@ant-design/icons';
 import PageHeader from '../../components/PageHeader';
-import { systemRoles } from './constants';
+import { permissionApi, type PermissionRole } from '../../services/permissionCenter';
 
 const { Text } = Typography;
 const leaves = (prefix: string, titles: string[]) => titles.map((title, i) => ({ key: `${prefix}:${i}`, title }));
@@ -14,9 +14,9 @@ const page = (key: string, title: string, actions: string[] = []): DataNode => (
   children: actions.length ? leaves(`${key}:action`, actions) : undefined,
 });
 
-const permissionTree: DataNode[] = [
+export const permissionTree: DataNode[] = [
   { key: 'home', title: '首页' },
-  { key: 'assistant', title: '医小知' },
+  { key: 'assistant', title: '医小管' },
   {
     key: 'needs', title: '智能体建设需求管理', children: [
       page('needs:list', '需求管理列表页', ['需求标题下钻至需求详情', '生成需求', '查看详情', '智能化匹配']),
@@ -104,8 +104,8 @@ const permissionTree: DataNode[] = [
   },
   {
     key: 'user', title: '用户中心', children: [
-      page('user:list', '用户列表页', ['新建用户', '编辑', '停用', '批量启用', '批量停用', '导出列表']),
-      page('user:role', '角色管理页', ['新增角色', '查看详情', '编辑', '停用']),
+      page('user:list', '用户列表页', ['新建用户', '编辑', '停用', '批量启用', '批量停用', '导出列表', '删除']),
+      page('user:role', '角色管理页', ['新增角色', '查看详情', '编辑', '删除']),
       page('user:function', '功能权限配置页'),
     ],
   },
@@ -135,7 +135,33 @@ const permissionTree: DataNode[] = [
   },
 ];
 
-const flattenKeys = (nodes: DataNode[]): React.Key[] => nodes.flatMap((node) => [node.key, ...(node.children ? flattenKeys(node.children) : [])]);
+/**
+ * MVP 阶段仅做前端展示隐藏，完整权限定义及数据库授权关系均保留。
+ * 后续版本恢复模块时，从此集合移除对应 key 即可重新展示。
+ */
+const MVP_HIDDEN_PERMISSION_KEYS = new Set([
+  'assistant',
+  'needs',
+  'project',
+  'resource',
+  'monitor:business',
+  'monitor:status',
+  'monitor:cost',
+  'audit:project',
+  'audit:agent',
+  'system:evaluation-platform',
+]);
+
+const filterHiddenPermissions = (nodes: DataNode[]): DataNode[] => nodes
+  .filter((node) => !MVP_HIDDEN_PERMISSION_KEYS.has(String(node.key)))
+  .map((node) => node.children
+    ? { ...node, children: filterHiddenPermissions(node.children) }
+    : node);
+
+export const visiblePermissionTree = filterHiddenPermissions(permissionTree);
+
+export const flattenPermissionKeys = (nodes: DataNode[]): React.Key[] => nodes.flatMap((node) => [node.key, ...(node.children ? flattenPermissionKeys(node.children) : [])]);
+const flattenKeys = flattenPermissionKeys;
 const allKeys = flattenKeys(permissionTree);
 
 const findNode = (key: string, nodes: DataNode[] = permissionTree): DataNode | undefined => {
@@ -232,27 +258,48 @@ const deptKeys = combineKeys(
   keysFor('audit:agent'),
   keysFor('system:model'),
 );
-const defaults: Record<string, React.Key[]> = { 医院领导: leaderKeys, 信息科管理员: allKeys, 科室管理员: deptKeys };
+export const permissionDefaults: Record<string, React.Key[]> = { 医院领导: leaderKeys, 信息科管理员: allKeys, 科室管理员: deptKeys };
 
 const FunctionPermission = () => {
   const [searchParams] = useSearchParams();
-  const initialRole = searchParams.get('role') || '信息科管理员';
-  const [role, setRole] = useState(initialRole);
-  const [checked, setChecked] = useState<React.Key[]>(defaults[initialRole] || []);
-  const [activeModule, setActiveModule] = useState(String(permissionTree[0].key));
+  const initialRoleName = searchParams.get('role') || '信息科管理员';
+  const initialRoleId = searchParams.get('roleId');
+  const [roles, setRoles] = useState<PermissionRole[]>([]);
+  const [roleId, setRoleId] = useState('');
+  const [checked, setChecked] = useState<React.Key[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeModule, setActiveModule] = useState(String(visiblePermissionTree[0].key));
   const [collapsed, setCollapsed] = useState<React.Key[]>([]);
-  const roles = useMemo(() => [...systemRoles, ...(!systemRoles.includes(initialRole as never) ? [initialRole] : [])], [initialRole]);
-  const currentModule = permissionTree.find((item) => String(item.key) === activeModule) || permissionTree[0];
+  const currentRole = roles.find((item) => item.id === roleId);
+  const currentModule = visiblePermissionTree.find((item) => String(item.key) === activeModule) || visiblePermissionTree[0];
+  const visibleKeys = useMemo(() => flattenKeys(visiblePermissionTree), []);
+  const visibleCheckedCount = visibleKeys.filter((key) => checked.includes(key)).length;
   const currentNodes = useMemo(() => currentModule.children || [currentModule], [currentModule]);
   const currentKeys = useMemo(() => flattenKeys(currentNodes), [currentNodes]);
   const currentCheckedCount = currentKeys.filter((key) => checked.includes(key)).length;
   const moduleFullyChecked = currentCheckedCount === currentKeys.length;
   const modulePartlyChecked = currentCheckedCount > 0 && !moduleFullyChecked;
 
-  const switchRole = (value: string) => {
-    setRole(value);
-    setChecked(defaults[value] || []);
-  };
+  useEffect(() => {
+    void permissionApi.roles().then((items) => {
+      setRoles(items);
+      const initial = items.find((item) => item.id === initialRoleId)
+        || items.find((item) => item.name === initialRoleName)
+        || items[0];
+      if (initial) setRoleId(initial.id);
+    }).catch((error) => message.error(error instanceof Error ? error.message : '角色加载失败'));
+  }, []);
+
+  useEffect(() => {
+    if (!roleId) return;
+    setLoading(true);
+    void permissionApi.get(roleId).then((result) => setChecked(result.permissionCodes)).catch((error) => {
+      message.error(error instanceof Error ? error.message : '功能权限加载失败');
+    }).finally(() => setLoading(false));
+  }, [roleId]);
+
+  const switchRole = (value: string) => setRoleId(value);
 
   const checkModule = (value: boolean) => {
     setChecked((previous) => value
@@ -266,7 +313,16 @@ const FunctionPermission = () => {
       : previous.filter((key) => !keys.includes(key)));
   };
 
-  const resetRole = () => setChecked(defaults[role] || []);
+  const resetRole = () => setChecked(permissionDefaults[currentRole?.name || ''] || []);
+  const savePermissions = async () => {
+    if (!roleId || !currentRole) return;
+    try {
+      setSaving(true);
+      const result = await permissionApi.save(roleId, checked.map(String));
+      message.success(`「${currentRole.name}」功能权限保存成功，共 ${result.count} 项`);
+    } catch (error) { message.error(error instanceof Error ? error.message : '功能权限保存失败'); }
+    finally { setSaving(false); }
+  };
   const toggleNode = (key: React.Key) => setCollapsed((previous) => (
     previous.includes(key) ? previous.filter((item) => item !== key) : [...previous, key]
   ));
@@ -338,16 +394,16 @@ const FunctionPermission = () => {
       <PageHeader
         title="功能权限配置"
         subTitle="按角色勾选可访问的模块、页面及行内操作权限"
-        extra={<Space><Button icon={<ReloadOutlined />} onClick={resetRole}>重置</Button><Button type="primary" icon={<SaveOutlined />} onClick={() => message.success(`「${role}」功能权限保存成功`)}>保存配置</Button></Space>}
+        extra={<Space><Button icon={<ReloadOutlined />} disabled={!currentRole || loading} onClick={resetRole}>重置为角色默认权限</Button><Button type="primary" icon={<SaveOutlined />} loading={saving} disabled={!currentRole || loading} onClick={() => void savePermissions()}>保存配置</Button></Space>}
       />
       <Card bordered={false}>
         <div className="permission-role-bar">
-          <Space size={16} wrap><Text strong>配置角色</Text><Select value={role} options={roles.map((value) => ({ label: value, value }))} onChange={switchRole} style={{ width: 220 }} /><Text type="secondary">已选择 {checked.length} 项权限</Text></Space>
+          <Space size={16} wrap><Text strong>配置角色</Text><Select loading={!roles.length} value={roleId || undefined} options={roles.map((item) => ({ label: item.name, value: item.id, disabled: item.status === '停用' }))} onChange={switchRole} style={{ width: 220 }} /><Text type="secondary">已选择 {visibleCheckedCount} 项权限</Text></Space>
         </div>
         <div className="permission-config-layout">
           <aside className="permission-module-nav">
             <div className="permission-module-nav-title">功能模块</div>
-            {permissionTree.map((item) => {
+            {visiblePermissionTree.map((item) => {
               const keys = flattenKeys(item.children || [item]);
               const selected = keys.filter((key) => checked.includes(key)).length;
               return (

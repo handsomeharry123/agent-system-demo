@@ -82,7 +82,7 @@ const Cost = () => {
               { date: '06-30', CPU: 9500, GPU: 1480 },
               { date: '07-01', CPU: 9200, GPU: 1430 },
             ]}
-            xField="date" yField={['CPU', 'GPU']} color={['#52B788', '#722ED1']} legend={{ position: 'top' }}
+            xField="date" yField={['CPU', 'GPU']} color={['#1677FF', '#722ED1']} legend={{ position: 'top' }}
           />
         </Card>
       </Col>
@@ -105,7 +105,7 @@ const Cost = () => {
               { date: '07-01', 系统盘: 1250, 数据盘: 1010, 快照: 370 },
             ]}
             xField="date" yField={['系统盘', '数据盘', '快照']} stack
-            color={['#52B788', '#52C41A', '#FA8C16']} legend={{ position: 'top' }}
+            color={['#1677FF', '#52C41A', '#FA8C16']} legend={{ position: 'top' }}
           />
         </Card>
       </Col>
@@ -127,7 +127,7 @@ const Cost = () => {
       <Col span={12}>
         <Card bordered={false} title={<MetricLabel name="模型 Token 总消耗（趋势 + 7 日基线）" />} extra={<Button type="link" size="small">查看详情</Button>} styles={{ body: { padding: 12, height: 200, overflow: 'hidden' } }} style={{ height: 248 }}>
           <Space size="middle" style={{ width: '100%' }}>
-            <Statistic title="当前均值" value={1820} suffix="tokens/次" valueStyle={{ fontSize: 22, color: '#52B788' }} />
+            <Statistic title="当前均值" value={1820} suffix="tokens/次" valueStyle={{ fontSize: 22, color: '#1677FF' }} />
             <div style={{ flex: 1 }}>
               <Line
                 {...chartBaseConfig}
@@ -141,7 +141,7 @@ const Cost = () => {
                   { date: '06-30', 当前: 1820, 基线: 1850 },
                   { date: '07-01', 当前: 1820, 基线: 1850 },
                 ]}
-                xField="date" yField={['当前', '基线']} smooth color={['#52B788', '#D9D9D9']} legend={{ position: 'top' }}
+                xField="date" yField={['当前', '基线']} smooth color={['#1677FF', '#D9D9D9']} legend={{ position: 'top' }}
               />
             </div>
           </Space>
@@ -237,7 +237,7 @@ const Cost = () => {
                   { type: '其它', value: 6 },
                 ]}
                 angleField="value" colorField="type" radius={0.7} legend={{ position: 'bottom' }}
-                color={['#FF4D4F', '#FA8C16', '#722ED1', '#52B788', '#8C8C8C']}
+                color={['#FF4D4F', '#FA8C16', '#722ED1', '#1677FF', '#8C8C8C']}
               />
             </div>
           </Space>
@@ -258,7 +258,7 @@ const Cost = () => {
               { date: '07-01', GPU1: 78, GPU2: 72, GPU3: 85 },
             ]}
             xField="date" yField={['GPU1', 'GPU2', 'GPU3']} smooth
-            color={['#52B788', '#722ED1', '#EB2F96']} legend={{ position: 'top' }}
+            color={['#1677FF', '#722ED1', '#EB2F96']} legend={{ position: 'top' }}
           />
         </Card>
       </Col>
@@ -280,7 +280,7 @@ const Cost = () => {
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 4 }}>
             <Space direction="vertical" size={0}>
               <Text type="secondary" style={{ fontSize: 12 }}>当前均值</Text>
-              <Text style={{ fontSize: 24, fontWeight: 600, color: '#52B788', lineHeight: 1.2 }}>1,820</Text>
+              <Text style={{ fontSize: 24, fontWeight: 600, color: '#1677FF', lineHeight: 1.2 }}>1,820</Text>
             </Space>
             <Text type="success" style={{ fontSize: 12 }}>↓ 3.2% vs 7 日基线</Text>
           </div>
@@ -293,7 +293,7 @@ const Cost = () => {
               { date: '06-29', v: 1830 }, { date: '06-30', v: 1820 },
               { date: '07-01', v: 1820 },
             ]}
-            xField="date" yField="v" smooth color="#52B788" legend={false}
+            xField="date" yField="v" smooth color="#1677FF" legend={false}
           />
         </Card>
       </Col>
@@ -320,7 +320,7 @@ const Cost = () => {
               { date: '07-01', 输入: 3700, 输出: 2000 },
             ]}
             xField="date" yField={['输入', '输出']} stack
-            color={['#52B788', '#722ED1']} legend={{ position: 'top' }}
+            color={['#1677FF', '#722ED1']} legend={{ position: 'top' }}
           />
         </Card>
       </Col>
@@ -347,7 +347,7 @@ const Cost = () => {
               { date: '07-01', 算力: 9200, 存储: 3700, 流量: 2050, Token: 7050 },
             ]}
             xField="date" yField={['算力', '存储', '流量', 'Token']} stack
-            color={['#52B788', '#52C41A', '#FA8C16', '#722ED1']} legend={{ position: 'top' }}
+            color={['#1677FF', '#52C41A', '#FA8C16', '#722ED1']} legend={{ position: 'top' }}
           />
         </Card>
       </Col>
@@ -374,12 +374,12 @@ const Cost = () => {
                 ]}
                 angleField="value" colorField="type" radius={0.85} innerRadius={0.55}
                 legend={false}
-                color={['#52B788', '#52C41A', '#FA8C16', '#722ED1']}
+                color={['#1677FF', '#52C41A', '#FA8C16', '#722ED1']}
                 label={false}
               />
             </div>
             <Space direction="vertical" size={6} style={{ flex: '0 0 auto', fontSize: 12 }}>
-              <Space size={4}><span style={{ width: 8, height: 8, background: '#52B788', display: 'inline-block', borderRadius: 1 }} /><Text style={{ fontSize: 12 }}>算力 39% ↑2%</Text></Space>
+              <Space size={4}><span style={{ width: 8, height: 8, background: '#1677FF', display: 'inline-block', borderRadius: 1 }} /><Text style={{ fontSize: 12 }}>算力 39% ↑2%</Text></Space>
               <Space size={4}><span style={{ width: 8, height: 8, background: '#52C41A', display: 'inline-block', borderRadius: 1 }} /><Text style={{ fontSize: 12 }}>存储 14% ↓1%</Text></Space>
               <Space size={4}><span style={{ width: 8, height: 8, background: '#FA8C16', display: 'inline-block', borderRadius: 1 }} /><Text style={{ fontSize: 12 }}>流量 8% 持平</Text></Space>
               <Space size={4}><span style={{ width: 8, height: 8, background: '#722ED1', display: 'inline-block', borderRadius: 1 }} /><Text style={{ fontSize: 12 }}>Token 39% ↑3%</Text></Space>
@@ -533,7 +533,7 @@ const Cost = () => {
           <Card bordered={false} hoverable styles={{ body: { padding: '12px 16px', height: 96, overflow: 'hidden' } }}>
             <Space direction="vertical" size={4} style={{ width: '100%' }}>
               <MetricLabel name="周期总消耗 / 总成本" variant="kpi" />
-              <Text strong style={{ fontSize: 24, fontWeight: 600, color: '#52B788', lineHeight: 1.2 }}>284,010</Text>
+              <Text strong style={{ fontSize: 24, fontWeight: 600, color: '#1677FF', lineHeight: 1.2 }}>284,010</Text>
               <Text type="secondary" style={{ fontSize: 12, lineHeight: 1.4 }}>元 · 环比 ↑ 6.0%</Text>
             </Space>
           </Card>

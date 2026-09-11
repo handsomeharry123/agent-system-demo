@@ -54,7 +54,7 @@ export interface AccessRecord {
   description: string;
   applicant: string;
   applicantRole: string;
-  attachments: { name: string; size: string; url: string }[];
+  attachments: { name: string; size: string; url: string; fileUuid?: string }[];
   accessMode: AccessMode;
   apiEndpoint?: string;
   apiKey?: string;

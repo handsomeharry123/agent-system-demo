@@ -51,7 +51,10 @@ export default defineConfig({
     // 否则 Vite 会在请求进入 React 路由前直接返回 Host not allowed。
     allowedHosts: true,
     proxy: {
-      '/api': 'http://127.0.0.1:3002',
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   preview: {

@@ -31,7 +31,20 @@ export const AutoModelIcon = ({ size = 22 }: { size?: number }) => (
 );
 
 const MODELS: ModelOption[] = [
-  { value: 'MiniMax-M3', name: 'MiniMax', version: 'M3', vendor: 'MiniMax', iconUrl: 'minimax-color.svg', color: 'F03573', fallback: 'M' },
+  { value: 'auto', name: '自动', vendor: '智能选择最合适的模型', customIcon: <AutoModelIcon /> },
+  { value: 'gpt-5.2', name: 'GPT', version: '5.2', vendor: 'OpenAI', iconUrl: 'openai.svg', color: '101010', fallback: 'G' },
+  { value: 'claude-sonnet-4.5', name: 'Claude Sonnet', version: '4.5', vendor: 'Anthropic', iconUrl: 'claude-color.svg', color: 'D97757', fallback: 'C' },
+  { value: 'gemini-3-pro', name: 'Gemini', version: '3 Pro', vendor: 'Google', iconUrl: 'gemini-color.svg', color: '4285F4', fallback: 'G' },
+  { value: 'deepseek-v4', name: 'DeepSeek', version: 'V4', vendor: 'DeepSeek', iconUrl: 'deepseek-color.svg', color: '4D6BFE', fallback: 'D' },
+  { value: 'qwen3-max', name: 'Qwen', version: '3 Max', vendor: 'Alibaba Cloud', iconUrl: 'qwen-color.svg', color: 'FF6A00', fallback: 'Q' },
+  { value: 'kimi-k2', name: 'Kimi', version: 'K2 Thinking', vendor: 'Moonshot AI', iconUrl: 'kimi-color.svg', color: '111827', fallback: 'K' },
+  { value: 'doubao-seed-1.8', name: 'Doubao Seed', version: '1.8', vendor: 'ByteDance', iconUrl: 'doubao-color.svg', color: '325BF6', fallback: 'D' },
+  { value: 'glm-4.7', name: 'GLM', version: '4.7', vendor: 'Zhipu AI', iconUrl: 'glmv-color.svg', color: '155EEF', fallback: 'G' },
+  { value: 'minimax-m2.1', name: 'MiniMax', version: 'M2.1', vendor: 'MiniMax', iconUrl: 'minimax-color.svg', color: 'F03573', fallback: 'M' },
+  { value: 'llama-4-maverick', name: 'Llama', version: '4 Maverick', vendor: 'Meta', iconUrl: 'meta-color.svg', color: '0668E1', fallback: 'L' },
+  { value: 'grok-4', name: 'Grok', version: '4', vendor: 'xAI', iconUrl: 'grok.svg', color: '101010', fallback: 'X' },
+  { value: 'mistral-large-3', name: 'Mistral Large', version: '3', vendor: 'Mistral AI', iconUrl: 'mistral-color.svg', color: 'FA520F', fallback: 'M' },
+  { value: 'custom', name: '自定义模型', vendor: '配置私有或院内模型', customIcon: <ApiOutlined style={{ color: '#722ed1', fontSize: 21 }} /> },
 ];
 
 const BrandIcon = ({ model, compact = false }: { model: ModelOption; compact?: boolean }) => {

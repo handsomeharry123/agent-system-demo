@@ -90,7 +90,7 @@ const SkillList = ({ embedded = false, onTrySkill }: SkillListProps = {}) => {
         style={embedded ? { padding: '14px 18px' } : undefined}
         title={
           <Space size={embedded ? 8 : 10}>
-            <ToolOutlined style={{ color: '#52B788' }} />
+            <ToolOutlined style={{ color: '#1677FF' }} />
             <span>技能</span>
           </Space>
         }

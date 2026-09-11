@@ -134,8 +134,8 @@ const SecurityV21 = () => {
                   <Space direction="vertical" size={8} style={{ width: '100%' }}>
                     <MetricLabel name={metric.countTitle} variant="kpi" />
                     <Space align="baseline">
-                      <SafetyCertificateOutlined style={{ color: '#52B788', fontSize: 22 }} />
-                      <Text strong style={{ fontSize: 34, color: '#52B788', lineHeight: 1.1 }}>{metric.count.toLocaleString()}</Text>
+                      <SafetyCertificateOutlined style={{ color: '#1677FF', fontSize: 22 }} />
+                      <Text strong style={{ fontSize: 34, color: '#1677FF', lineHeight: 1.1 }}>{metric.count.toLocaleString()}</Text>
                       <Text type="secondary">{metric.countUnit}</Text>
                     </Space>
                     <Text type="secondary" style={{ fontSize: 12 }}>{metric.note}</Text>
@@ -177,7 +177,7 @@ const SecurityV21 = () => {
                     xField="date"
                     yField="value"
                     smooth
-                    color="#52B788"
+                    color="#1677FF"
                     area={{ style: { fillOpacity: 0.12 } }}
                     point={trendRanges[metric.key] === '7d' || trendRanges[metric.key] === '1m'
                       ? { size: 3, shape: 'circle' }
@@ -213,7 +213,7 @@ const SecurityV21 = () => {
                 colorField="type"
                 innerRadius={0.58}
                 radius={0.84}
-                color={['#52B788', '#13C2C2', '#FAAD14', '#FF4D4F', '#722ED1']}
+                color={['#1677FF', '#13C2C2', '#FAAD14', '#FF4D4F', '#722ED1']}
                 legend={{ position: 'right' }}
                 label={{ text: 'value', position: 'outside', style: { fontSize: 11 } }}
                 tooltip={{
@@ -228,7 +228,7 @@ const SecurityV21 = () => {
               <Space direction="vertical" size={14} style={{ width: '100%' }}>
                 <div>
                   <Text type="secondary">安全问题总量</Text>
-                  <Text strong style={{ display: 'block', fontSize: 32, color: '#52B788' }}>{totalIssues.toLocaleString()} 次</Text>
+                  <Text strong style={{ display: 'block', fontSize: 32, color: '#1677FF' }}>{totalIssues.toLocaleString()} 次</Text>
                 </div>
                 {issueDistribution.map((item) => (
                   <div key={item.type} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #f0f0f0', paddingBottom: 8 }}>

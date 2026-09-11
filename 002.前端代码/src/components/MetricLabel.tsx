@@ -111,7 +111,7 @@ export const MetricLabel: React.FC<MetricLabelProps> = ({
             padding: 0,
             transition: 'color 0.2s',
           }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#52B788')}
+          onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.color = '#1677FF')}
           onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.color = '#BFBFBF')}
         />
       </Tooltip>

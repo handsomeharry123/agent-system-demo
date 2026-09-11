@@ -1,0 +1,174 @@
+{
+  "ts": "2026-07-04T04:52:10.024Z",
+  "tester": "C",
+  "total": 33,
+  "passed": 33,
+  "failed": 0,
+  "results": [
+    {
+      "name": "[C/草稿] 迷你清单 toggle 存在(零状态 N=0 可接受)",
+      "pass": true,
+      "detail": "N=0,skip miniList"
+    },
+    {
+      "name": "[C/待审核] 迷你清单 toggle 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/待审核] 迷你清单展开后含行级按钮",
+      "pass": true,
+      "detail": "n=4"
+    },
+    {
+      "name": "[C/待审核] 行级按钮 kind=navigate-detail 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-detail recordId=acc-004"
+    },
+    {
+      "name": "[C/待审核] navigate-detail 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/agent-center/detail/acc-004"
+    },
+    {
+      "name": "[C/待审核] 行级按钮 kind=confirm-cancel 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=confirm-cancel recordId=acc-004"
+    },
+    {
+      "name": "[C/待审核] confirm-cancel 打开二次确认 Modal",
+      "pass": true,
+      "detail": "modal=true"
+    },
+    {
+      "name": "[C/审核中] 迷你清单 toggle 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/审核中] 迷你清单展开后含行级按钮",
+      "pass": true,
+      "detail": "n=4"
+    },
+    {
+      "name": "[C/审核中] 行级按钮 kind=navigate-detail 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-detail recordId=acc-003"
+    },
+    {
+      "name": "[C/审核中] navigate-detail 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/agent-center/detail/acc-003"
+    },
+    {
+      "name": "[C/审核中] 行级按钮 kind=confirm-cancel 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=confirm-cancel recordId=acc-003"
+    },
+    {
+      "name": "[C/审核中] confirm-cancel 打开二次确认 Modal",
+      "pass": true,
+      "detail": "modal=true"
+    },
+    {
+      "name": "[C/退回修改] 迷你清单 toggle 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/退回修改] 迷你清单展开后含行级按钮",
+      "pass": true,
+      "detail": "n=2"
+    },
+    {
+      "name": "[C/退回修改] 行级按钮 kind=navigate-edit 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-edit recordId=acc-005"
+    },
+    {
+      "name": "[C/退回修改] navigate-edit 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/agent-center/edit/acc-005"
+    },
+    {
+      "name": "[C/撤销修改] 迷你清单 toggle 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/撤销修改] 迷你清单展开后含行级按钮",
+      "pass": true,
+      "detail": "n=2"
+    },
+    {
+      "name": "[C/撤销修改] 行级按钮 kind=navigate-edit 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-edit recordId=acc-006"
+    },
+    {
+      "name": "[C/撤销修改] navigate-edit 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/agent-center/edit/acc-006"
+    },
+    {
+      "name": "[C/撤销修改] 行级按钮 kind=confirm-delete 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=confirm-delete recordId=acc-006"
+    },
+    {
+      "name": "[C/撤销修改] confirm-delete 打开二次确认 Modal",
+      "pass": true,
+      "detail": "modal=true"
+    },
+    {
+      "name": "[C/审核通过] 迷你清单 toggle 存在",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/审核通过] 迷你清单展开后含行级按钮",
+      "pass": true,
+      "detail": "n=9"
+    },
+    {
+      "name": "[C/审核通过] 行级按钮 kind=navigate-detail 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-detail recordId=acc-002"
+    },
+    {
+      "name": "[C/审核通过] navigate-detail 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/agent-center/detail/acc-002"
+    },
+    {
+      "name": "[C/审核通过] 行级按钮 kind=navigate-eval 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-eval recordId=acc-002"
+    },
+    {
+      "name": "[C/审核通过] navigate-eval 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/evaluation/tasks/create?agentName=%E8%82%BA%E9%83%A8%2"
+    },
+    {
+      "name": "[C/审核通过] 行级按钮 kind=navigate-ledger 派发 agent-bubble-row-action",
+      "pass": true,
+      "detail": "kind=navigate-ledger recordId=acc-002"
+    },
+    {
+      "name": "[C/审核通过] navigate-ledger 触发 navigation",
+      "pass": true,
+      "detail": "url=http://localhost:5173/app/ledger/detail/AGT-2025-005?search=%E8%82%BA%E9%83%A8+C"
+    },
+    {
+      "name": "[C/查看全部] 展开态含「查看全部」按钮",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "[C/查看全部] 派发 agent-jump-tab 事件(targetTab=待审核)",
+      "pass": true,
+      "detail": "targetTab=待审核"
+    }
+  ]
+}

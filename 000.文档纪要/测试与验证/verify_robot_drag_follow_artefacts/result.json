@@ -1,0 +1,44 @@
+{
+  "beforeRobot": {
+    "x": 1352,
+    "y": 912,
+    "width": 64,
+    "height": 64
+  },
+  "beforeBubble": {
+    "x": 980,
+    "y": 745,
+    "width": 360,
+    "height": 154.5
+  },
+  "afterRobot": {
+    "x": 996.4000244140625,
+    "y": 642.4000244140625,
+    "width": 67.199951171875,
+    "height": 67.20001220703125
+  },
+  "afterBubble": {
+    "x": 626,
+    "y": 481,
+    "width": 360,
+    "height": 154.5
+  },
+  "robotMoved": 446,
+  "bubbleMoved": 442,
+  "relativeBefore": {
+    "dx": -372,
+    "dy": -167
+  },
+  "relativeAfter": {
+    "dx": -370,
+    "dy": -161
+  },
+  "stored": "{\"left\":998,\"top\":648}",
+  "listRobot": {
+    "x": 998,
+    "y": 642.6087036132812,
+    "width": 64,
+    "height": 64
+  },
+  "persistedAfterRoute": true
+}

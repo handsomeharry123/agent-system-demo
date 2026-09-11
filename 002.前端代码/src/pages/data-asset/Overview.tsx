@@ -104,7 +104,7 @@ const Overview = () => {
                   width: 64,
                   height: 64,
                   borderRadius: 16,
-                  background: '#EAF7EF',
+                  background: '#E6F4FF',
                   color: token.colorPrimary,
                   fontSize: 32,
                   display: 'flex',

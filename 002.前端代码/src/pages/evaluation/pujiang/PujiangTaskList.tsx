@@ -30,7 +30,7 @@ const PujiangTaskList = ({ moduleSwitcher }: Props) => {
   const isAdmin = currentUser?.roles.includes('信息科管理员') ?? false;
   const { pushWelcomeGreeting, consumeWelcome } = useSmartDraft();
   const [tasks, setTasks] = useState(initialPujiangTasks);
-  // 浦江模块默认落在「全部任务」；全部状态 Tab 均展示同一套医小知分类引导。
+  // 浦江模块默认落在「全部任务」；全部状态 Tab 均展示同一套医小管分类引导。
   const requestedTab = searchParams.get('tab') as TabKey | null;
   const [activeTab, setActiveTab] = useState<TabKey>(tabs.some((tab) => tab.key === requestedTab) ? requestedTab! : 'all');
   const [keyword, setKeyword] = useState('');

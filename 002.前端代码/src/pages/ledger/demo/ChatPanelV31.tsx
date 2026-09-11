@@ -13,10 +13,10 @@
  *   - 面板尺寸:480 → 440(对齐 CHAT_WIDTH); 后扩到 560 承载指标清单; 2026-07-03 再统一抬到 480
  *     (历史轨迹: 480 → 440 → 560 → 480, 当前两处 Agent 对话窗口完全等宽)
  *   - 高度:min(80vh, 720px) → 660(对齐 CHAT_HEIGHT)
- *   - 顶栏:标题由「医小知·台账助手」+「全院数据权限/本科室数据权限·跨中心聚合」→ 简化为「医小知」+「全院数据权限·跨中心聚合」/「本科室数据权限·跨中心聚合」(副标题位置文字相同,主标题对齐)
+ *   - 顶栏:标题由「医小管·台账助手」+「全院数据权限/本科室数据权限·跨中心聚合」→ 简化为「医小管」+「全院数据权限·跨中心聚合」/「本科室数据权限·跨中心聚合」(副标题位置文字相同,主标题对齐)
  *   - 工具栏:MoreOutlined 下拉(报告/速读/清空)保留,与接入中心结构保持一致
  *   - 输入区:上传/图片/链接/重置 + TextArea/语音/发送 两行布局 → Space.Compact 单行紧凑布局(对齐接入中心 AgentAssistant 输入区)
- *   - 输入区底部:补充「医小知仅在您授权下处理数据, 全程仅操作本人表单(单文件 ≤ 30M)」对齐接入中心
+ *   - 输入区底部:补充「医小管仅在您授权下处理数据, 全程仅操作本人表单(单文件 ≤ 30M)」对齐接入中心
  *   - 录音 banner:补 Alert 录音提示,完全对齐接入中心
  *   - 拖拽上传高亮:对齐接入中心 .agent-chat-dropzone / agentChatPanelIn keyframes
  *   - 保留独有:① 欢迎消息内嵌关键指标 + 分流链接(替代原顶部蓝条);② 推荐问句 chip(蓝色填充 + 圆角);③ mini chart + 下钻链接(聚合作答场景)
@@ -430,7 +430,7 @@ const MiniBar: React.FC<{ data: Array<{ name: string; value: number }>; title: s
           const y = padding.top + innerH - h;
           return (
             <g key={d.name}>
-              <rect x={x} y={y} width={w} height={h} fill="#52B788" rx={2} />
+              <rect x={x} y={y} width={w} height={h} fill="#1677FF" rx={2} />
               <text
                 x={x + w / 2}
                 y={y - 3}
@@ -471,7 +471,7 @@ const renderAgentMsg = (
       <div style={{ fontSize: 13, lineHeight: 1.7, color: '#262626' }}>
         {parts.map((p, idx) =>
           p.startsWith('**') && p.endsWith('**') ? (
-            <strong key={idx} style={{ color: '#52B788' }}>
+            <strong key={idx} style={{ color: '#1677FF' }}>
               {p.slice(2, -2)}
             </strong>
           ) : (
@@ -506,9 +506,9 @@ const renderAgentMsg = (
               style={{
                 padding: '5px 9px',
                 borderRadius: 4,
-                border: action.primary ? '1px solid #52B788' : '1px solid #D6E4FF',
-                background: action.primary ? '#52B788' : '#F3FBF6',
-                color: action.primary ? '#FFFFFF' : '#52B788',
+                border: action.primary ? '1px solid #1677FF' : '1px solid #D6E4FF',
+                background: action.primary ? '#1677FF' : '#F0F5FF',
+                color: action.primary ? '#FFFFFF' : '#1677FF',
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 500,
@@ -533,7 +533,7 @@ const renderAgentMsg = (
                 onClick={() => navigate(l.to)}
                 style={{
                   padding: '6px 8px',
-                  background: '#F3FBF6',
+                  background: '#F0F5FF',
                   border: '1px solid #D6E4FF',
                   borderRadius: 4,
                   cursor: 'pointer',
@@ -542,14 +542,14 @@ const renderAgentMsg = (
                   alignItems: 'center',
                 }}
                 onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background = '#EAF7EF')
+                  ((e.currentTarget as HTMLElement).style.background = '#E6F4FF')
                 }
                 onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLElement).style.background = '#F3FBF6')
+                  ((e.currentTarget as HTMLElement).style.background = '#F0F5FF')
                 }
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <CaretRightOutlined style={{ color: '#52B788', fontSize: 11 }} />
+                  <CaretRightOutlined style={{ color: '#1677FF', fontSize: 11 }} />
                   <span style={{ fontSize: 13, color: '#262626' }}>{l.name}</span>
                 </div>
                 {l.sub && (
@@ -619,7 +619,7 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
       faultCount: metrics.faultCount,
     };
     if (pageKind === 'detail') {
-      const detailText = `您好，我是**医小知**。当前为您展示【${activeDetailAgent.name}】的${detailView === 'profile' ? '360画像' : '信息详情'}，有什么该智能体相关问题可以直接问我~`;
+      const detailText = `您好，我是**医小管**。当前为您展示【${activeDetailAgent.name}】的${detailView === 'profile' ? '360画像' : '信息详情'}，有什么该智能体相关问题可以直接问我~`;
       setMsgs([
         {
           id: 'welcome',
@@ -771,8 +771,8 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
       id: 'welcome',
       role: 'agent',
       text: isDept
-        ? `你好，我是**医小知**。${overviewText}`
-        : `你好，我是**医小知**！${overviewText}`,
+        ? `你好，我是**医小管**。${overviewText}`
+        : `你好，我是**医小管**！${overviewText}`,
       links: overviewLinks,
       guideActions: overviewGuideActions,
       suggestions,
@@ -910,7 +910,7 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
         }}
       >
       {/* ===== 顶栏 — V1.2 与接入中心 AgentAssistant 标题结构完全一致 =====
-          主标题统一为「医小知」,副标题保留场景信息「全院数据权限 · 跨中心聚合」/「本科室数据权限 · 跨中心聚合」 */}
+          主标题统一为「医小管」,副标题保留场景信息「全院数据权限 · 跨中心聚合」/「本科室数据权限 · 跨中心聚合」 */}
       <div
         style={{
           height: 48,
@@ -927,7 +927,7 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
             <AgentRobotIcon mood="idle" size={32} />
           </div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#1F1F1F' }}>医小知</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#1F1F1F' }}>医小管</div>
             <Text type="secondary" style={{ fontSize: 11 }}>
               {scope === 'platform_admin' ? '全院数据权限' : '本科室数据权限'} · 跨中心聚合
             </Text>
@@ -990,7 +990,7 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
                 maxWidth: '78%',
                 padding: '8px 10px',
                 borderRadius: m.role === 'user' ? '12px 12px 4px 12px' : '4px 12px 12px 12px',
-                background: m.role === 'user' ? '#52B788' : '#FFFFFF',
+                background: m.role === 'user' ? '#1677FF' : '#FFFFFF',
                 color: m.role === 'user' ? '#fff' : '#262626',
                 fontSize: 13,
                 boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
@@ -1147,7 +1147,7 @@ export const ChatPanelV31: React.FC<ChatPanelV31Props> = ({
         </Space.Compact>
         {/* 底部数据授权提示 — 完全对齐接入中心 AgentAssistant */}
         <div style={{ marginTop: 6, fontSize: 11, color: '#999', textAlign: 'center' }}>
-          <ThunderboltFilled /> 医小知仅在您授权下处理数据，全程仅操作本人表单（单文件 ≤ 30M）
+          <ThunderboltFilled /> 医小管仅在您授权下处理数据，全程仅操作本人表单（单文件 ≤ 30M）
         </div>
       </div>
     </div>

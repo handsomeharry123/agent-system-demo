@@ -65,11 +65,11 @@ const Agents = () => {
 
   const renderAgentIcon = (type: string) => {
     const icons: Record<string, React.ReactNode> = {
-      辅助诊断: <RobotOutlined style={{ fontSize: 32, color: '#52B788' }} />,
+      辅助诊断: <RobotOutlined style={{ fontSize: 32, color: '#1677FF' }} />,
       影像分析: <MedicineBoxOutlined style={{ fontSize: 32, color: '#722ED1' }} />,
       病历生成: <TeamOutlined style={{ fontSize: 32, color: '#13C2C2' }} />,
     };
-    return icons[type] || <RobotOutlined style={{ fontSize: 32, color: '#52B788' }} />;
+    return icons[type] || <RobotOutlined style={{ fontSize: 32, color: '#1677FF' }} />;
   };
 
   return (
@@ -211,7 +211,7 @@ const Agents = () => {
                   }}
                   className="card-arrow"
                 >
-                  <RightOutlined style={{ color: '#52B788' }} />
+                  <RightOutlined style={{ color: '#1677FF' }} />
                 </div>
               </Card>
             </Col>

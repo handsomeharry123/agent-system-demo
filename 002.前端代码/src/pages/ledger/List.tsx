@@ -43,6 +43,7 @@ import {
 } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { mvpFeatures } from '../../config/mvpFeatures';
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -70,14 +71,12 @@ import { useAuth } from '../../hooks/useAuth';
 import { matchAgentByName } from '../../utils/agentNameMatcher';
 import { getAgentAvatar as getAgentAvatarImage } from '../../utils/agentAvatar';
 import {
-  ledgerAgents,
-  currentUser,
   SOURCE_COLOR,
   ENUMS,
-  getVisibleAgents,
   getSubscriptionHistoryReports,
   type LedgerAgent,
 } from '../../mock/ledger';
+import { changeLedgerAgentStatus, getLedgerAgents, type LedgerListResponse } from '../../services/ledgerApi';
 
 const { Text } = Typography;
 
@@ -103,7 +102,7 @@ const RISK_TAG: Record<string, { color: string; tag: string }> = {
 };
 
 const AGENT_AVATAR: Record<string, { background: string; icon: React.ReactNode }> = {
-  智能问诊: { background: 'linear-gradient(135deg, #52B788, #69b1ff)', icon: <RobotOutlined /> },
+  智能问诊: { background: 'linear-gradient(135deg, #1677ff, #69b1ff)', icon: <RobotOutlined /> },
   导诊分诊: { background: 'linear-gradient(135deg, #13c2c2, #5cdbd3)', icon: <MedicineBoxOutlined /> },
   辅助诊断: { background: 'linear-gradient(135deg, #722ed1, #b37feb)', icon: <MedicineBoxOutlined /> },
   影像分析: { background: 'linear-gradient(135deg, #2f54eb, #85a5ff)', icon: <MedicineBoxOutlined /> },
@@ -114,7 +113,7 @@ const AGENT_AVATAR: Record<string, { background: string; icon: React.ReactNode }
 
 const getAgentAvatarStyle = (type: string) =>
   AGENT_AVATAR[type] ?? {
-    background: 'linear-gradient(135deg, #52B788, #91caff)',
+    background: 'linear-gradient(135deg, #1677ff, #91caff)',
     icon: <RobotOutlined />,
   };
 
@@ -148,7 +147,7 @@ const LedgerList = () => {
   const location = useLocation();
   const { currentUser: authUser } = useAuth();
   const isHospitalLeader = authUser?.roles.includes('医院领导') ?? false;
-  const isPlatformAdmin = currentUser.role === 'platform_admin';
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(authUser?.roles.includes('信息科管理员') ?? false);
 
   const [filters, setFilters] = useState<FilterState>({ search: '' });
   // 筛选区展开/收起：默认收起，只显示一行；展开后展示全部筛选维度
@@ -158,6 +157,9 @@ const LedgerList = () => {
   // 台账支持卡片 / 表格双视图，默认使用信息密度更友好的卡片视图
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [cardPage, setCardPage] = useState(1);
+  const [visibleList, setVisibleList] = useState<LedgerAgent[]>([]);
+  const [ledgerMeta, setLedgerMeta] = useState<LedgerListResponse<LedgerAgent>['meta']>({ departments: [], stages: [...ENUMS.diagnosisPhase], sources: ['自研','第三方','合作研发'], riskLevels: ['高度关注','中度关注','一般关注'], accessModes: [...ENUMS.accessType], runtimeStatuses: ['在线','离线','更新','禁用','异常'] });
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // V1：速读订阅抽屉（PRD §3.1.1 / §3.3.1 汇报引导）
   const [subDrawerOpen, setSubDrawerOpen] = useState(false);
@@ -228,7 +230,7 @@ const LedgerList = () => {
 
     // V2.7: 改用公共 4 级匹配(精确 → 去尾缀 → 子串 → bigram min-归一化 + 活跃 tiebreaker)
     //   接入中心 / 台账 mock 命名口径不一致时仍能命中(如「心电图智能辅助诊断」↔「心电图智能辅助诊断系统」)
-    const matched = matchAgentByName(searchName, getVisibleAgents(), {
+    const matched = matchAgentByName(searchName, visibleList, {
       isActive: (a) =>
         // 原 List.tsx 内联 4 级匹配的活跃判定:排除「已禁用」/「已归档」(后者虽不在 LedgerAgent 枚举里,保留判定以防 mock 增改)
         (a as LedgerAgent).lifecycleStatus !== '已禁用' &&
@@ -249,10 +251,26 @@ const LedgerList = () => {
       autoOpenConsumed.current = `miss:${location.search}`;
       message.warning(`未在台账中找到名称为「${searchName}」的智能体,请手动定位`);
     }
-  }, [location.search, navigate]);
+  }, [location.search, navigate, visibleList]);
 
-  // 可见数据：先按角色过滤
-  const visibleList = useMemo(() => getVisibleAgents(), []);
+  useEffect(() => {
+    const timer=window.setTimeout(() => {
+      void getLedgerAgents<LedgerAgent>({ keyword:filters.search,department:filters.department,stage:filters.diagnosisPhase,source:filters.sourceType,risk:filters.riskLevel,accessMode:filters.accessType,runtimeStatus:filters.runtimeStatus,accessMonth:new URLSearchParams(location.search).get('accessMonth')??undefined })
+        .then((data)=>{setVisibleList(data.items);setLedgerMeta(data.meta);setIsPlatformAdmin(data.isPlatformAdmin);})
+        .catch((error)=>message.error(error instanceof Error?error.message:'台账列表加载失败'));
+    },250);
+    return()=>window.clearTimeout(timer);
+  },[filters,location.search,refreshKey]);
+
+  useEffect(() => {
+    const refresh = () => setRefreshKey((value) => value + 1);
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
 
   // 二次过滤（V1.7 §2.1 筛选查询：6 维 + 关键字）
   const filtered = useMemo(() => {
@@ -288,10 +306,6 @@ const LedgerList = () => {
 
   const handleViewDetail = (agent: LedgerAgent) => {
     navigate(`/app/ledger/detail/${agent.id}`);
-  };
-
-  const handleRiskLevel = (agent: LedgerAgent) => {
-    navigate(`/app/ledger/risk/${agent.id}`);
   };
 
   // ===== 批量导出台账 =====
@@ -415,6 +429,23 @@ const LedgerList = () => {
     return isPlatformAdmin
       ? [
           {
+            key: 'edit',
+            label: '编辑',
+            onClick: () => navigate(`/app/ledger/detail/${record.id}?edit=1`),
+          },
+          {
+            key: 'status',
+            danger: record.lifecycleStatus !== '已禁用',
+            label: record.lifecycleStatus === '已禁用' ? '重新启用' : '禁用',
+            onClick: async () => {
+              const disabling=record.lifecycleStatus!=='已禁用';
+              const reason=disabling?window.prompt('请输入禁用原因')?.trim():undefined;
+              if(disabling&&!reason)return;
+              try{await changeLedgerAgentStatus(record.id,disabling?'disable':'enable',reason);message.success(disabling?'智能体已禁用':'智能体已重新启用');setRefreshKey((value)=>value+1);}catch(error){message.error(error instanceof Error?error.message:'状态更新失败');}
+            },
+          },
+          { type: 'divider' },
+          {
             key: 'resource',
             label: '查看资源申请',
             icon: <AppstoreOutlined />,
@@ -462,13 +493,11 @@ const LedgerList = () => {
   const renderAgentActions = (record: LedgerAgent) => (
     <Space size={6} split={<Divider type="vertical" style={{ margin: 0 }} />}>
       <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)} style={{ padding: 0 }}>
-        360画像
+        查看详情
       </Button>
+      {!isHospitalLeader && mvpFeatures.ledgerRiskLevel && <Button type="link" size="small" icon={<SafetyCertificateOutlined />} onClick={() => navigate(`/app/ledger/risk/${record.id}`)} style={{ padding: 0 }}>风险分级</Button>}
       {!isHospitalLeader && (
         <>
-          <Button type="link" size="small" icon={<SafetyCertificateOutlined />} onClick={() => handleRiskLevel(record)} style={{ padding: 0 }}>
-            风险分级
-          </Button>
           <Dropdown menu={{ items: getMoreItems(record) }} trigger={['click']}>
             <Button type="link" size="small" icon={<MoreOutlined />} style={{ padding: 0 }}>
               更多
@@ -626,7 +655,7 @@ const LedgerList = () => {
     <div style={{ padding: 16, background: '#F5F5F5', minHeight: 'calc(100vh - 64px)' }}>
       <PageHeader
         title="台账列表"
-        subTitle={isPlatformAdmin ? '全院智能体台账' : `仅显示 ${currentUser.department} 台账`}
+        subTitle={isPlatformAdmin ? '全院智能体台账' : `仅显示 ${authUser?.department ?? '本科室'} 台账`}
         extra={
           <Space size={8}>
             {/* V1：PRD §3.1.1 / §3.3.1 汇报引导（生成报告 + 订阅速读） */}
@@ -665,7 +694,7 @@ const LedgerList = () => {
               allowClear
               showSearch
               style={{ width: '100%' }}
-              options={ENUMS.department.map((d) => ({ label: d, value: d }))}
+              options={ledgerMeta.departments}
               value={filters.department}
               onChange={(v) => setFilters((f) => ({ ...f, department: v }))}
             />
@@ -675,7 +704,7 @@ const LedgerList = () => {
               placeholder="诊疗环节"
               allowClear
               style={{ width: '100%' }}
-              options={ENUMS.diagnosisPhase.map((d) => ({ label: d, value: d }))}
+              options={ledgerMeta.stages.map((d) => ({ label: d, value: d }))}
               value={filters.diagnosisPhase}
               onChange={(v) => setFilters((f) => ({ ...f, diagnosisPhase: v }))}
             />
@@ -685,29 +714,29 @@ const LedgerList = () => {
               placeholder="智能体来源"
               allowClear
               style={{ width: '100%' }}
-              options={['自研', '第三方', '合作研发'].map((d) => ({ label: d, value: d }))}
+              options={ledgerMeta.sources.map((d) => ({ label: d, value: d }))}
               value={filters.sourceType}
               onChange={(v) => setFilters((f) => ({ ...f, sourceType: v }))}
             />
           </Col>
           {filtersExpanded && (
             <>
-              <Col xs={24} sm={12} md={8} lg={4}>
+              {mvpFeatures.ledgerRiskLevel && <Col xs={24} sm={12} md={8} lg={4}>
                 <Select
                   placeholder="风险分级"
                   allowClear
                   style={{ width: '100%' }}
-                  options={['高度关注', '中度关注', '一般关注'].map((d) => ({ label: d, value: d }))}
+                  options={ledgerMeta.riskLevels.map((d) => ({ label: d, value: d }))}
                   value={filters.riskLevel}
                   onChange={(v) => setFilters((f) => ({ ...f, riskLevel: v }))}
                 />
-              </Col>
+              </Col>}
               <Col xs={24} sm={12} md={8} lg={4}>
                 <Select
                   placeholder="接入方式"
                   allowClear
                   style={{ width: '100%' }}
-                  options={ENUMS.accessType.map((d) => ({ label: d, value: d }))}
+                  options={ledgerMeta.accessModes.map((d) => ({ label: d, value: d }))}
                   value={filters.accessType}
                   onChange={(v) => setFilters((f) => ({ ...f, accessType: v }))}
                 />
@@ -717,7 +746,7 @@ const LedgerList = () => {
                   placeholder="运行状态"
                   allowClear
                   style={{ width: '100%' }}
-                  options={['在线', '离线', '更新', '禁用', '异常'].map((d) => ({ label: d, value: d }))}
+                  options={ledgerMeta.runtimeStatuses.map((d) => ({ label: d, value: d }))}
                   value={filters.runtimeStatus}
                   onChange={(v) => setFilters((f) => ({ ...f, runtimeStatus: v }))}
                 />
@@ -946,7 +975,7 @@ const LedgerList = () => {
                               onClick={() => handleViewDetail(agent)}
                               style={{ flex: '0 0 auto', padding: 0 }}
                             >
-                              360画像
+                              查看详情
                             </Button>
                           </div>
                         </Card>
@@ -968,7 +997,7 @@ const LedgerList = () => {
             ) : (
             <Table
               rowKey="id"
-              columns={columns}
+              columns={mvpFeatures.ledgerRiskLevel ? columns : columns.filter((column) => column.title !== '风险分级')}
               dataSource={filtered}
               size="middle"
               rowSelection={{
@@ -994,7 +1023,7 @@ const LedgerList = () => {
         onClose={() => setSubDrawerOpen(false)}
         title={
           <Space>
-            <BellOutlined style={{ color: '#52B788' }} />
+            <BellOutlined style={{ color: '#1677FF' }} />
             <span>{isPlatformAdmin ? '全院台账速读订阅' : '本科室台账速读订阅'}</span>
           </Space>
         }
@@ -1214,7 +1243,7 @@ const LedgerList = () => {
                             }
                             title={
                               <Space size={6} wrap>
-                                <FileTextOutlined style={{ fontSize: 16, color: '#52B788' }} />
+                                <FileTextOutlined style={{ fontSize: 16, color: '#1677FF' }} />
                                 {/* 报告名称：点击进入报告详情 */}
                                 <a
                                   onClick={() => navigate('/app/ledger-demo/report')}

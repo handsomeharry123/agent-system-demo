@@ -97,7 +97,7 @@ export const buildPlatformReport = (): ReportNode[] => [
     id: 'n4',
     type: 'kpi',
     kpis: [
-      { label: '纳管智能体总数', value: '42', unit: '个', color: '#52B788' },
+      { label: '纳管智能体总数', value: '42', unit: '个', color: '#1677FF' },
       { label: '总调用量', value: '126.8', unit: '万', color: '#13C2C2' },
       { label: '科室覆盖率', value: '68.4', unit: '%', color: '#722ED1' },
       { label: '正常运行率', value: '95.2', unit: '%', color: '#52C41A' },
@@ -290,7 +290,7 @@ export const buildPlatformReport = (): ReportNode[] => [
     id: 'n_h2_2_1_kpi',
     type: 'kpi',
     kpis: [
-      { label: '医院资源管理中心对接业务系统数量(个)', value: '12', color: '#52B788' },
+      { label: '医院资源管理中心对接业务系统数量(个)', value: '12', color: '#1677FF' },
     ],
   },
   {
@@ -420,7 +420,7 @@ export const buildPlatformReport = (): ReportNode[] => [
     kpis: [
       { label: '告警次数(次)', value: '68', color: '#FA8C16' },
       { label: '故障次数(次)', value: '3', color: '#F5222D' },
-      { label: '故障平均恢复时间', value: '42', unit: '分钟', color: '#52B788' },
+      { label: '故障平均恢复时间', value: '42', unit: '分钟', color: '#1677FF' },
     ],
   },
   {
@@ -596,7 +596,7 @@ export const buildDeptReport = (deptLabel: string = '放射科'): ReportNode[] =
     id: 'r_kpi_1',
     type: 'kpi',
     kpis: [
-      { label: '纳管智能体数量', value: '8', unit: '个', color: '#52B788' },
+      { label: '纳管智能体数量', value: '8', unit: '个', color: '#1677FF' },
       { label: '总调用量', value: '18.6', unit: '万次 · 全院占比 14.7%', color: '#13C2C2' },
       { label: '正常运行率', value: '87.5', unit: '% · 全院平均 95.2%', color: '#FA8C16' },
       { label: '使用成本', value: '6.8', unit: '万元', color: '#722ED1' },
@@ -764,7 +764,7 @@ export const buildDeptReport = (deptLabel: string = '放射科'): ReportNode[] =
   {
     id: 'r_h2_2_1_kpi',
     type: 'kpi',
-    kpis: [{ label: '本科室智能体对接的业务系统数量(个)', value: '5', color: '#52B788' }],
+    kpis: [{ label: '本科室智能体对接的业务系统数量(个)', value: '5', color: '#1677FF' }],
   },
   {
     id: 'r_h2_2_1_p',
@@ -962,7 +962,7 @@ export const buildDeptReport = (deptLabel: string = '放射科'): ReportNode[] =
     kpis: [
       { label: '告警次数(次)', value: '14', color: '#FA8C16' },
       { label: '故障次数(次)', value: '1', color: '#F5222D' },
-      { label: '故障平均恢复时间', value: '35', unit: '分钟', color: '#52B788' },
+      { label: '故障平均恢复时间', value: '35', unit: '分钟', color: '#1677FF' },
     ],
   },
   {

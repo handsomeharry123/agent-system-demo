@@ -677,7 +677,7 @@ const AlertEventListV18 = () => {
     return () => consumeWelcome();
   }, [activeTab, consumeWelcome, isAdmin, pushWelcomeGreeting, tabCounts.all, tabCounts.closed, tabCounts.handling, tabCounts.ignored, tabCounts.pending_assign, tabCounts.pending_handle, tabCounts.pending_review, tabCounts.reviewing]);
 
-  // 医小知对话联动：筛选待处理事件、直达详情、将事件转入处理中。
+  // 医小管对话联动：筛选待处理事件、直达详情、将事件转入处理中。
   useEffect(() => {
     const onAssistantQuery = (rawEvent: Event) => {
       const detail = (rawEvent as CustomEvent<{ text: string; respond?: (answer: string) => void }>).detail;
@@ -721,7 +721,7 @@ const AlertEventListV18 = () => {
           },
           handleTimeline: [
             ...(event.handleTimeline || []),
-            { time: now, action: '分派', operator, remark: `由医小知自动分派给 ${assignee.name}` },
+            { time: now, action: '分派', operator, remark: `由医小管自动分派给 ${assignee.name}` },
           ],
         });
         setEvents((current) => current.map((event) => targetIds.has(event.id) ? assignEvent(event) : event));
@@ -865,7 +865,7 @@ const AlertEventListV18 = () => {
         setEvents((current) => current.map((item) => item.id === target.id ? {
           ...item, status: 'handling', handleStartTime: now,
           handleTimeline: [...(item.handleTimeline || []), {
-            time: now, action: '开始处理', operator: currentUserName || '当前用户', remark: '由医小知根据对话指令发起',
+            time: now, action: '开始处理', operator: currentUserName || '当前用户', remark: '由医小管根据对话指令发起',
           }],
         } : item));
         setActiveTab('handling');

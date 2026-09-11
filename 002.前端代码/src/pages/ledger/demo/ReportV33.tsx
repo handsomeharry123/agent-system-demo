@@ -150,7 +150,7 @@ const buildPlatformDraft = (): ReportNode[] => [
     id: 'n4',
     type: 'kpi',
     kpis: [
-      { label: '纳管智能体总数', value: '42', unit: '个', color: '#52B788' },
+      { label: '纳管智能体总数', value: '42', unit: '个', color: '#1677FF' },
       { label: '总调用量', value: '126.8', unit: '万', color: '#13C2C2' },
       { label: '科室覆盖率', value: '68.4', unit: '%', color: '#722ED1' },
       { label: '正常运行率', value: '95.2', unit: '%', color: '#52C41A' },
@@ -413,7 +413,7 @@ const buildPlatformDraft = (): ReportNode[] => [
     id: 'n11-1-kpi',
     type: 'kpi',
     kpis: [
-      { label: '医院资源管理中心对接业务系统数量(个)', value: '12', color: '#52B788' },
+      { label: '医院资源管理中心对接业务系统数量(个)', value: '12', color: '#1677FF' },
     ],
     comments: [],
   },
@@ -614,7 +614,7 @@ const buildPlatformDraft = (): ReportNode[] => [
     kpis: [
       { label: '告警次数(次)', value: '68', color: '#FA8C16' },
       { label: '故障次数(次)', value: '3', color: '#FF4D4F' },
-      { label: '故障平均恢复时间', value: '42', unit: '分钟', color: '#52B788' },
+      { label: '故障平均恢复时间', value: '42', unit: '分钟', color: '#1677FF' },
     ],
     comments: [],
   },
@@ -873,7 +873,7 @@ const buildDeptDraft = (deptLabel: string = '放射科'): ReportNode[] => [
     id: 'r_kpi_1',
     type: 'kpi',
     kpis: [
-      { label: '纳管智能体数量', value: '8', unit: '个', color: '#52B788' },
+      { label: '纳管智能体数量', value: '8', unit: '个', color: '#1677FF' },
       { label: '总调用量', value: '18.6', unit: '万次 · 全院占比 14.7%', color: '#13C2C2' },
       { label: '正常运行率', value: '87.5', unit: '% · 全院平均 95.2%', color: '#FA8C16' },
       { label: '使用成本', value: '6.8', unit: '万元', color: '#722ED1' },
@@ -1102,7 +1102,7 @@ const buildDeptDraft = (deptLabel: string = '放射科'): ReportNode[] => [
     id: 'r_kpi_2',
     type: 'kpi',
     kpis: [
-      { label: '本科室智能体对接的业务系统数量', value: '5', unit: '个', color: '#52B788' },
+      { label: '本科室智能体对接的业务系统数量', value: '5', unit: '个', color: '#1677FF' },
     ],
     comments: [],
   },
@@ -1325,7 +1325,7 @@ const buildDeptDraft = (deptLabel: string = '放射科'): ReportNode[] => [
     kpis: [
       { label: '告警次数', value: '14', unit: '次', color: '#FA8C16' },
       { label: '故障次数', value: '1', unit: '次', color: '#FF4D4F' },
-      { label: '故障平均恢复时间', value: '35', unit: '分钟', color: '#52B788' },
+      { label: '故障平均恢复时间', value: '35', unit: '分钟', color: '#1677FF' },
     ],
     comments: [],
   },
@@ -1517,7 +1517,7 @@ const buildDeptDraft = (deptLabel: string = '放射科'): ReportNode[] => [
 ];
 // ============ 简易图表渲染 ============
 // 对接矩阵热力图(本科室智能体 × 业务系统)
-//   - 颜色按 value/maxV 映射到 #52B788 透明度
+//   - 颜色按 value/maxV 映射到 #1677FF 透明度
 //   - 0 值显示「—」浅灰边框(未对接)
 //   - 列标签顶部旋转 -45°
 const MatrixHeatmap: React.FC<{
@@ -1537,7 +1537,7 @@ const MatrixHeatmap: React.FC<{
   const colorOf = (v: number) => {
     if (v === 0) return '#FAFAFA';
     const a = Math.max(0.15, Math.min(1, v / maxV));
-    // #52B788 的 RGB=22,119,255;按 alpha a 混合到白底
+    // #1677FF 的 RGB=22,119,255;按 alpha a 混合到白底
     const r = Math.round(255 - (255 - 22) * a);
     const g = Math.round(255 - (255 - 119) * a);
     const b = Math.round(255 - (255 - 255) * a);
@@ -1650,7 +1650,7 @@ const MiniChart: React.FC<{
   }
   if (type === 'pie') {
     const total = data.reduce((s, d) => s + d.value, 0);
-    const palette = ['#52B788', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
+    const palette = ['#1677FF', '#13C2C2', '#52C41A', '#FA8C16', '#722ED1', '#EB2F96', '#FAAD14', '#A0D911'];
     let cursor = -Math.PI / 2;
     const cx = 80;
     const cy = 80;
@@ -1739,8 +1739,8 @@ const MiniChart: React.FC<{
       <svg width="100%" viewBox={`0 0 ${W} ${H}`}>
         <defs>
           <linearGradient id="line-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#52B788" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="#52B788" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="#1677FF" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#1677FF" stopOpacity={0.02} />
           </linearGradient>
         </defs>
         {[0, 0.25, 0.5, 0.75, 1].map((p) => {
@@ -1755,10 +1755,10 @@ const MiniChart: React.FC<{
           );
         })}
         <path d={areaD} fill="url(#line-grad)" />
-        <path d={pathD} fill="none" stroke="#52B788" strokeWidth={2} />
+        <path d={pathD} fill="none" stroke="#1677FF" strokeWidth={2} />
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#52B788" strokeWidth={2} />
+            <circle cx={p.x} cy={p.y} r={4} fill="#fff" stroke="#1677FF" strokeWidth={2} />
             <text x={p.x} y={p.y - 8} fontSize={10} fill="#262626" textAnchor="middle">
               {p.value}
             </text>
@@ -1800,7 +1800,7 @@ const MiniChart: React.FC<{
         const label = d.name.length > 6 ? d.name.slice(0, 6) + '…' : d.name;
         return (
           <g key={d.name}>
-            <rect x={x} y={y} width={w} height={h} fill="#52B788" rx={2} />
+            <rect x={x} y={y} width={w} height={h} fill="#1677FF" rx={2} />
             <text x={x + w / 2} y={y - 4} fontSize={10} fill="#262626" textAnchor="middle">
               {d.value}
             </text>
@@ -1857,12 +1857,12 @@ const NodeRenderer: React.FC<{
               fontSize: 20,
               fontWeight: 600,
               padding: '12px 0 6px',
-              borderBottom: '2px solid #52B788',
+              borderBottom: '2px solid #1677FF',
               background: 'transparent',
             }}
           />
         ) : (
-          <Title level={3} style={{ marginTop: 24, marginBottom: 8, borderBottom: '2px solid #52B788', paddingBottom: 4 }}>
+          <Title level={3} style={{ marginTop: 24, marginBottom: 8, borderBottom: '2px solid #1677FF', paddingBottom: 4 }}>
             {node.text}
           </Title>
         )}
@@ -1902,7 +1902,7 @@ const NodeRenderer: React.FC<{
               fontWeight: 600,
               padding: '8px 0 4px',
               background: 'transparent',
-              color: '#52B788',
+              color: '#1677FF',
             }}
           />
         ) : (
@@ -1910,7 +1910,7 @@ const NodeRenderer: React.FC<{
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: '#52B788',
+              color: '#1677FF',
               padding: '8px 0 4px',
               marginTop: 12,
               marginBottom: 4,
@@ -1964,7 +1964,7 @@ const NodeRenderer: React.FC<{
             <Col key={k.label} span={Math.floor(24 / node.kpis!.length)}>
               <Card size="small" style={{ background: '#FAFAFA', textAlign: 'center' }} bodyStyle={{ padding: 12 }}>
                 <div style={{ fontSize: 11, color: '#8C8C8C' }}>{k.label}</div>
-                <div style={{ fontSize: 22, fontWeight: 600, color: k.color || '#52B788', marginTop: 4 }}>
+                <div style={{ fontSize: 22, fontWeight: 600, color: k.color || '#1677FF', marginTop: 4 }}>
                   {k.value}
                   {k.unit && <span style={{ fontSize: 12, marginLeft: 4, color: '#8C8C8C' }}>{k.unit}</span>}
                 </div>
@@ -2020,7 +2020,7 @@ const NodeRenderer: React.FC<{
             }}
           >
             <thead>
-              <tr style={{ background: '#F3FBF6' }}>
+              <tr style={{ background: '#F0F5FF' }}>
                 {node.table!.headers.map((h) => (
                   <th
                     key={h}
@@ -2029,7 +2029,7 @@ const NodeRenderer: React.FC<{
                       border: '1px solid #D6E4FF',
                       textAlign: 'left',
                       fontWeight: 600,
-                      color: '#52B788',
+                      color: '#1677FF',
                     }}
                   >
                     {h}
@@ -2067,7 +2067,7 @@ const NodeRenderer: React.FC<{
       <div
         style={{
           position: 'relative',
-          background: 'linear-gradient(135deg, #52B788 0%, #0958D9 100%)',
+          background: 'linear-gradient(135deg, #1677FF 0%, #0958D9 100%)',
           color: '#fff',
           padding: '48px 40px',
           borderRadius: 8,
@@ -2124,12 +2124,12 @@ const NodeRenderer: React.FC<{
         bordered
         style={{
           marginBottom: 24,
-          background: '#F3FBF6',
+          background: '#F0F5FF',
           border: '1px solid #ADC8FF',
         }}
         bodyStyle={{ padding: '16px 24px' }}
       >
-        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#52B788' }}>
+        <Title level={4} style={{ marginTop: 0, marginBottom: 12, color: '#1677FF' }}>
           📑 目  录
         </Title>
         <div style={{ fontSize: 13, lineHeight: 2 }}>
@@ -2144,7 +2144,7 @@ const NodeRenderer: React.FC<{
                 borderBottom: i < items.length - 1 ? '1px dashed #D6E4FF' : 'none',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#52B788';
+                (e.currentTarget as HTMLElement).style.color = '#1677FF';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLElement).style.color = '#262626';
@@ -2193,7 +2193,7 @@ const NodeRenderer: React.FC<{
     const cl = node.colophon!;
     return (
       <div style={{ marginTop: 32 }}>
-        <Divider style={{ margin: '24px 0 16px', borderTop: '2px solid #52B788' }} />
+        <Divider style={{ margin: '24px 0 16px', borderTop: '2px solid #1677FF' }} />
         <div
           style={{
             textAlign: 'right',
@@ -2213,7 +2213,7 @@ const NodeRenderer: React.FC<{
           style={{ background: '#FAFAFA', border: '1px solid #F0F0F0' }}
           bodyStyle={{ padding: 12 }}
         >
-          <Text strong style={{ fontSize: 13, color: '#52B788' }}>
+          <Text strong style={{ fontSize: 13, color: '#1677FF' }}>
             附:编制说明
           </Text>
           <Paragraph style={{ fontSize: 12, color: '#595959', lineHeight: 1.85, marginTop: 6, marginBottom: 0 }}>
@@ -2396,7 +2396,7 @@ const ReportV33: React.FC = () => {
               (k) =>
                 `<td style="border:1px solid #ccc;padding:8px;text-align:center"><div>${esc(
                   k.label,
-                )}</div><div style="font-size:18px;color:${k.color || '#52B788'};font-weight:600">${esc(
+                )}</div><div style="font-size:18px;color:${k.color || '#1677FF'};font-weight:600">${esc(
                   String(k.value),
                 )}${k.unit ? ' ' + esc(k.unit) : ''}</div></td>`,
             )
@@ -2411,7 +2411,7 @@ const ReportV33: React.FC = () => {
         }
         if (n.type === 'table') {
           const ths = (n.table?.headers || [])
-            .map((h) => `<th style="border:1px solid #ccc;padding:4px;background:#EAF7EF">${esc(h)}</th>`)
+            .map((h) => `<th style="border:1px solid #ccc;padding:4px;background:#E6F4FF">${esc(h)}</th>`)
             .join('');
           const trs = (n.table?.rows || [])
             .map(
@@ -2424,7 +2424,7 @@ const ReportV33: React.FC = () => {
         if (n.type === 'quote') return `<blockquote>${esc(n.text || '')}</blockquote>`;
         if (n.type === 'cover' && n.cover) {
           const c = n.cover;
-          return `<div style="background:#52B788;color:#fff;padding:48px 40px;border-radius:8px;text-align:center">
+          return `<div style="background:#1677FF;color:#fff;padding:48px 40px;border-radius:8px;text-align:center">
             <h1 style="color:#fff;font-size:30px;margin:0">${esc(c.hospital)}</h1>
             <h2 style="color:#fff;font-size:22px;margin:8px 0 24px">${esc(c.reportTitle)}</h2>
             <table style="margin:0 auto;color:#fff;font-size:14px;line-height:2;text-align:left;background:rgba(255,255,255,0.12);padding:16px 24px;border-radius:6px">
@@ -2440,8 +2440,8 @@ const ReportV33: React.FC = () => {
           const items = n.toc.items
             .map((it, i) => `<li>${String(i + 1).padStart(2, '0')}. ${esc(it.label)}</li>`)
             .join('');
-          return `<div style="background:#F3FBF6;border:1px solid #ADC8FF;padding:16px 24px;border-radius:4px">
-            <h3 style="color:#52B788;margin-top:0">📑 目  录</h3>
+          return `<div style="background:#F0F5FF;border:1px solid #ADC8FF;padding:16px 24px;border-radius:4px">
+            <h3 style="color:#1677FF;margin-top:0">📑 目  录</h3>
             <ol style="font-size:13px;line-height:2">${items}</ol>
           </div>`;
         }
@@ -2449,8 +2449,8 @@ const ReportV33: React.FC = () => {
           const m = n.matrix;
           // 取最大值做颜色参考(Word 不支持 rgba,用十六进制近似)
           const max = Math.max(...m.data.flat(), 1);
-          const headerRow = `<tr><th style="border:1px solid #ccc;padding:6px;background:#EAF7EF">智能体 / 系统</th>${m.cols
-            .map((c) => `<th style="border:1px solid #ccc;padding:6px;background:#EAF7EF">${esc(c)}</th>`)
+          const headerRow = `<tr><th style="border:1px solid #ccc;padding:6px;background:#E6F4FF">智能体 / 系统</th>${m.cols
+            .map((c) => `<th style="border:1px solid #ccc;padding:6px;background:#E6F4FF">${esc(c)}</th>`)
             .join('')}</tr>`;
           const bodyRows = m.rows
             .map(
@@ -2484,7 +2484,7 @@ const ReportV33: React.FC = () => {
             <div>${esc(cl.reportDate)}</div>
           </div>
           <div style="background:#FAFAFA;border:1px solid #F0F0F0;padding:12px">
-            <strong style="color:#52B788;font-size:13px">附:编制说明</strong>
+            <strong style="color:#1677FF;font-size:13px">附:编制说明</strong>
             <p style="font-size:12px;color:#595959;line-height:1.85;margin:6px 0 0">${esc(
               cl.note,
             )}</p>
@@ -2619,7 +2619,7 @@ const ReportV33: React.FC = () => {
       <Row gutter={12} style={{ marginTop: 12 }}>
         <Col span={5}>
           <Card size="small" bodyStyle={{ padding: 8 }}>
-            <Statistic title="章节模块" value={stats.modules} suffix="个" valueStyle={{ fontSize: 18, color: '#52B788' }} />
+            <Statistic title="章节模块" value={stats.modules} suffix="个" valueStyle={{ fontSize: 18, color: '#1677FF' }} />
           </Card>
         </Col>
         <Col span={5}>
@@ -2638,9 +2638,9 @@ const ReportV33: React.FC = () => {
           </Card>
         </Col>
         <Col span={4}>
-          <Card size="small" bodyStyle={{ padding: 8 }} style={{ background: '#F3FBF6' }}>
+          <Card size="small" bodyStyle={{ padding: 8 }} style={{ background: '#F0F5FF' }}>
             <div style={{ fontSize: 12, color: '#8C8C8C' }}>导出即完成</div>
-            <div style={{ fontSize: 14, color: '#52B788', fontWeight: 600, marginTop: 4 }}>
+            <div style={{ fontSize: 14, color: '#1677FF', fontWeight: 600, marginTop: 4 }}>
               <CheckOutlined /> 草稿状态
             </div>
           </Card>
@@ -2675,7 +2675,7 @@ const ReportV33: React.FC = () => {
           style={{
             marginTop: 32,
             paddingTop: 16,
-            borderTop: '2px solid #52B788',
+            borderTop: '2px solid #1677FF',
             textAlign: 'right',
             color: '#8C8C8C',
             fontSize: 12,

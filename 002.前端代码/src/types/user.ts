@@ -1,4 +1,5 @@
-export type UserRole = '医院领导' | '信息科管理员' | '科室管理员';
+/** 角色由后端角色中心管理，不在前端限定为内置角色。 */
+export type UserRole = string;
 
 export type UserStatus = '正常' | '在职' | '已停用';
 
@@ -23,6 +24,8 @@ export interface User {
   department: string;
   /** 一个用户可同时拥有多个角色 */
   roles: UserRole[];
+  /** 当前用户通过全部有效角色获得的功能权限编码 */
+  permissionCodes?: string[];
   phone: string;
   email?: string;
   avatar?: string;

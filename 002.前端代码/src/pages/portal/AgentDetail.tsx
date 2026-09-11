@@ -84,7 +84,7 @@ const AgentDetail = () => {
                 width: 80,
                 height: 80,
                 borderRadius: 12,
-                background: 'linear-gradient(135deg, #52B788 0%, #001529 100%)',
+                background: 'linear-gradient(135deg, #1677FF 0%, #001529 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -179,7 +179,7 @@ const AgentDetail = () => {
           body: {
             padding: 32,
             textAlign: 'center',
-            background: 'linear-gradient(135deg, #52B788 0%, #001529 100%)',
+            background: 'linear-gradient(135deg, #1677FF 0%, #001529 100%)',
             borderRadius: 8,
           },
         }}
@@ -194,7 +194,7 @@ const AgentDetail = () => {
           type="primary"
           size="large"
           onClick={handleUse}
-          style={{ background: '#fff', borderColor: '#fff', color: '#52B788' }}
+          style={{ background: '#fff', borderColor: '#fff', color: '#1677FF' }}
         >
           {isAuthenticated ? '进入控制台' : '登录后使用'}
         </Button>

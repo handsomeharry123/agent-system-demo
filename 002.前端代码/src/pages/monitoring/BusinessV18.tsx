@@ -96,7 +96,7 @@ const getTrendAxis = (range: TrendRange) => ({
   y: { title: false },
 });
 
-const topAgentColors = ['#52B788', '#13C2C2', '#FA8C16', '#B37FEB', '#7265E6'];
+const topAgentColors = ['#1677FF', '#13C2C2', '#FA8C16', '#B37FEB', '#7265E6'];
 
 const TrendRangeSwitch = ({
   value,
@@ -214,7 +214,7 @@ const BusinessV18 = () => {
           {[
             ['任务执行成功率', `${kpi.taskSuccessRate}%`, '#52C41A', '已完成且无异常终止'],
             ['任务中断率', `${kpi.taskInterruptRate}%`, '#FAAD14', '超时 / 报错 / 循环卡死'],
-            ['单任务平均推理步数', kpi.avgReasoningSteps, '#52B788', '推理、决策及工具调用'],
+            ['单任务平均推理步数', kpi.avgReasoningSteps, '#1677FF', '推理、决策及工具调用'],
             ['工具选择准确率', `${kpi.toolSelectionAccuracy}%`, '#52C41A', '正确调用目标工具'],
             ['工具执行成功率', `${kpi.toolExecutionSuccessRate}%`, '#52C41A', '工具返回成功状态'],
           ].map(([title, value, color, note]) => (
@@ -234,7 +234,7 @@ const BusinessV18 = () => {
           <Col span={6}>
             <Card bordered={false} styles={{ body: { padding: 18, height: 170 } }}>
               <MetricLabel name="智能体累计服务患者人数" variant="kpi" />
-              <Text strong style={{ display: 'block', fontSize: 34, color: '#52B788', marginTop: 14 }}>{kpi.totalPatients.toLocaleString()}</Text>
+              <Text strong style={{ display: 'block', fontSize: 34, color: '#1677FF', marginTop: 14 }}>{kpi.totalPatients.toLocaleString()}</Text>
               <Text type="secondary">人 · 患者主索引跨渠道去重</Text>
             </Card>
           </Col>
@@ -242,7 +242,7 @@ const BusinessV18 = () => {
             <Card bordered={false} styles={{ body: { padding: 18, height: 170 } }}>
               <MetricLabel name="智能体当日服务患者人数" variant="kpi" />
               <Space align="baseline" style={{ marginTop: 14 }}>
-                <Text strong style={{ fontSize: 34, color: '#52B788' }}>{kpi.todayPatients.toLocaleString()}</Text>
+                <Text strong style={{ fontSize: 34, color: '#1677FF' }}>{kpi.todayPatients.toLocaleString()}</Text>
                 <Text type="success"><RiseOutlined /> 8.6%</Text>
               </Space>
               <Text type="secondary" style={{ display: 'block' }}>人 · 较昨日同期</Text>
@@ -263,7 +263,7 @@ const BusinessV18 = () => {
               <Card hoverable bordered={false} styles={{ body: { padding: 16, height: 110 } }}>
                 <Space direction="vertical" size={2} style={{ width: '100%' }}>
                   <MetricLabel name="智能体累计调用次数" variant="kpi" />
-                  <Text strong style={{ fontSize: 32, color: '#52B788', lineHeight: 1.1 }}>
+                  <Text strong style={{ fontSize: 32, color: '#1677FF', lineHeight: 1.1 }}>
                     {kpi.totalCalls.toLocaleString()}
                   </Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>次 · 点击进入审计日志 →</Text>
@@ -292,7 +292,7 @@ const BusinessV18 = () => {
               <Space direction="vertical" size={2} style={{ width: '100%' }}>
                 <MetricLabel name="当日调用次数" variant="kpi" />
                 <Space size={6} align="baseline">
-                  <Text strong style={{ fontSize: 32, color: '#52B788', lineHeight: 1.1 }}>
+                  <Text strong style={{ fontSize: 32, color: '#1677FF', lineHeight: 1.1 }}>
                     {kpi.todayCalls.toLocaleString()}
                   </Text>
                   <Space size={2}>
@@ -329,7 +329,7 @@ const BusinessV18 = () => {
             <Card bordered={false} title="调用次数趋势" extra={
               <TrendRangeSwitch value={callRange} onChange={setCallRange} label="调用次数趋势时间范围" />
             } styles={{ body: { padding: '16px 20px 12px', height: 320 } }} style={{ height: 380 }}>
-              <Line {...chartBase} height={300} data={getTrendWindow(trendDataByMetric.calls, callRange)} xField="date" yField="value" smooth color="#52B788" axis={getTrendAxis(callRange)} />
+              <Line {...chartBase} height={300} data={getTrendWindow(trendDataByMetric.calls, callRange)} xField="date" yField="value" smooth color="#1677FF" axis={getTrendAxis(callRange)} />
             </Card>
           </Col>
         </Row>
@@ -385,7 +385,7 @@ const BusinessV18 = () => {
                 <Space size={16} align="baseline">
                   <Space size={4} align="baseline">
                     <Text type="secondary" style={{ fontSize: 12 }}>当前</Text>
-                    <Text strong style={{ fontSize: 28, color: '#52B788', lineHeight: 1.1 }}>{kpi.concurrency.current}</Text>
+                    <Text strong style={{ fontSize: 28, color: '#1677FF', lineHeight: 1.1 }}>{kpi.concurrency.current}</Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>路</Text>
                   </Space>
                   <Space size={4} align="baseline">
@@ -394,7 +394,7 @@ const BusinessV18 = () => {
                   </Space>
                 </Space>
                 <div style={{ height: 200 }}>
-                  <Line {...chartBase} height={200} data={getTrendWindow(trendDataByMetric.concurrency, concurrencyRange)} xField="date" yField="value" smooth color="#52B788" axis={getTrendAxis(concurrencyRange)} />
+                  <Line {...chartBase} height={200} data={getTrendWindow(trendDataByMetric.concurrency, concurrencyRange)} xField="date" yField="value" smooth color="#1677FF" axis={getTrendAxis(concurrencyRange)} />
                 </div>
               </Space>
             </Card>

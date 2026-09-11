@@ -8,6 +8,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { mvpFeatures } from '../config/mvpFeatures';
 
 const { Header, Footer, Content } = Layout;
 
@@ -53,20 +54,22 @@ const PortalLayout = () => {
             }}
             onClick={() => navigate('/')}
           >
-            <Avatar shape="square" size={40} style={{ background: '#52B788' }}>
+            <Avatar shape="square" size={40} style={{ background: '#1677FF' }}>
               AI
             </Avatar>
             <span style={{ fontSize: 18, fontWeight: 600, color: '#333' }}>
               医疗智能体平台
             </span>
           </div>
-          <Menu
-            mode="horizontal"
-            selectedKeys={[currentPath]}
-            onClick={handleMenuClick}
-            items={navItems}
-            style={{ border: 'none', minWidth: 400 }}
-          />
+          {mvpFeatures.portalNavigation && (
+            <Menu
+              mode="horizontal"
+              selectedKeys={[currentPath]}
+              onClick={handleMenuClick}
+              items={navItems}
+              style={{ border: 'none', minWidth: 400 }}
+            />
+          )}
         </div>
         <Avatar
           style={{ background: '#f0f0f0', color: '#666', cursor: 'pointer' }}
@@ -98,7 +101,7 @@ const PortalLayout = () => {
           <div>
             <h4 style={{ color: '#fff', marginBottom: 16 }}>平台介绍</h4>
             <p style={{ color: 'rgba(255,255,255,0.65)', lineHeight: 1.8 }}>
-              医小知致力于提供安全、可靠的AI智能体接入与管理服务。
+              医疗智能体管理平台致力于提供安全、可靠的AI智能体接入与管理服务。
             </p>
           </div>
           <div>
@@ -135,7 +138,7 @@ const PortalLayout = () => {
             color: 'rgba(255,255,255,0.45)',
           }}
         >
-          © 2024 医小知 版权所有
+          © 2024 医疗智能体管理平台 版权所有
         </div>
       </Footer>
     </Layout>

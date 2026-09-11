@@ -234,7 +234,7 @@ ${rule.name},${AlertRuleTypeLabels[rule.type]},${rule.triggerCondition.metric},$
           >
             {rule.ruleFile ? (
               <Space size={12} align="center" wrap>
-                <FileTextOutlined style={{ fontSize: 24, color: '#52B788' }} />
+                <FileTextOutlined style={{ fontSize: 24, color: '#1677FF' }} />
                 <Space direction="vertical" size={0}>
                   <Text strong>{rule.ruleFile.name}</Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
@@ -277,7 +277,7 @@ ${rule.name},${AlertRuleTypeLabels[rule.type]},${rule.triggerCondition.metric},$
                 <Tag color="processing">{TriggerActionLabels[rule.ruleConfig.trigger_action]}</Tag>
               </Descriptions.Item>
               <Descriptions.Item label={<Text strong>5. output_prompt（输出提示词）</Text>}>
-                <Card size="small" style={{ background: '#F3FBF6', borderColor: '#ADC6FF' }}>
+                <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
                   <Text style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>
                     {rule.ruleConfig.output_prompt}
                   </Text>
@@ -317,7 +317,7 @@ ${rule.name},${AlertRuleTypeLabels[rule.type]},${rule.triggerCondition.metric},$
                   <List.Item
                     style={{
                       padding: '8px 12px',
-                      background: isCurrent ? '#EAF7EF' : 'transparent',
+                      background: isCurrent ? '#E6F4FF' : 'transparent',
                       border: isCurrent ? '1px solid #91CAFF' : '1px solid transparent',
                       borderRadius: 6,
                     }}

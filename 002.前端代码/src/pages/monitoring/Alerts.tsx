@@ -152,7 +152,7 @@ const Alerts = () => {
       title: '通知方式', dataIndex: 'notification', key: 'notification', width: 120,
       render: (_, r) => (
         <Space size={4}>
-          {r.notification.channels.map((c) => <span key={c} style={{ fontSize: 16, color: '#52B788' }}>{channelIconMap[c]}</span>)}
+          {r.notification.channels.map((c) => <span key={c} style={{ fontSize: 16, color: '#1677FF' }}>{channelIconMap[c]}</span>)}
         </Space>
       ),
     },
