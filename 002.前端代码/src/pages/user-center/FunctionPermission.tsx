@@ -161,6 +161,8 @@ const filterHiddenPermissions = (nodes: DataNode[]): DataNode[] => nodes
 export const visiblePermissionTree = filterHiddenPermissions(permissionTree);
 
 export const flattenPermissionKeys = (nodes: DataNode[]): React.Key[] => nodes.flatMap((node) => [node.key, ...(node.children ? flattenPermissionKeys(node.children) : [])]);
+const visiblePermissionKeySet = new Set(flattenPermissionKeys(visiblePermissionTree).map(String));
+export const countVisiblePermissions = (permissionCodes: string[] = []) => permissionCodes.filter((code) => visiblePermissionKeySet.has(code)).length;
 const flattenKeys = flattenPermissionKeys;
 const allKeys = flattenKeys(permissionTree);
 

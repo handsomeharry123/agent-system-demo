@@ -10,6 +10,8 @@ import auditOperationLogsRouter from './routes/audit-operation-logs.js';
 import dictionariesRouter from './routes/dictionaries.js';
 import modelsRouter from './routes/models.js';
 import ledgerRouter from './routes/ledger.js';
+import evaluationDatasetsRouter from './routes/evaluation-datasets.js';
+import evaluationIndicatorsRouter from './routes/evaluation-indicators.js';
 import { operationAuditMiddleware } from './operation-audit.js';
 
 export const app = express();
@@ -28,12 +30,14 @@ app.use('/api/audit/operation-logs', auditOperationLogsRouter);
 app.use('/api/system-config/dictionaries', dictionariesRouter);
 app.use('/api/system-config/models', modelsRouter);
 app.use('/api/ledger', ledgerRouter);
+app.use('/api/evaluation/datasets', evaluationDatasetsRouter);
+app.use('/api/evaluation/indicators', evaluationIndicatorsRouter);
 app.use((_req, res) => res.status(404).json({ code: 404, message: '接口不存在' }));
 
 const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   console.error(error);
   const uploadTooLarge = (error as { code?: string }).code === 'LIMIT_FILE_SIZE';
   const status = uploadTooLarge ? 400 : Number((error as { statusCode?: number }).statusCode) || 500;
-  res.status(status).json({ code: status, message: uploadTooLarge ? '上传文件不能超过30MB' : status === 500 ? '服务器内部错误' : error.message });
+  res.status(status).json({ code: status, message: uploadTooLarge ? '上传文件不能超过允许大小' : status === 500 ? '服务器内部错误' : error.message });
 };
 app.use(errorHandler);

@@ -31,7 +31,10 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
 };
 
 export const agentAccessApi = {
-  meta: () => request<{ departments: Array<{ value: number; label: string; code: string }> }>('/api/agent-access/meta'),
+  meta: () => request<{
+    departments: Array<{ value: number; label: string; code: string }>;
+    clinicalStages: Array<{ label: string; code: string }>;
+  }>('/api/agent-access/meta'),
   list: () => request<AccessRecord[]>('/api/agent-access/applications'),
   detail: (id: string) => request<AccessRecord>(`/api/agent-access/applications/${id}`),
   save: (record: AccessRecord) => request<AccessRecord>('/api/agent-access/applications/save', { method: 'POST', body: JSON.stringify(record) }),

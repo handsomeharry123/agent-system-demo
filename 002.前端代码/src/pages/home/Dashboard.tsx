@@ -29,7 +29,6 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDemoSettings } from "../../hooks/useDemoSettings";
-import { mvpFeatures } from "../../config/mvpFeatures";
 import "./Dashboard.css";
 
 const { Text, Title } = Typography;
@@ -234,10 +233,25 @@ const topAgents = [
   { name: "急诊分诊助手", value: 28310 },
   { name: "用药审核助手", value: 24680 },
 ];
-const risks = [
-  { name: "高风险", value: 12 },
-  { name: "中风险", value: 35 },
-  { name: "低风险", value: 81 },
+const treatmentStages = [
+  { name: "辅助诊断", value: 31 },
+  { name: "辅助检查", value: 23 },
+  { name: "辅助治疗", value: 18 },
+  { name: "导诊分诊", value: 15 },
+  { name: "预问诊", value: 13 },
+  { name: "预约挂号", value: 11 },
+  { name: "住院", value: 10 },
+  { name: "手术", value: 7 },
+];
+const treatmentStageColors = [
+  "#16b9ff",
+  "#21e6c1",
+  "#4d7cff",
+  "#8b5cff",
+  "#d94cff",
+  "#ff6f91",
+  "#ffad32",
+  "#c8e530",
 ];
 const alertLevels = [
   { name: "高级", value: 5 },
@@ -561,6 +575,81 @@ function SimpleBars({
   );
 }
 
+function TreatmentStagePie() {
+  const navigate = useNavigate();
+  const total = treatmentStages.reduce((sum, item) => sum + item.value, 0);
+
+  return (
+    <div className="dashboard-treatment-pie">
+      <div className="dashboard-treatment-chart">
+        <Pie
+          angleField="value"
+          colorField="name"
+          data={treatmentStages}
+          color={treatmentStageColors}
+          innerRadius={0.58}
+          radius={0.86}
+          padding={4}
+          height={260}
+          theme="classicDark"
+          legend={false}
+          label={false}
+          tooltip={{
+            title: "name",
+            items: [
+              (datum: PieDatum) => ({
+                name: "智能体数量",
+                value: `${datum.value} 个（${((datum.value / total) * 100).toFixed(1)}%）`,
+              }),
+            ],
+          }}
+          style={{
+            stroke: "#06152f",
+            lineWidth: 2,
+            shadowColor: "#16b9ff",
+            shadowBlur: 9,
+            cursor: "pointer",
+          }}
+          state={{
+            active: { lineWidth: 3, stroke: "#e9fcff", shadowBlur: 20 },
+            inactive: { opacity: 0.45 },
+          }}
+          interaction={{ elementHighlight: true }}
+          animate={{ enter: { type: "waveIn", duration: 900 } }}
+          onReady={(plot: any) =>
+            plot.on("element:click", (event: any) => {
+              const name = event?.data?.data?.name;
+              if (name) {
+                navigate(`/app/ledger/list?diagnosisPhase=${encodeURIComponent(name)}`);
+              }
+            })
+          }
+        />
+        <div className="dashboard-treatment-core" aria-hidden="true">
+          <strong>{total}</strong>
+          <span>智能体</span>
+        </div>
+      </div>
+      <div className="dashboard-treatment-legend" aria-label="诊疗环节数量与占比">
+        {treatmentStages.map((item, index) => (
+          <button
+            type="button"
+            key={item.name}
+            onClick={() =>
+              navigate(`/app/ledger/list?diagnosisPhase=${encodeURIComponent(item.name)}`)
+            }
+          >
+            <i style={{ background: treatmentStageColors[index] }} />
+            <span>{item.name}</span>
+            <b>{item.value} 个</b>
+            <em>{((item.value / total) * 100).toFixed(1)}%</em>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ResourceTopology({ isAdmin }: { isAdmin: boolean }) {
   const navigate = useNavigate();
   const shown = isAdmin
@@ -864,21 +953,9 @@ export default function Dashboard() {
               <ChartCard className="dashboard-bar-card" title="高频调用智能体 TOP5">
                 <SimpleBars data={topAgents.slice(0, 4)} color="#13c2c2" />
               </ChartCard>
-              {mvpFeatures.ledgerRiskLevel && <ChartCard className="dashboard-pie-card" title="智能体风险分级">
-                <CyberPie
-                  data={risks}
-                  color={["#ff416c", "#ffb21c", "#32e59b"]}
-                  tone="#32e59b"
-                  labelFontSize={15}
-                  radius={0.78}
-                  innerRadius={0.48}
-                  onReady={(p: any) =>
-                    p.on("element:click", (e: any) =>
-                      navigate(`/app/ledger/list?risk=${e.data.data.name}`),
-                    )
-                  }
-                />
-              </ChartCard>}
+              <ChartCard className="dashboard-treatment-card" title="智能体诊疗环节分布">
+                <TreatmentStagePie />
+              </ChartCard>
             </>
           ) : (
             <>

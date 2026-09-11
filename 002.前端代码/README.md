@@ -7,7 +7,7 @@ npm install
 npm run dev
 ```
 
-- 前端地址：`http://localhost:3001`
+- 前端地址：`http://localhost:3005`
 - 后端 API：开发环境通过 Vite 将 `/api` 代理到 `http://localhost:3000`
 - 生产构建：`npm run build`
 

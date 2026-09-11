@@ -73,8 +73,8 @@ export const userCenterApi = {
   batchStatus: (status: AccountStatus, ids: string[], filters: UserFilters) => jsonRequest<{ affected: number }>('/api/users/batch-status', {
     method: 'PATCH', body: JSON.stringify({ status, ids, ...filters }),
   }),
-  exportCsv: async (filters: UserFilters) => {
-    const response = await fetch(`/api/users/export/csv?${queryString(filters)}`, { headers: tokenHeaders() });
+  exportCsv: async (filters: UserFilters, ids: string[] = []) => {
+    const response = await fetch(`/api/users/export/csv?${queryString({ ...filters, ids: ids.join(',') })}`, { headers: tokenHeaders() });
     if (!response.ok) {
       const body = await response.json() as Envelope<unknown>;
       throw new ApiError(body.message, response.status, body.data);

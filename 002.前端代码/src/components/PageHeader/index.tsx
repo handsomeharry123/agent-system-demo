@@ -7,6 +7,7 @@ const { Title, Text } = Typography;
 
 interface PageHeaderProps {
   title: ReactNode;
+  /** @deprecated 页面标题区不再展示说明文字，仅为兼容现有调用保留。 */
   subTitle?: string;
   extra?: ReactNode;
   showBack?: boolean;
@@ -17,7 +18,6 @@ interface PageHeaderProps {
 
 const PageHeader = ({
   title,
-  subTitle,
   extra,
   showBack = false,
   onBack,
@@ -81,29 +81,19 @@ const PageHeader = ({
               style={{ marginLeft: -8 }}
             />
           )}
-          <div style={{ minWidth: 0 }}>
-            <Title
-              level={4}
-              style={{
-                margin: 0,
-                fontSize: 18,
-                fontWeight: 600,
-                lineHeight: 1.4,
-                color: '#1F1F1F',
-                letterSpacing: 0.2,
-              }}
-            >
-              {title}
-            </Title>
-            {subTitle && (
-              <Text
-                type="secondary"
-                style={{ fontSize: 13, marginTop: 2, display: 'block', lineHeight: 1.5 }}
-              >
-                {subTitle}
-              </Text>
-            )}
-          </div>
+          <Title
+            level={4}
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 600,
+              lineHeight: 1.4,
+              color: '#1F1F1F',
+              letterSpacing: 0.2,
+            }}
+          >
+            {title}
+          </Title>
         </Space>
 
         {extra && (
@@ -118,7 +108,7 @@ const PageHeader = ({
 
 /**
  * 使用示例：
- * <PageHeader title="智能体详情" subTitle="心电图智能辅助诊断系统" />
+ * 页面标题区仅展示标题，不展示说明文字。
  * <PageHeader title="智能体列表" extra={<Button type="primary">新增</Button>} />
  * <PageHeader title="台账详情" showBack onBack={() => navigate(-1)} />
  * <PageHeader

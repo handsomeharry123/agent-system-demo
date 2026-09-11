@@ -65,7 +65,6 @@ import {
   type AccessMode,
   type AccessRecord,
   sourceOptions,
-  clinicalStageOptions,
   accessModeOptions,
   genAgentCode,
 } from './types';
@@ -81,6 +80,7 @@ import ConnectivityTester from './smart/ConnectivityTester';
 import type { ReviewProblem } from './smart/types';
 import { agentAccessApi } from '../../services/agentAccess';
 import { useDepartmentOptions } from './useDepartmentOptions';
+import { useClinicalStageOptions } from './useClinicalStageOptions';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -90,9 +90,22 @@ const { TextArea } = Input;
 //   仅做 PDF 格式 + 单文件 ≤30M 的基础校验。
 //   历史附件保留 category 字段用于详情页展示分类（不再用于校验）。
 type AttachmentCategory = 'product' | 'tech' | 'other';
+const ATTACHMENT_CATEGORY_LABEL: Record<AttachmentCategory, string> = {
+  product: '产品说明书',
+  tech: '技术规格书',
+  other: '其他材料',
+};
+const ATTACHMENT_CATEGORY_ORDER: AttachmentCategory[] = ['product', 'tech', 'other'];
+const REQUIRED_ATTACHMENT_CATEGORIES: AttachmentCategory[] = ['product', 'tech'];
+const ATTACHMENT_CATEGORY_MAX: Record<AttachmentCategory, number> = {
+  product: 1,
+  tech: 1,
+  other: 5,
+};
 
 const Registration = () => {
   const departmentOptions = useDepartmentOptions();
+  const clinicalStageOptions = useClinicalStageOptions();
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams<{ id?: string }>();
@@ -135,6 +148,8 @@ const Registration = () => {
   const [form] = Form.useForm();
 
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [activeAttachmentCategory, setActiveAttachmentCategory] =
+    useState<AttachmentCategory>('product');
   const [submitting, setSubmitting] = useState(false);
   const [tested, setTested] = useState(false);
   const [testResult, setTestResult] = useState<null | {
@@ -737,28 +752,35 @@ const Registration = () => {
   };
 
   const handleUpload = (info: { file: UploadFile; fileList: UploadFile[] }) => {
+    const category = activeAttachmentCategory;
     const f = info.file;
     const isPdf = f.type === 'application/pdf' || (f.name && f.name.toLowerCase().endsWith('.pdf'));
     const size = f.size ?? 0;
     if (!isPdf) {
-      message.error(`上传失败,仅支持 PDF 类型文件（${f.name}）`);
+      message.error(`上传失败,仅支持 PDF 类型文件（${ATTACHMENT_CATEGORY_LABEL[category]}）`);
       return;
     }
     if (size > 30 * 1024 * 1024) {
       message.error(`上传失败,单文件超过最大限制 30M（${f.name}）`);
       return;
     }
-    // V3.1：不做分类/份数限制，按文件名启发式给个 category 用于详情展示
-    const guessed: AttachmentCategory = /(技术|spec|sdk|api|接口|otel)/i.test((f.name || '').toLowerCase())
-      ? 'tech'
-      : /(产品|说明|product)/i.test((f.name || '').toLowerCase())
-        ? 'product'
-        : 'other';
-    setFileList((prev) => {
-      const without = prev.filter((x) => x.uid !== f.uid);
-      return [...without, { ...f, category: guessed } as UploadFile];
-    });
-    message.success(`已选择文件（${f.name}），保存或提交时上传`);
+    const categoryFiles = info.fileList
+      .filter((item) => {
+        const itemIsPdf = item.type === 'application/pdf' || item.name?.toLowerCase().endsWith('.pdf');
+        return itemIsPdf && (item.size ?? 0) <= 30 * 1024 * 1024;
+      })
+      .map((item) => ({ ...item, category } as UploadFile));
+    const maxCount = ATTACHMENT_CATEGORY_MAX[category];
+    const accepted = categoryFiles.slice(0, maxCount);
+    setFileList((prev) => [
+      ...prev.filter((item) => (item as UploadFile & { category?: AttachmentCategory }).category !== category),
+      ...accepted,
+    ]);
+    if (categoryFiles.length > maxCount) {
+      message.error(`${ATTACHMENT_CATEGORY_LABEL[category]}最多上传 ${maxCount} 份`);
+      return;
+    }
+    message.success(`上传成功（${ATTACHMENT_CATEGORY_LABEL[category]} · ${f.name}）`);
   };
 
   const obtainInstrumentation = async (mode: 'SDK' | 'OTEL') => {
@@ -948,6 +970,19 @@ const Registration = () => {
   // ──────────────────────────────────────────────────────────────────
   // Render
   // ──────────────────────────────────────────────────────────────────
+  const fileListByCategory = ATTACHMENT_CATEGORY_ORDER.reduce(
+    (result, category) => {
+      result[category] = fileList.filter(
+        (file) => (file as UploadFile & { category?: AttachmentCategory }).category === category,
+      );
+      return result;
+    },
+    { product: [], tech: [], other: [] } as Record<AttachmentCategory, UploadFile[]>,
+  );
+  const missingRequiredAttachments = REQUIRED_ATTACHMENT_CATEGORIES.filter(
+    (category) => fileListByCategory[category].length === 0,
+  );
+
   return (
     <>
       <PageHeader
@@ -984,10 +1019,26 @@ const Registration = () => {
           reviewTimerRef.current = setTimeout(() => runReview(), 800);
         }}
       >
-        {/* ① 备案材料上传 — PRD §1.2.1（V3.1 统一上传入口）：
-              单一 Dragger 接收所有 PDF,不做分类、不限份数、不做必填校验；
-              仅校验 PDF 格式 + 单文件 ≤30M,管理员审核时自行判断材料完整性。 */}
         <Card title="① 备案材料上传" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>当前上传至：</Text>
+            {ATTACHMENT_CATEGORY_ORDER.map((category) => (
+              <Tag.CheckableTag
+                key={category}
+                checked={activeAttachmentCategory === category}
+                onChange={(checked) => checked && setActiveAttachmentCategory(category)}
+                style={{ padding: '2px 10px', border: '1px solid #d9d9d9', borderRadius: 4, fontSize: 12 }}
+              >
+                {ATTACHMENT_CATEGORY_LABEL[category]}
+                {REQUIRED_ATTACHMENT_CATEGORIES.includes(category) && (
+                  <span style={{ color: '#FF4D4F', marginLeft: 4 }}>*</span>
+                )}
+                <span style={{ marginLeft: 6, color: '#999' }}>
+                  {fileListByCategory[category].length}/{ATTACHMENT_CATEGORY_MAX[category]}份
+                </span>
+              </Tag.CheckableTag>
+            ))}
+          </div>
           <Upload.Dragger
             multiple
             accept=".pdf"
@@ -1000,35 +1051,43 @@ const Registration = () => {
               <CloudUploadOutlined />
             </p>
             <p className="ant-upload-text" style={{ fontSize: 13 }}>
-              点击或拖拽 上传备案材料 PDF
+              点击或拖拽 PDF（{ATTACHMENT_CATEGORY_LABEL[activeAttachmentCategory]}）
             </p>
             <p className="ant-upload-hint" style={{ fontSize: 11, marginTop: 2 }}>
-              限定 PDF 格式 · 单文件 ≤30M · 智能助手可在右侧根据上传材料自动识别并回填下方表单
+              {activeAttachmentCategory === 'other'
+                ? '可选 · 单文件 ≤30M · 最多 5 份'
+                : '必填 · 单文件 ≤30M · 限 1 份'}
             </p>
           </Upload.Dragger>
           <div style={{ marginTop: 12 }}>
+            {ATTACHMENT_CATEGORY_ORDER.map((category) => {
+              const list = fileListByCategory[category];
+              if (list.length === 0) return null;
+              return (
+                <div key={category} style={{ marginBottom: 8 }}>
+                  <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
+                    {ATTACHMENT_CATEGORY_LABEL[category]}（{list.length}/{ATTACHMENT_CATEGORY_MAX[category]}）：
+                  </Text>
+                  {list.map((file) => (
+                    <Tag key={file.uid} color="blue" closable onClose={(event) => {
+                      event.preventDefault();
+                      handleRemove(file);
+                    }} style={{ marginBottom: 4 }}>
+                      {file.name}
+                    </Tag>
+                  ))}
+                </div>
+              );
+            })}
             {fileList.length === 0 ? (
               <Text type="secondary" style={{ fontSize: 12 }}>
-                支持上传产品说明书 / 技术规格书 / 其他材料(如安全测试报告、部署环境说明书)等备案材料,管理员审核时将根据实际提交材料进行判断。
+                限定 PDF 格式 · 单文件 ≤ 30M · 支持多文件上传
               </Text>
-            ) : (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {fileList.map((f) => (
-                  <Tag
-                    key={f.uid}
-                    color="blue"
-                    closable
-                    onClose={(e) => {
-                      e.preventDefault();
-                      handleRemove(f);
-                    }}
-                    style={{ marginBottom: 4 }}
-                  >
-                    {f.name}
-                  </Tag>
-                ))}
-              </div>
-            )}
+            ) : missingRequiredAttachments.length > 0 ? (
+              <Tag color="warning" style={{ marginTop: 4 }}>
+                缺：{missingRequiredAttachments.map((category) => ATTACHMENT_CATEGORY_LABEL[category]).join(' / ')}
+              </Tag>
+            ) : null}
           </div>
         </Card>
 

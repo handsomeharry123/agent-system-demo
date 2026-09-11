@@ -40,6 +40,7 @@ import {
   Segmented,
   Pagination,
   Avatar,
+  Skeleton,
 } from 'antd';
 import type { MenuProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -158,6 +159,11 @@ const LedgerList = () => {
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [cardPage, setCardPage] = useState(1);
   const [visibleList, setVisibleList] = useState<LedgerAgent[]>([]);
+  // 首屏加载与真实空数据必须分开，避免请求返回前闪现“暂无数据”。
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string>();
+  const requestSequence = useRef(0);
   const [ledgerMeta, setLedgerMeta] = useState<LedgerListResponse<LedgerAgent>['meta']>({ departments: [], stages: [...ENUMS.diagnosisPhase], sources: ['自研','第三方','合作研发'], riskLevels: ['高度关注','中度关注','一般关注'], accessModes: [...ENUMS.accessType], runtimeStatuses: ['在线','离线','更新','禁用','异常'] });
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -225,7 +231,7 @@ const LedgerList = () => {
     const params = new URLSearchParams(location.search);
     const openDetail = params.get('openDetail');
     const searchName = params.get('search');
-    if (!openDetail || !searchName) return;
+    if (!openDetail || !searchName || !hasLoaded) return;
     if (autoOpenConsumed.current === location.search) return;
 
     // V2.7: 改用公共 4 级匹配(精确 → 去尾缀 → 子串 → bigram min-归一化 + 活跃 tiebreaker)
@@ -251,15 +257,33 @@ const LedgerList = () => {
       autoOpenConsumed.current = `miss:${location.search}`;
       message.warning(`未在台账中找到名称为「${searchName}」的智能体,请手动定位`);
     }
-  }, [location.search, navigate, visibleList]);
+  }, [hasLoaded, location.search, navigate, visibleList]);
 
   useEffect(() => {
-    const timer=window.setTimeout(() => {
+    const sequence = ++requestSequence.current;
+    setIsLoading(true);
+    setLoadError(undefined);
+    const timer = window.setTimeout(() => {
       void getLedgerAgents<LedgerAgent>({ keyword:filters.search,department:filters.department,stage:filters.diagnosisPhase,source:filters.sourceType,risk:filters.riskLevel,accessMode:filters.accessType,runtimeStatus:filters.runtimeStatus,accessMonth:new URLSearchParams(location.search).get('accessMonth')??undefined })
-        .then((data)=>{setVisibleList(data.items);setLedgerMeta(data.meta);setIsPlatformAdmin(data.isPlatformAdmin);})
-        .catch((error)=>message.error(error instanceof Error?error.message:'台账列表加载失败'));
-    },250);
-    return()=>window.clearTimeout(timer);
+        .then((data) => {
+          if (sequence !== requestSequence.current) return;
+          setVisibleList(data.items);
+          setLedgerMeta(data.meta);
+          setIsPlatformAdmin(data.isPlatformAdmin);
+          setHasLoaded(true);
+        })
+        .catch((error) => {
+          if (sequence !== requestSequence.current) return;
+          const errorMessage = error instanceof Error ? error.message : '台账列表加载失败';
+          setLoadError(errorMessage);
+          setHasLoaded(true);
+          message.error(errorMessage);
+        })
+        .finally(() => {
+          if (sequence === requestSequence.current) setIsLoading(false);
+        });
+    }, 250);
+    return () => window.clearTimeout(timer);
   },[filters,location.search,refreshKey]);
 
   useEffect(() => {
@@ -786,7 +810,7 @@ const LedgerList = () => {
         <div className="ledger-card-toolbar">
           <Space size={8} style={{ flex: '0 0 auto' }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {selectedCount > 0 ? `已选 ${selectedCount} 条` : `共 ${filtered.length} 条`}
+              {selectedCount > 0 ? `已选 ${selectedCount} 条` : !hasLoaded ? '共 -- 条' : `共 ${filtered.length} 条`}
             </Text>
             {selectedCount > 0 && (
               <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setSelectedRowKeys([])}>
@@ -822,7 +846,28 @@ const LedgerList = () => {
           />
         </div>
 
-        {visibleList.length === 0 ? (
+        {!hasLoaded ? (
+          <div style={{ marginTop: 20 }} aria-label="台账数据加载中">
+            <Row gutter={[16, 16]}>
+              {[0, 1, 2].map((item) => (
+                <Col xs={24} md={12} xl={8} key={item}>
+                  <Card styles={{ body: { padding: 20 } }} style={{ height: 278 }}>
+                    <Skeleton active avatar={{ shape: 'square', size: 64 }} paragraph={{ rows: 4 }} />
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        ) : loadError && visibleList.length === 0 ? (
+          <Alert
+            style={{ marginTop: 16 }}
+            type="error"
+            showIcon
+            message="台账数据加载失败"
+            description={loadError}
+            action={<Button size="small" onClick={() => setRefreshKey((value) => value + 1)}>重试</Button>}
+          />
+        ) : visibleList.length === 0 ? (
           <Alert
             style={{ marginTop: 16 }}
             type="warning"
@@ -996,6 +1041,7 @@ const LedgerList = () => {
               </>
             ) : (
             <Table
+              loading={isLoading}
               rowKey="id"
               columns={mvpFeatures.ledgerRiskLevel ? columns : columns.filter((column) => column.title !== '风险分级')}
               dataSource={filtered}

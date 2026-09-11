@@ -4,11 +4,20 @@ import { requireAuth } from '../auth.js';
 import { pool } from '../db.js';
 import { writeOperationLog } from '../operation-audit.js';
 import { normalizeClientIp } from '../client-ip.js';
+import { getDictionaryOptions } from '../dictionary-departments.js';
 
 const router = Router();
 router.use(requireAuth);
 const ok = (data: unknown, message = 'success') => ({ code: 200, message, data, timestamp: new Date().toISOString() });
 const fail = (status: number, message: string) => Object.assign(new Error(message), { statusCode: status });
+const requiredModuleOptions = ['首页', '统一准入评测沙盒', '统一运行监控中心'];
+
+const mergeModuleOptions = (rows: RowDataPacket[]) => {
+  const moduleNames = new Set(rows.map((row) => String(row.value)).filter(Boolean));
+  requiredModuleOptions.forEach((moduleName) => moduleNames.add(moduleName));
+  return [...moduleNames].sort((left, right) => left.localeCompare(right, 'zh-CN'))
+    .map((moduleName) => ({ label: moduleName, value: moduleName }));
+};
 
 const filtersOf = (query: Record<string, unknown>) => {
   const where = ['1=1']; const values: Array<string> = [];
@@ -31,12 +40,12 @@ const toDto = (row: any) => ({
 });
 
 router.get('/meta', async (_req,res,next) => { try {
-  const [orgs,modules,types] = await Promise.all([
-    pool.execute<RowDataPacket[]>(`SELECT DISTINCT department_name_snapshot value,department_name_snapshot label FROM aud_operation_log ORDER BY value`),
+  const [organizations,modules,types] = await Promise.all([
+    getDictionaryOptions('organization'),
     pool.execute<RowDataPacket[]>(`SELECT DISTINCT module_name value,module_name label FROM aud_operation_log ORDER BY value`),
     pool.execute<RowDataPacket[]>(`SELECT DISTINCT operation_type value,operation_type label FROM aud_operation_log ORDER BY value`),
   ]);
-  res.json(ok({organizations:orgs[0],modules:modules[0],types:types[0]}));
+  res.json(ok({organizations:organizations.map(({label})=>({label,value:label})),modules:mergeModuleOptions(modules[0]),types:types[0]}));
 } catch(e){next(e);} });
 
 router.get('/user-options', async(req,res,next) => { try {

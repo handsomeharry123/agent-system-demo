@@ -5,6 +5,7 @@ import { pinyin } from 'pinyin-pro';
 import { randomUUID } from 'node:crypto';
 import { requireAuth } from '../auth.js';
 import { pool } from '../db.js';
+import { dictionaryDepartmentRows } from '../dictionary-departments.js';
 import { requireRole } from '../middleware/authorization.js';
 
 const router = Router();
@@ -106,10 +107,7 @@ const selectSql = (whereSql: string) => `
 
 router.get('/meta', async (_req, res, next) => {
   try {
-    const [departments] = await pool.execute<RowDataPacket[]>(
-      `SELECT id AS value, department_name AS label FROM sys_department
-       WHERE status = 'ENABLED' AND is_deleted = 0 ORDER BY sort_no, id`,
-    );
+    const departments = await dictionaryDepartmentRows('organization', 'OTHER');
     const [roles] = await pool.execute<RowDataPacket[]>(
       `SELECT role_name AS value, role_name AS label FROM iam_role
        WHERE role_code <> 'NORMAL_USER' AND status = 'ENABLED' AND is_deleted = 0 ORDER BY is_system DESC, id`,
@@ -198,14 +196,23 @@ router.patch('/:id/status', async (req, res, next) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      const [result] = await connection.execute<ResultSetHeader>(
-        `UPDATE iam_user SET account_status = ?, updated_by = ? WHERE user_uuid = ? AND is_deleted = 0`,
-        [status === '正常' ? 'ACTIVE' : 'DISABLED', req.auth!.userId, req.params.id],
+      const [users] = await connection.execute<RowDataPacket[]>(
+        `SELECT id, login_name FROM iam_user WHERE user_uuid = ? AND is_deleted = 0 FOR UPDATE`,
+        [req.params.id],
       );
-      if (!result.affectedRows) {
+      const user = users[0];
+      if (!user) {
         await connection.rollback();
         return void res.status(404).json({ code: 404, message: '用户不存在' });
       }
+      if (status === '停用' && String(user.login_name).toLowerCase() === 'admin') {
+        await connection.rollback();
+        return void res.status(409).json({ code: 409, message: '系统管理员帐号不支持停用' });
+      }
+      const [result] = await connection.execute<ResultSetHeader>(
+        `UPDATE iam_user SET account_status = ?, updated_by = ? WHERE id = ?`,
+        [status === '正常' ? 'ACTIVE' : 'DISABLED', req.auth!.userId, user.id],
+      );
       if (status === '停用') await connection.execute(
         `UPDATE iam_login_session s JOIN iam_user u ON u.id = s.user_id
          SET s.revoked_at = CURRENT_TIMESTAMP(3), s.revoke_reason = '账号被管理员停用'
@@ -271,7 +278,7 @@ router.patch('/batch-status', async (req, res, next) => {
         ? { sql: `u.user_uuid IN (${ids.map(() => '?').join(',')}) AND u.is_deleted = 0`, values: ids }
         : { sql: filter.whereSql, values: filter.values };
       const [targets] = await connection.execute<RowDataPacket[]>(
-        `SELECT u.id FROM iam_user u WHERE ${targetWhere.sql} FOR UPDATE`, targetWhere.values,
+        `SELECT u.id FROM iam_user u WHERE ${targetWhere.sql}${status === '停用' ? ` AND LOWER(u.login_name) <> 'admin'` : ''} FOR UPDATE`, targetWhere.values,
       );
       const numericIds = targets.map((row) => Number(row.id));
       if (!numericIds.length) {
@@ -296,7 +303,14 @@ router.patch('/batch-status', async (req, res, next) => {
 
 router.get('/export/csv', async (req, res, next) => {
   try {
-    const { whereSql, values } = parseFilters(req.query);
+    const ids = String(req.query.ids ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+    if (ids.length > 1000) {
+      return void res.status(400).json({ code: 400, message: '单次勾选最多1000人' });
+    }
+    const filter = parseFilters(req.query);
+    const { whereSql, values } = ids.length
+      ? { whereSql: `u.user_uuid IN (${ids.map(() => '?').join(',')}) AND u.is_deleted = 0`, values: ids }
+      : filter;
     const [rows] = await pool.execute<UserListRow[]>(`${selectSql(whereSql)} ORDER BY u.created_at DESC, u.id DESC`, values);
     const escape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
     const headers = ['用户姓名', '用户工号', '所属组织', '联系方式', '用户角色', '数据权限', '帐号状态', '帐号创建时间', '最后登录时间'];

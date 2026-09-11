@@ -7,6 +7,7 @@ import path from 'node:path';
 import { requireAuth } from '../auth.js';
 import { config } from '../config.js';
 import { pool } from '../db.js';
+import { dictionaryDepartmentRows, findDictionaryDepartmentByName, syncDictionaryDepartments } from '../dictionary-departments.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -189,9 +190,8 @@ const saveRecord = async (connection: PoolConnection, userId: number, body: any,
   }
   let departmentId = ctx.department_id;
   if (v.department) {
-    const [departments] = await connection.execute<RowDataPacket[]>(
-      `SELECT id FROM sys_department WHERE department_name=? AND status='ENABLED' AND is_deleted=0 LIMIT 1`, [v.department],
-    );
+    await syncDictionaryDepartments('dept', 'DEPARTMENT');
+    const [departments] = await findDictionaryDepartmentByName(connection, 'dept', v.department);
     if (!departments.length) throw fail(400, `所属科室“${v.department}”不存在`);
     departmentId = Number(departments[0]!.id);
   }
@@ -304,8 +304,16 @@ const saveRecord = async (connection: PoolConnection, userId: number, body: any,
 };
 
 router.get('/meta', async (_req,res,next) => { try {
-  const [departments] = await pool.execute<RowDataPacket[]>(`SELECT id value,department_name label,department_code code FROM sys_department WHERE status='ENABLED' AND is_deleted=0 ORDER BY sort_no,id`);
-  res.json(ok({departments}));
+  const departments = await dictionaryDepartmentRows('dept', 'DEPARTMENT');
+  const [clinicalStageRows] = await pool.execute<RowDataPacket[]>(
+    `SELECT i.item_code code,i.item_name label
+     FROM sys_dictionary_item i
+     JOIN sys_dictionary d ON d.id=i.dictionary_id
+     WHERE d.dictionary_code='clinical_stage' AND d.is_deleted=0 AND d.status='ENABLED'
+       AND i.is_deleted=0 AND i.status='ENABLED'
+     ORDER BY i.sort_no,i.id`,
+  );
+  res.json(ok({departments,clinicalStages:clinicalStageRows}));
 } catch(e){next(e);} });
 
 router.post('/files', upload.single('file'), async(req,res,next) => { try {

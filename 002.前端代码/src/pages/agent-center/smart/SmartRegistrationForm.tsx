@@ -12,7 +12,7 @@
  * 入口：/app/agent-center/smart-register
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useBlocker, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   Alert,
@@ -23,6 +23,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Modal,
   Radio,
   Row,
   Select,
@@ -49,7 +50,6 @@ import {
   ROLE_ADMIN,
   ROLE_DEPT,
   sourceOptions,
-  clinicalStageOptions,
   accessModeOptions,
   genAgentCode,
   type AccessMode,
@@ -68,6 +68,12 @@ import type { AgentMessage } from './types';
 import type { ReviewProblem } from './types';
 import { agentAccessApi } from '../../../services/agentAccess';
 import { useDepartmentOptions } from '../useDepartmentOptions';
+import { useClinicalStageOptions } from '../useClinicalStageOptions';
+import {
+  buildRegistrationMaterialFilename,
+  renamePdfFile,
+  type RegistrationMaterialCategory,
+} from './materialFilename';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -78,7 +84,7 @@ const { TextArea } = Input;
 const TEST_STAGES = ['建立连接', '鉴权验证', '发送请求', '接收响应'];
 
 // PRD §1.2.1 备案材料 3 档: 产品说明书 / 技术规格书 / 其他材料
-type Category = 'product' | 'tech' | 'other';
+type Category = RegistrationMaterialCategory;
 const CATEGORY_LABEL: Record<Category, string> = {
   product: '产品说明书',
   tech: '技术规格书',
@@ -130,6 +136,7 @@ const isRequiredRegistrationInfoComplete = (v: Record<string, any>) => {
 
 const SmartRegistrationForm = () => {
   const departmentOptions = useDepartmentOptions();
+  const clinicalStageOptions = useClinicalStageOptions();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const role = currentUser?.roles[0] || ROLE_ADMIN;
@@ -167,6 +174,29 @@ const SmartRegistrationForm = () => {
   // PRD §1.2.1 备案材料（产品说明书 / 技术规格书 / 其他材料）合在一个上传组件内,
   //   顶部按材料类型切换,下方一个 Dragger + 列表区
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const allowNavigationRef = useRef(false);
+
+  // 所有站内跳转统一经过路由拦截，避免页头返回、底部返回、面包屑或侧边栏
+  // 在用户已经填写内容后直接丢失数据。
+  const navigationBlocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedChanges &&
+      !allowNavigationRef.current &&
+      currentLocation.pathname !== nextLocation.pathname,
+  );
+
+  // 刷新、关闭标签页等浏览器级离开无法展示业务弹窗，使用浏览器原生未保存提醒兜底。
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   // 初始值
   useEffect(() => {
@@ -193,6 +223,21 @@ const SmartRegistrationForm = () => {
   const watchedPlatformUrl = Form.useWatch('platformUrl', form);
   const watchedPlatformKey = Form.useWatch('platformKey', form);
   const watchedRegistrationValues = Form.useWatch([], form);
+  const watchedAgentCode = watchedRegistrationValues?.department
+    ? genAgentCode(
+        watchedRegistrationValues.department,
+        records.map((r) => r.agentCode),
+      )
+    : '';
+  const materialDisplayName = useCallback(
+    (file: UploadFile) => buildRegistrationMaterialFilename(
+      (file as UploadFile & { category?: Category }).category || 'other',
+      watchedAgentCode,
+      watchedRegistrationValues?.name,
+      file.name,
+    ),
+    [watchedAgentCode, watchedRegistrationValues?.name],
+  );
   const connectionParamsKey = useMemo(() => {
     const mode = watchedAccessMode;
     if (mode === 'API') {
@@ -669,6 +714,7 @@ const SmartRegistrationForm = () => {
       ].slice(0, CATEGORY_MAX[cat]);
       return [...others, ...nextForCategory];
     });
+    setHasUnsavedChanges(true);
     message.success(`已同步至备案材料:${f.name}`);
     clearUploadedFile();
     // CATEGORY_MAX 是模块级常量,不会变化,这里省略依赖
@@ -704,6 +750,7 @@ const SmartRegistrationForm = () => {
       return;
     }
     setFileList(merged);
+    setHasUnsavedChanges(true);
     if (isPdf && size <= 30 * 1024 * 1024) {
       message.success(`上传成功（${CATEGORY_LABEL[cat]} · ${f.name}）`);
     }
@@ -712,6 +759,7 @@ const SmartRegistrationForm = () => {
   // 删除时按前缀定位, 仅剔除本类别下的文件
   const handleRemove = (file: UploadFile) => {
     setFileList((prev) => prev.filter((x) => x.uid !== file.uid));
+    setHasUnsavedChanges(true);
     return true;
   };
 
@@ -819,13 +867,34 @@ const SmartRegistrationForm = () => {
     return true;
   };
 
-  const uploadPendingFiles = async () => Promise.all(fileList.map(async (f) => {
-    const existingUuid = (f as UploadFile & { fileUuid?: string }).fileUuid;
-    if (existingUuid) return { name: f.name, size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`, url: '#', fileUuid: existingUuid };
-    if (!f.originFileObj) throw new Error(`无法读取备案材料：${f.name}，请重新上传`);
-    const saved = await agentAccessApi.uploadFile(f.originFileObj as File);
-    return { name: saved.name, size: `${(saved.sizeBytes / 1024 / 1024).toFixed(1)} MB`, url: saved.url, fileUuid: saved.fileUuid };
-  }));
+  const uploadPendingFiles = async () => {
+    const values = form.getFieldsValue(true);
+    const agentCode = values.department
+      ? genAgentCode(values.department, records.map((r) => r.agentCode))
+      : '';
+    return Promise.all(fileList.map(async (f) => {
+      const category = (f as UploadFile & { category?: Category }).category || 'other';
+      const finalName = buildRegistrationMaterialFilename(category, agentCode, values.name, f.name);
+      const existingUuid = (f as UploadFile & { fileUuid?: string }).fileUuid;
+      if (existingUuid) {
+        return {
+          name: finalName,
+          size: `${((f.size ?? 0) / 1024 / 1024).toFixed(1)} MB`,
+          url: '#',
+          fileUuid: existingUuid,
+        };
+      }
+      if (!f.originFileObj) throw new Error(`无法读取备案材料：${f.name}，请重新上传`);
+      const uploadFile = renamePdfFile(f.originFileObj as File, finalName);
+      const saved = await agentAccessApi.uploadFile(uploadFile);
+      return {
+        name: finalName,
+        size: `${(saved.sizeBytes / 1024 / 1024).toFixed(1)} MB`,
+        url: saved.url,
+        fileUuid: saved.fileUuid,
+      };
+    }));
+  };
 
   const buildRecord = (status: '草稿' | '待审核', attachments?: Awaited<ReturnType<typeof uploadPendingFiles>>) => {
     const v = form.getFieldsValue(true);
@@ -888,22 +957,40 @@ const SmartRegistrationForm = () => {
     };
   };
 
-  const saveDraft = async () => {
-    try {
-      await form.validateFields(['name']);
-    } catch {
-      return;
-    }
+  const saveDraft = async (navigateAfterSave = true): Promise<boolean> => {
+    setSavingDraft(true);
     try {
       const attachments = await uploadPendingFiles();
       const rec = buildRecord('草稿', attachments);
       await upsertAccessRecord(rec as any);
     } catch (error) {
       message.error(error instanceof Error ? error.message : '草稿保存失败');
-      return;
+      setSavingDraft(false);
+      return false;
     }
+    setSavingDraft(false);
+    setHasUnsavedChanges(false);
     message.success('注册表单填写记录已暂存至草稿状态列表页');
-    setTimeout(() => navigate('/app/agent-center?tab=草稿'), 400);
+    if (navigateAfterSave) {
+      allowNavigationRef.current = true;
+      setTimeout(() => navigate('/app/agent-center?tab=草稿'), 400);
+    }
+    return true;
+  };
+
+  const leaveWithoutSaving = () => {
+    if (navigationBlocker.state !== 'blocked') return;
+    allowNavigationRef.current = true;
+    setHasUnsavedChanges(false);
+    navigationBlocker.proceed();
+  };
+
+  const saveDraftAndLeave = async () => {
+    if (navigationBlocker.state !== 'blocked') return;
+    const saved = await saveDraft(false);
+    if (!saved) return;
+    allowNavigationRef.current = true;
+    navigationBlocker.proceed();
   };
 
   const submitRegister = async () => {
@@ -924,6 +1011,8 @@ const SmartRegistrationForm = () => {
       return;
     }
     setSubmitting(false);
+    setHasUnsavedChanges(false);
+    allowNavigationRef.current = true;
     message.success('提交成功');
     // 给对话助手推一条成功反馈
     addMessage({
@@ -976,6 +1065,26 @@ const SmartRegistrationForm = () => {
 
   return (
     <>
+      <Modal
+        open={navigationBlocker.state === 'blocked'}
+        title="是否保存为草稿？"
+        closable={false}
+        maskClosable={false}
+        keyboard={false}
+        footer={[
+          <Button key="cancel" onClick={() => navigationBlocker.state === 'blocked' && navigationBlocker.reset()}>
+            取消
+          </Button>,
+          <Button key="discard" danger onClick={leaveWithoutSaving}>
+            不保存并退出
+          </Button>,
+          <Button key="save" type="primary" loading={savingDraft} onClick={() => void saveDraftAndLeave()}>
+            保存为草稿
+          </Button>,
+        ]}
+      >
+        <Text>当前填写内容尚未保存。保存后可在“注册管理-草稿”中继续编辑。</Text>
+      </Modal>
       <PageHeader
         title="新建注册"
         subTitle="对话 + 多模态 + AI 预填 → 备案材料 → 基本信息 → 技术信息 → 测试验证 → 提交"
@@ -994,6 +1103,7 @@ const SmartRegistrationForm = () => {
         layout="vertical"
         preserve={false}
         onValuesChange={(changed) => {
+          setHasUnsavedChanges(true);
           // §3.1 P1.3: 用户主动改过 clinicalStage / department 后,不再被语义联动覆盖
           const keys = Object.keys(changed || {});
           if (keys.some((k) => k === 'clinicalStage' || k === 'department')) {
@@ -1091,7 +1201,7 @@ const SmartRegistrationForm = () => {
                       }}
                       style={{ marginBottom: 4 }}
                     >
-                      {f.name}
+                      {materialDisplayName(f)}
                     </Tag>
                   ))}
                 </div>
@@ -1698,7 +1808,7 @@ const SmartRegistrationForm = () => {
           <Space style={{ width: '100%', justifyContent: 'space-between' }}>
             <Space>
               <Tooltip title="保存为草稿，可稍后回到列表继续编辑">
-                <Button icon={<SaveOutlined />} onClick={saveDraft}>
+                <Button icon={<SaveOutlined />} loading={savingDraft} onClick={() => void saveDraft()}>
                   暂存
                 </Button>
               </Tooltip>

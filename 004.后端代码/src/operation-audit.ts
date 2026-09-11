@@ -5,28 +5,39 @@ import { pool } from './db.js';
 import { normalizeClientIp } from './client-ip.js';
 
 const recentReadAudits = new Map<string, number>();
-const READ_DEDUPLICATION_WINDOW_MS = 1_000;
+/**
+ * “查看”是列表加载、分页和页面轮询最容易产生的高频操作。默认按一分钟
+ * 采样一次；部署时可通过环境变量调整，而无需修改业务代码。
+ */
+const configuredReadWindow = Number(process.env.OPERATION_AUDIT_READ_WINDOW_MS);
+export const READ_DEDUPLICATION_WINDOW_MS = Number.isFinite(configuredReadWindow) && configuredReadWindow >= 0
+  ? configuredReadWindow
+  : 60_000;
 
 /**
- * React development StrictMode and browser retries can issue the same
- * idempotent read twice within a few milliseconds. Keep one audit event for
- * that single user intent, while never deduplicating writes or failed calls.
+ * List loading, pagination and polling can issue many idempotent reads. Sample
+ * successful reads by user + module + operation type, while never suppressing
+ * writes, failures, or activity from another user/module/type.
  */
-const isDuplicateReadAudit = (req: Request, input: OperationAuditInput) => {
+export const isDuplicateReadAudit = (req: Request, input: OperationAuditInput, now = Date.now()) => {
   const method = input.requestMethod ?? req.method;
   if (method !== 'GET' || input.operationType !== '查看' || (input.result ?? 'SUCCESS') !== 'SUCCESS') return false;
-  const now = Date.now();
-  const requestPath = input.requestPath ?? req.originalUrl;
-  const key = [req.auth?.userId, method, requestPath, input.moduleCode, input.operationType, input.description].join('\0');
-  const previous = recentReadAudits.get(key) ?? 0;
-  recentReadAudits.set(key, now);
+  const key = [req.auth?.userId, input.moduleCode, input.operationType].join('\0');
+  const previous = recentReadAudits.get(key);
+  const duplicate = previous !== undefined && now >= previous && now - previous < READ_DEDUPLICATION_WINDOW_MS;
+  // Only accepted samples advance the timestamp. Continuous polling therefore
+  // still leaves one trace per window instead of suppressing the stream forever.
+  if (!duplicate) recentReadAudits.set(key, now);
   if (recentReadAudits.size > 1_000) {
     for (const [candidate, timestamp] of recentReadAudits) {
       if (now - timestamp > READ_DEDUPLICATION_WINDOW_MS) recentReadAudits.delete(candidate);
     }
   }
-  return now - previous < READ_DEDUPLICATION_WINDOW_MS;
+  return duplicate;
 };
+
+/** Test helper: keeps policy tests isolated without exposing the cache itself. */
+export const clearRecentReadAudits = () => recentReadAudits.clear();
 
 export interface OperationAuditInput {
   moduleCode: string;
@@ -148,6 +159,20 @@ export const describeOperation = (req: Request): Omit<OperationAuditInput, 'resu
       moduleCode:'LEDGER',moduleName:'统一台账中心',operationType:req.body?.action==='disable'?'禁用':'启用',
       description:`用户${req.body?.action==='disable'?'禁用':'启用'}台账智能体`,...target('LEDGER_AGENT',req.params.id),
     };
+  }
+  if (path.startsWith('/api/evaluation/datasets')) {
+    const datasetMatch = path.match(/^\/api\/evaluation\/datasets\/([^/]+)$/);
+    const datasetStatusMatch = path.match(/^\/api\/evaluation\/datasets\/([^/]+)\/status$/);
+    const questionMatch = path.match(/^\/api\/evaluation\/datasets\/([^/]+)\/questions\/([^/]+)$/);
+    if (method === 'GET' && path === '/api/evaluation/datasets') return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'查看',description:'用户查看评测数据集列表' };
+    if (method === 'GET' && path.endsWith('/template.xlsx')) return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'下载',description:'用户下载评测题集导入模板' };
+    if (method === 'POST' && path === '/api/evaluation/datasets/import') return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'导入',description:'用户导入评测数据集' };
+    if (method === 'POST' && /\/questions\/import$/.test(path)) return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'导入',description:'用户向评测数据集追加题集',...target('EVALUATION_DATASET',req.params.id) };
+    if (questionMatch && method === 'GET') return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'查看',description:'用户查看评测题目详情',...target('EVALUATION_QUESTION',req.params.questionId) };
+    if (questionMatch && ['PUT','DELETE'].includes(method)) return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:method==='DELETE'?'删除':'编辑',description:`用户${method==='DELETE'?'删除':'编辑'}评测题目`,...target('EVALUATION_QUESTION',req.params.questionId) };
+    if (datasetMatch && method === 'GET') return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:'查看',description:'用户查看评测数据集详情',...target('EVALUATION_DATASET',req.params.id) };
+    if (datasetMatch && ['PUT','DELETE'].includes(method)) return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:method==='DELETE'?'删除':'编辑',description:`用户${method==='DELETE'?'删除':'编辑'}评测数据集`,...target('EVALUATION_DATASET',req.params.id) };
+    if (datasetStatusMatch && method === 'PATCH') return { moduleCode:'EVALUATION',moduleName:'统一准入评测沙盒',operationType:req.body?.enabled?'启用':'禁用',description:`用户${req.body?.enabled?'启用':'禁用'}评测数据集`,...target('EVALUATION_DATASET',datasetStatusMatch[1]) };
   }
   return null;
 };

@@ -475,6 +475,122 @@
   grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr);
 }
 
+.dashboard-treatment-card .ant-card-body {
+  padding: 4px 8px 8px !important;
+}
+
+.dashboard-treatment-pie {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  grid-template-columns: 46% 54%;
+}
+
+.dashboard-treatment-chart {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+.dashboard-treatment-chart > div:first-child {
+  height: 100%;
+}
+
+.dashboard-treatment-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  width: 58px;
+  height: 58px;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border: 1px solid rgba(36, 211, 255, .35);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 30%, rgba(17, 68, 116, .96), rgba(3, 17, 42, .98));
+  box-shadow: inset 0 0 16px rgba(64, 199, 255, .16), 0 0 18px rgba(22, 185, 255, .2);
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+}
+
+.dashboard-treatment-core strong {
+  color: #f1fbff;
+  font-family: "DIN Alternate", "Arial Narrow", sans-serif;
+  font-size: 21px;
+  line-height: 21px;
+  text-shadow: 0 0 9px #16b9ff;
+}
+
+.dashboard-treatment-core span {
+  margin-top: 3px;
+  color: #78a7d2;
+  font-size: 10px;
+}
+
+.dashboard-treatment-legend {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 5px;
+}
+
+.dashboard-treatment-legend button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  height: 26px;
+  padding: 3px 5px;
+  align-items: center;
+  color: #b8d8ff;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  grid-template-columns: 8px minmax(54px, 1fr) 42px 46px;
+  gap: 5px;
+  transition: background .2s ease, border-color .2s ease, transform .2s ease;
+}
+
+.dashboard-treatment-legend button:hover,
+.dashboard-treatment-legend button:focus-visible {
+  border-color: rgba(51, 211, 255, .3);
+  outline: none;
+  background: rgba(31, 133, 210, .12);
+  transform: translateX(2px);
+}
+
+.dashboard-treatment-legend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: 0 0 7px currentColor;
+}
+
+.dashboard-treatment-legend span {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-treatment-legend b {
+  color: #e8f7ff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dashboard-treatment-legend em {
+  color: #62bde9;
+  font-size: 11px;
+  font-style: normal;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .dashboard-status-grid {
   display: grid;
   height: 100%;

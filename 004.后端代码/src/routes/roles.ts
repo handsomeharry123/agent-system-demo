@@ -91,7 +91,25 @@ router.get('/meta', async (_req, res, next) => {
 router.get('/', async (_req, res, next) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(`${roleQuery} ORDER BY r.id`);
-    res.json(ok(rows.map(dto)));
+    const [permissions] = await pool.query<RowDataPacket[]>(
+      `SELECT rp.role_id, p.permission_code
+       FROM iam_role_permission rp
+       JOIN iam_permission p ON p.id = rp.permission_id
+       JOIN iam_role r ON r.id = rp.role_id
+       WHERE p.status = 'ENABLED' AND r.is_deleted = 0 AND r.role_code <> 'NORMAL_USER'
+       ORDER BY rp.role_id, p.sort_no, p.id`,
+    );
+    const permissionCodesByRole = new Map<number, string[]>();
+    for (const permission of permissions) {
+      const roleId = Number(permission.role_id);
+      const codes = permissionCodesByRole.get(roleId) ?? [];
+      codes.push(String(permission.permission_code));
+      permissionCodesByRole.set(roleId, codes);
+    }
+    res.json(ok(rows.map((row) => ({
+      ...dto(row),
+      permissionCodes: permissionCodesByRole.get(Number(row.id)) ?? [],
+    }))));
   } catch (error) { next(error); }
 });
 

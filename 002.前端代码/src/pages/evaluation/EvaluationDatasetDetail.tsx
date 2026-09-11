@@ -54,7 +54,7 @@ const { Text } = Typography;
 const { TextArea } = Input;
 
 const ALL_QUESTION_TYPES: QuestionType[] = [
-  '单选题', '多选题', '填空题', '问答题', '场景模拟',
+  '单选题', '多选题', '填空题', '问答题',
 ];
 
 const EvaluationDatasetDetail = () => {

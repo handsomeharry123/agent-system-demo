@@ -9,6 +9,9 @@ import { userCenterApi, type AccountStatus, type CenterUser, type UserFilters } 
 
 export type { CenterUser } from '../../services/userCenter';
 
+/** 系统内置管理员是平台兜底帐号，不允许通过用户中心停用。 */
+export const isSystemAdministrator = (user: CenterUser) => user.employeeId.toLowerCase() === 'admin';
+
 const UserList = () => {
   const navigate = useNavigate();
   const [filterForm] = Form.useForm<UserFilters>();
@@ -21,18 +24,25 @@ const UserList = () => {
   const [userOptionsLoading, setUserOptionsLoading] = useState(false);
   const userSearchTimer = useRef<ReturnType<typeof setTimeout>>();
   const userSearchSequence = useRef(0);
+  const listRequestSequence = useRef(0);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 8, total: 0 });
 
   const loadUsers = async (current = pagination.current, nextFilters = filters) => {
+    const sequence = ++listRequestSequence.current;
     try {
       setLoading(true);
       const result = await userCenterApi.list({ ...nextFilters, current, pageSize: pagination.pageSize });
+      if (sequence !== listRequestSequence.current) return;
       setUsers(result.list);
       setPagination(result.pagination);
       setSelectedRowKeys([]);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : '用户列表加载失败');
-    } finally { setLoading(false); }
+      if (sequence === listRequestSequence.current) {
+        message.error(error instanceof Error ? error.message : '用户列表加载失败');
+      }
+    } finally {
+      if (sequence === listRequestSequence.current) setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -97,7 +107,9 @@ const UserList = () => {
     const ids = selectedRowKeys;
     Modal.confirm({
       title: `确认${status === '正常' ? '批量启用' : '批量停用'}？`,
-      content: ids.length ? `将更新已选中的 ${ids.length} 个帐号。` : '当前未勾选用户，将更新筛选结果中的全部帐号。',
+      content: ids.length
+        ? `将更新已选中的 ${ids.length} 个帐号。`
+        : `当前未勾选用户，将更新筛选结果中的全部帐号${status === '停用' ? '（系统管理员除外）' : ''}。`,
       okText: '确认', cancelText: '取消',
       onOk: async () => {
         try {
@@ -111,17 +123,31 @@ const UserList = () => {
     });
   };
 
-  const exportList = async () => {
+  const downloadExport = async (ids: string[]) => {
     try {
-      const blob = await userCenterApi.exportCsv(filters);
+      const blob = await userCenterApi.exportCsv(filters, ids);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
       anchor.download = `用户列表-${new Date().toISOString().slice(0, 10)}.csv`;
       anchor.click();
       URL.revokeObjectURL(url);
-      message.success('已导出当前筛选结果');
+      message.success(ids.length ? `已导出选中的 ${ids.length} 个帐号` : '已导出当前筛选结果');
     } catch (error) { message.error(error instanceof Error ? error.message : '导出失败'); }
+  };
+
+  const exportList = () => {
+    const ids = selectedRowKeys.map(String);
+    if (ids.length) {
+      void downloadExport(ids);
+      return;
+    }
+    Modal.confirm({
+      title: '导出全部筛选结果？',
+      content: '当前未勾选用户，将导出筛选结果中的全部帐号',
+      okText: '确认导出', cancelText: '取消',
+      onOk: () => downloadExport([]),
+    });
   };
 
   const columns: ColumnsType<CenterUser> = [
@@ -136,7 +162,7 @@ const UserList = () => {
     { title: '最后登录时间', dataIndex: 'lastLoginAt', width: 170 },
     { title: '操作', key: 'action', width: 250, fixed: 'right', render: (_, record) => <Space size={2}>
       <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/app/user-center/${record.id}/edit`)}>编辑</Button>
-      <Button type="link" size="small" danger={record.status === '正常'} onClick={() => void updateStatus(record.id, record.status === '正常' ? '停用' : '正常')}>{record.status === '正常' ? '停用' : '恢复'}</Button>
+      {!isSystemAdministrator(record) && <Button type="link" size="small" danger={record.status === '正常'} onClick={() => void updateStatus(record.id, record.status === '正常' ? '停用' : '正常')}>{record.status === '正常' ? '停用' : '恢复'}</Button>}
       <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => removeUser(record)}>删除</Button>
     </Space> },
   ];
@@ -144,7 +170,14 @@ const UserList = () => {
   return <div className="user-center-page">
     <PageHeader title="用户列表" subTitle="管理平台用户帐号、角色及使用状态" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/app/user-center/create')}>新建用户</Button>} />
     <Card className="user-center-filter" bordered={false}>
-      <Form form={filterForm} layout="inline" onFinish={(values) => { setFilters(values); void loadUsers(1, values); }}>
+      <Form
+        form={filterForm}
+        layout="inline"
+        onValuesChange={(_, values) => {
+          setFilters(values);
+          void loadUsers(1, values);
+        }}
+      >
         <Form.Item name="userId" label="用户">
           <Select
             allowClear
@@ -162,16 +195,27 @@ const UserList = () => {
         <Form.Item name="departmentId" label="所属组织"><Select allowClear placeholder="全部组织" options={departments} style={{ width: 180 }} /></Form.Item>
         <Form.Item name="role" label="用户角色"><Select allowClear placeholder="全部角色" options={systemRoles.map((value) => ({ label: value, value }))} style={{ width: 170 }} /></Form.Item>
         <Form.Item name="status" label="帐号状态"><Select allowClear placeholder="全部状态" options={['正常', '停用'].map((value) => ({ label: value, value }))} style={{ width: 140 }} /></Form.Item>
-        <Form.Item><Space><Button type="primary" htmlType="submit">查询</Button><Button onClick={() => { filterForm.resetFields(); setFilters({}); void loadUsers(1, {}); }}>重置</Button></Space></Form.Item>
+        <Form.Item>
+          <Button
+            size="small"
+            onClick={() => {
+              filterForm.resetFields();
+              setFilters({});
+              void loadUsers(1, {});
+            }}
+          >
+            重置筛选
+          </Button>
+        </Form.Item>
       </Form>
     </Card>
     <Card bordered={false}>
       <div className="user-center-toolbar"><Space>
         <Button icon={<CheckCircleOutlined />} onClick={() => confirmBatch('正常')}>批量启用</Button>
         <Button icon={<StopOutlined />} onClick={() => confirmBatch('停用')}>批量停用</Button>
-        <Button icon={<ExportOutlined />} onClick={() => void exportList()}>导出列表</Button>
+        <Button icon={<ExportOutlined />} onClick={exportList}>导出列表</Button>
       </Space><span>共 {pagination.total} 位用户{selectedRowKeys.length > 0 && `，已选 ${selectedRowKeys.length} 位`}</span></div>
-      <Table rowKey="id" loading={loading} columns={columns} dataSource={users} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys }} scroll={{ x: 1320 }} pagination={{ ...pagination, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }} onChange={(page: TablePaginationConfig) => void loadUsers(page.current ?? 1)} />
+      <Table rowKey="id" loading={loading} columns={columns} dataSource={users} rowSelection={{ selectedRowKeys, onChange: setSelectedRowKeys, getCheckboxProps: (record) => ({ disabled: isSystemAdministrator(record), title: isSystemAdministrator(record) ? '系统管理员不参与批量启停' : undefined }) }} scroll={{ x: 1320 }} pagination={{ ...pagination, showSizeChanger: false, showTotal: (total) => `共 ${total} 条` }} onChange={(page: TablePaginationConfig) => void loadUsers(page.current ?? 1)} />
     </Card>
   </div>;
 };

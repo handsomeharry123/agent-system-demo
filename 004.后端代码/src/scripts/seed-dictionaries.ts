@@ -47,6 +47,9 @@ const seeds: DictionarySeed[] = [
   { code:'mq_auth_type', name:'MQ认证方式', items:pairs(['ak_sk','sasl'],['AK/SK（Access Key）','SASL认证（Kafka常见）']) },
   { code:'test_sample_size', name:'测试样本量', items:pairs(['quick_eval','standard_eval','deep_eval'],['快速评测','标准评测','深度评测']) },
   { code:'alert_rule_type', name:'告警规则类型', items:pairs(['business_alert','status_alert','cost_alert','security_alert'],['业务监控告警规则','状态监控告警规则','成本监控告警规则','安全监控告警规则']) },
+  { code:'model_deployment_type', name:'模型部署方式', items:pairs(
+    ['on_premises','cloud','hybrid'],
+    ['本地化部署','云端部署','混合部署']) },
 ];
 
 const connection = await pool.getConnection();

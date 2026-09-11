@@ -4,7 +4,7 @@ export type RoleStatus = '启用' | '停用';
 export type DataRange = '全院智能体' | '本科室智能体' | '指定科室智能体' | '指定智能体';
 export interface RoleItem {
   id: string; name: string; description: string; userCount: number; dataRange: DataRange;
-  functionCount: number; status: RoleStatus; isSystem: boolean; createdAt: string; updatedAt: string;
+  functionCount: number; permissionCodes: string[]; status: RoleStatus; isSystem: boolean; createdAt: string; updatedAt: string;
 }
 export interface RoleDetail extends RoleItem {
   departmentIds: number[]; agentIds: number[]; dataRangeItems: string[]; permissions: string[]; permissionCodes: string[];

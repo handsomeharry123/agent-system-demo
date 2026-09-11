@@ -7,6 +7,7 @@ import PageHeader from '../../components/PageHeader';
 import { roleColorMap } from './constants';
 import { roleCenterApi, type DataRange, type RoleDetail, type RoleItem, type RolePayload, type RoleStatus } from '../../services/roleCenter';
 import RolePermissionScope from './RolePermissionScope';
+import { countVisiblePermissions } from './FunctionPermission';
 
 const { TextArea } = Input;
 
@@ -92,7 +93,7 @@ const RoleManage = () => {
         <Descriptions.Item label="状态"><Tag color={detail.status === '启用' ? 'success' : 'default'}>{detail.status}</Tag></Descriptions.Item>
         <Descriptions.Item label="角色描述" span={2}>{detail.description}</Descriptions.Item>
         <Descriptions.Item label="关联用户数">{detail.userCount} 人</Descriptions.Item>
-        <Descriptions.Item label="关联功能权限范围">{detail.functionCount} 项</Descriptions.Item>
+        <Descriptions.Item label="关联功能权限范围">{countVisiblePermissions(detail.permissionCodes)} 项</Descriptions.Item>
         <Descriptions.Item label="关联数据权限范围" span={2}><Space wrap><Tag color="blue">{detail.dataRange}</Tag>{detail.dataRangeItems.length ? detail.dataRangeItems.map((item) => <Tag key={item}>{item}</Tag>) : <span>按角色动态生效</span>}</Space></Descriptions.Item>
         <Descriptions.Item label="拥有的功能权限" span={2}><RolePermissionScope permissionCodes={detail.permissionCodes || []} /></Descriptions.Item>
         <Descriptions.Item label="创建时间">{detail.createdAt}</Descriptions.Item><Descriptions.Item label="更新时间">{detail.updatedAt}</Descriptions.Item>
@@ -106,7 +107,7 @@ const RoleManage = () => {
     { title: '角色描述', dataIndex: 'description', ellipsis: true, width: 300 },
     { title: '关联用户数', dataIndex: 'userCount', width: 110, render: (value) => `${value} 人` },
     { title: '关联数据权限范围', dataIndex: 'dataRange', width: 160 },
-    { title: '关联功能权限范围', dataIndex: 'functionCount', width: 160, render: (value) => `${value} 项权限` },
+    { title: '关联功能权限范围', dataIndex: 'functionCount', width: 160, render: (_, record) => `${countVisiblePermissions(record.permissionCodes)} 项权限` },
     { title: '状态', dataIndex: 'status', width: 90, render: (value: RoleStatus) => <Tag color={value === '启用' ? 'success' : 'default'}>{value}</Tag> },
     { title: '创建时间', dataIndex: 'createdAt', width: 170 }, { title: '更新时间', dataIndex: 'updatedAt', width: 170 },
     { title: '操作', fixed: 'right', width: 220, render: (_, record) => <Space size={2}>

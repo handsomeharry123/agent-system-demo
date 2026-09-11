@@ -1,10 +1,11 @@
 /**
- * 智能体接入中心 - 注册管理列表页（V2.6）
+ * 智能体接入中心 - 注册管理列表页（V2.7）
  *
- * V2.6 调整：
- *   - 「审核通过」Tab 操作列从 1 个「查看详情」按钮扩展为 3 个平铺按钮：
- *       查看详情（所有角色）/ 立即评测（仅信息科管理员）/ 查看台账（所有角色）
- *   - 列宽 110 → 260（3 个 link 按钮一行内展示完、不被截字）
+ * V2.7 调整：
+ *   - 「全部」Tab 与各状态 Tab 共用同一套按记录状态生成的操作项，避免操作不同步
+ *   - 操作总数超过 2 个时，仅展示「查看详情 + 更多」，其余操作收进下拉菜单
+ *   - 操作总数不超过 2 个时直接展示，兼顾操作效率与列表稳定性
+ *   - 「审核通过」状态操作：查看详情 / 立即评测（仅信息科管理员）/ 查看台账
  *   - 跳转行为：
  *       立即评测 → /app/evaluation/tasks/create?agentName={r.name}  带智能体名称预填
  *       查看台账 → /app/ledger/list?search={r.name}&openDetail=1
@@ -75,6 +76,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { useDemoSettings } from '../../hooks/useDemoSettings';
 import { useDepartmentOptions } from './useDepartmentOptions';
+import { useClinicalStageOptions } from './useClinicalStageOptions';
 import PageHeader from '../../components/PageHeader';
 import NewUserConsole from '../../components/NewUserConsole';
 import {
@@ -84,7 +86,6 @@ import {
   statusColorMap,
   statusListKeys,
   sourceOptions,
-  clinicalStageOptions,
   type AccessRecord,
 } from './types';
 import {
@@ -107,6 +108,7 @@ const { Text } = Typography;
 
 const AgentCenterContent = () => {
   const departmentOptions = useDepartmentOptions();
+  const clinicalStageOptions = useClinicalStageOptions();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser, hasPermission } = useAuth();
@@ -117,7 +119,6 @@ const AgentCenterContent = () => {
   // 均为第 4 个 action（index 3）；页面级授权则代表拥有该页全部操作。
   const canAuditPending = hasPermission('access:pending', 'action:3');
   const canAuditReviewing = hasPermission('access:reviewing', 'action:3');
-  const canAuditFromList = hasPermission('access:list', 'action:3');
 
   const records = useAccessRecords();
   const { pushWelcomeGreeting } = useSmartDraft();
@@ -446,8 +447,6 @@ const AgentCenterContent = () => {
     params.set('openDetail', '1');
     navigate(`/app/ledger/list?${params.toString()}`);
   };
-  const goLedgerOverview = () => navigate('/app/ledger');
-
   // §3.1.1 指向性规则：监听「迷你清单」内记录级按钮（AgentAssistant 派发 CustomEvent）
   //   复用与操作列完全相同的 handler：详情/编辑/审核走导航；删除/撤销走二次确认 Modal
   useEffect(() => {
@@ -540,10 +539,10 @@ const AgentCenterContent = () => {
         render: (d: string) => ellipsisCell(d, 15),
       },
       {
-        title: '智能体版本',
+        title: <span style={{ whiteSpace: 'nowrap' }}>智能体版本</span>,
         dataIndex: 'version',
         key: 'version',
-        width: 100,
+        width: 120,
         render: (v: string) => v || <Text type="secondary">--</Text>,
       },
     ];
@@ -622,216 +621,105 @@ const AgentCenterContent = () => {
         sorter: true,
         render: (s: RegisterStatus) => <Tag color={statusColorMap[s].color}>{s}</Tag>,
       });
-      // §4.1.2 预审建议标识：admin 在「全部」Tab 每条记录旁以辅助 Tag 展示
-      if (isPlatformAdmin) {
-        statusCol.push({
-          title: '预审建议',
-          key: 'preAudit',
-          width: 150,
-          render: (_v, r) => {
-            const tip = preAuditTipOf(r);
-            if (!tip) return <Text type="secondary">--</Text>;
-            const color =
-              tip.tip === '建议通过' ? 'success' : tip.tip === '建议退回' ? 'error' : 'default';
-            return (
-              <Tooltip title={`依据已填信息 + 连通结果推断: ${tip.reason}`}>
-                <Tag color={color} data-testid="pre-audit-tip">{tip.tip}</Tag>
-              </Tooltip>
-            );
-          },
-        });
-      }
-    }
-    if ((activeStatus === '待审核' || activeStatus === '审核中') && isPlatformAdmin) {
-      // §4.1.2 待审/审核中 Tab 同样挂「预审建议」辅助标识（窄列）
-      statusCol.push({
-        title: '预审建议',
-        key: 'preAudit',
-        width: 130,
-        render: (_v, r) => {
-          const tip = preAuditTipOf(r);
-          if (!tip) return <Text type="secondary">--</Text>;
-          const color =
-            tip.tip === '建议通过' ? 'success' : tip.tip === '建议退回' ? 'error' : 'default';
-          return (
-            <Tooltip title={`依据已填信息 + 连通结果推断: ${tip.reason}`}>
-              <Tag color={color} data-testid="pre-audit-tip">{tip.tip}</Tag>
-            </Tooltip>
-          );
-        },
-      });
     }
 
     const actionCol: ColumnsType<AccessRecord>[0] = {
       title: '操作',
       key: 'action',
-      // 列宽按 Tab 贴合「最宽按钮组合 + 充足余量」,保证按钮一行内展示完、不被截字、右侧不过空:
-      // - 「全部」/「草稿」Tab 走「查看详情 + 更多」下拉,固定 160
-      // - 撤销修改:最多 3 按钮(查看+编辑+删除) → 230
-      // - 待审核 / 审核中:最多 3 按钮(查看+审核+撤销) → 280
-      // - 退回修改:2 按钮(查看+编辑) → 200(给两个带图标 link 按钮留足一行展开空间)
-      // - 审核通过:3 按钮(查看详情+立即评测+查看台账)→ 260
-      // 数值含 8px 单元格左右 padding + 8px 视觉余量;fixed:right 列的实际列宽由列定义宽度决定
-      width:
-        activeStatus === '全部' ? 160 :
-        activeStatus === '草稿' ? 160 :
-        activeStatus === '撤销修改' ? 230 :
-        activeStatus === '审核通过' ? 260 :
-        activeStatus === '退回修改' ? 200 :
-        280, // 待审核 / 审核中
+      // 最多只展示两个入口：操作较多时统一为「查看详情 + 更多」。
+      width: 190,
       fixed: 'right',
       render: (_v, r) => {
         const isMine = r.applicant === loginName;
         const canOwnerEdit = isMine;
         const canAudit = r.status === '待审核'
-          ? (activeStatus === '全部' ? canAuditFromList : canAuditPending)
+          ? canAuditPending
           : r.status === '审核中'
-            ? (activeStatus === '全部' ? canAuditFromList : canAuditReviewing)
+            ? canAuditReviewing
             : false;
         const canOwnerCancel = isMine;
 
-        // 收集该记录在当前身份下可执行的操作菜单项(用于「全部」Tab 的「更多」下拉)
-        const moreItems: MenuProps['items'] = [];
+        // 操作只由记录状态、身份和权限决定，与当前所在 Tab 无关。
+        // 因此「全部」和状态 Tab 对同一条记录始终呈现完全一致的操作能力。
+        const secondaryActions: Array<{
+          key: string;
+          label: string;
+          icon: React.ReactNode;
+          onClick: () => void;
+          danger?: boolean;
+        }> = [];
         if (r.status === '草稿' && canOwnerEdit) {
-          moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
-          moreItems.push({ key: 'del', label: '删除', icon: <DeleteOutlined />, danger: true, onClick: () => setPendingDelete(r) });
+          secondaryActions.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
+          secondaryActions.push({ key: 'del', label: '删除', icon: <DeleteOutlined />, danger: true, onClick: () => setPendingDelete(r) });
         } else if (r.status === '待审核') {
           if (canAudit) {
-            moreItems.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
+            secondaryActions.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
           }
           if (canOwnerCancel) {
-            moreItems.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
+            secondaryActions.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
           }
         } else if (r.status === '审核中') {
           if (canAudit) {
-            moreItems.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
+            secondaryActions.push({ key: 'audit', label: '审核', icon: <AuditOutlined />, onClick: () => goAudit(r) });
           }
           if (canOwnerCancel) {
-            moreItems.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
+            secondaryActions.push({ key: 'cancel', label: '撤销', icon: <UndoOutlined />, onClick: () => setPendingCancel(r) });
           }
         } else if (r.status === '退回修改' && canOwnerEdit) {
-          moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
+          secondaryActions.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
         } else if (r.status === '撤销修改' && canOwnerEdit) {
-          moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
-          moreItems.push({ key: 'del', label: '删除', icon: <DeleteOutlined />, danger: true, onClick: () => setPendingDelete(r) });
+          secondaryActions.push({ key: 'edit', label: '编辑', icon: <EditOutlined />, onClick: () => goEdit(r) });
+          secondaryActions.push({ key: 'del', label: '删除', icon: <DeleteOutlined />, danger: true, onClick: () => setPendingDelete(r) });
+        } else if (r.status === '审核通过') {
+          if (isPlatformAdmin) {
+            secondaryActions.push({ key: 'eval', label: '立即评测', icon: <PlayCircleOutlined />, onClick: () => goEvaluationCreate(r) });
+          }
+          secondaryActions.push({ key: 'ledger', label: '查看台账', icon: <DatabaseOutlined />, onClick: () => goLedgerList(r) });
         }
 
-        // 「全部」Tab：固定「查看详情 + 更多」下拉,避免一列里出现 2~4 个按钮导致列宽不可控
-        if (activeStatus === '全部') {
-          return (
-            <Space size={4} wrap>
-              <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => goDetail(r)}>
-                查看详情
-              </Button>
-              {moreItems.length > 0 && (
-                <Dropdown menu={{ items: moreItems }} trigger={['click']}>
-                  <Button type="link" size="small" icon={<MoreOutlined />} style={{ padding: 0 }}>
-                    更多
-                  </Button>
-                </Dropdown>
-              )}
-            </Space>
-          );
-        }
-
-        // 6 个非「全部」Tab：状态单一,把可执行操作直接平铺展示
-        const buttons: React.ReactNode[] = [
+        const detailButton = (
           <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => goDetail(r)}>
             查看详情
-          </Button>,
-        ];
-        if (r.status === '草稿' && canOwnerEdit) {
-          // 草稿 Tab 与「全部」Tab 一致：走「查看详情 + 更多」下拉(列宽 160)
-          // 「更多」下拉复用 moreItems(已按 r.status 分发)
+          </Button>
+        );
+
+        if (secondaryActions.length > 1) {
+          const menuItems: MenuProps['items'] = secondaryActions.map((action) => ({
+            key: action.key,
+            label: action.label,
+            icon: action.icon,
+            danger: action.danger,
+            onClick: action.onClick,
+          }));
           return (
-            <Space size={4} wrap>
-              <Button key="view" type="link" size="small" icon={<EyeOutlined />} onClick={() => goDetail(r)}>
-                查看详情
-              </Button>
-              {moreItems.length > 0 && (
-                <Dropdown menu={{ items: moreItems }} trigger={['click']}>
-                  <Button type="link" size="small" icon={<MoreOutlined />} style={{ padding: 0 }}>
-                    更多
-                  </Button>
-                </Dropdown>
-              )}
+            <Space size={4} wrap={false} style={{ whiteSpace: 'nowrap' }}>
+              {detailButton}
+              <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+                <Button type="link" size="small" icon={<MoreOutlined />} style={{ padding: 0 }}>
+                  更多
+                </Button>
+              </Dropdown>
             </Space>
           );
-        } else if (r.status === '待审核') {
-          if (canAudit) {
-            buttons.push(
-              <Button key="audit" type="link" size="small" icon={<AuditOutlined />} onClick={() => goAudit(r)}>
-                审核
-              </Button>,
-            );
-          }
-          if (canOwnerCancel) {
-            buttons.push(
-              <Button key="cancel" type="link" size="small" icon={<UndoOutlined />} onClick={() => setPendingCancel(r)}>
-                撤销
-              </Button>,
-            );
-          }
-        } else if (r.status === '审核中') {
-          if (canAudit) {
-            buttons.push(
-              <Button key="audit" type="link" size="small" icon={<AuditOutlined />} onClick={() => goAudit(r)}>
-                审核
-              </Button>,
-            );
-          }
-          if (canOwnerCancel) {
-            buttons.push(
-              <Button key="cancel" type="link" size="small" icon={<UndoOutlined />} onClick={() => setPendingCancel(r)}>
-                撤销
-              </Button>,
-            );
-          }
-        } else if (r.status === '退回修改' && canOwnerEdit) {
-          buttons.push(
-            <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => goEdit(r)}>
-              编辑
-            </Button>,
-          );
-        } else if (r.status === '审核通过') {
-          // 审核通过 Tab：固定 3 按钮 —— 查看详情(全部) / 立即评测(仅信息科管理员) / 查看台账(全部)
-          // · 立即评测：仅 信息科管理员(ROLE_ADMIN)可见,带智能体名称预填跳到新建评测任务
-          // · 查看台账：所有角色可见,跳到台账列表页并自动打开此智能体详情
-          if (isPlatformAdmin) {
-            buttons.push(
+        }
+
+        return (
+          <Space size={4} wrap={false} style={{ whiteSpace: 'nowrap' }}>
+            {detailButton}
+            {secondaryActions.map((action) => (
               <Button
-                key="eval"
+                key={action.key}
                 type="link"
                 size="small"
-                icon={<PlayCircleOutlined />}
-                onClick={() => goEvaluationCreate(r)}
+                icon={action.icon}
+                danger={action.danger}
+                onClick={action.onClick}
               >
-                立即评测
-              </Button>,
-            );
-          }
-          buttons.push(
-            <Button
-              key="ledger"
-              type="link"
-              size="small"
-              icon={<DatabaseOutlined />}
-              onClick={() => goLedgerList(r)}
-            >
-              查看台账
-            </Button>,
-          );
-        } else if (r.status === '撤销修改' && canOwnerEdit) {
-          buttons.push(
-            <Button key="edit" type="link" size="small" icon={<EditOutlined />} onClick={() => goEdit(r)}>
-              编辑
-            </Button>,
-            <Button key="del" type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => setPendingDelete(r)}>
-              删除
-            </Button>,
-          );
-        }
-        return <Space size={4} wrap={false} style={{ whiteSpace: 'nowrap' }}>{buttons}</Space>;
+                {action.label}
+              </Button>
+            ))}
+          </Space>
+        );
       },
     };
     return [...base, ...statusCol, actionCol];
@@ -858,11 +746,6 @@ const AgentCenterContent = () => {
         subTitle="按注册状态分页管理全部注册记录"
         extra={
           <Space>
-            {activeStatus === '审核通过' && (
-              <Button icon={<DatabaseOutlined />} onClick={goLedgerOverview}>
-                台账总览
-              </Button>
-            )}
             <Button
               type="primary"
               icon={<ThunderboltFilled />}

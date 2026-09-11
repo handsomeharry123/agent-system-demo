@@ -15,7 +15,7 @@ export const dictionaryApi={
  update:(code:string,payload:DictionaryPayload)=>request<null>(`/api/system-config/dictionaries/${encodeURIComponent(code)}`,{method:'PUT',body:JSON.stringify(payload)}),
  updateStatus:(code:string,enabled:boolean)=>request<null>(`/api/system-config/dictionaries/${encodeURIComponent(code)}/status`,{method:'PATCH',body:JSON.stringify({enabled})}),
  remove:(code:string)=>request<null>(`/api/system-config/dictionaries/${encodeURIComponent(code)}`,{method:'DELETE'}),
- export:(keyword:string)=>{const q=new URLSearchParams();if(keyword.trim())q.set('keyword',keyword.trim());return download(`/api/system-config/dictionaries/export.xlsx${q.size?`?${q}`:''}`)},
+ export:(codes:string[])=>{const q=new URLSearchParams();codes.forEach(code=>q.append('codes',code));return download(`/api/system-config/dictionaries/export.xlsx?${q}`)},
  itemList:(code:string,current:number,pageSize:number,keyword:string)=>{const q=new URLSearchParams({current:String(current),pageSize:String(pageSize)});if(keyword.trim())q.set('keyword',keyword.trim());return request<DictionaryItemPage>(`/api/system-config/dictionaries/${encodeURIComponent(code)}/items?${q}`)},
  itemDetail:(code:string,id:string)=>request<DictionaryItem&{sortNo:number}>(`/api/system-config/dictionaries/${encodeURIComponent(code)}/items/${encodeURIComponent(id)}`),
  createItem:(code:string,payload:DictionaryItemPayload)=>request<{id:string}>(`/api/system-config/dictionaries/${encodeURIComponent(code)}/items`,{method:'POST',body:JSON.stringify(payload)}),

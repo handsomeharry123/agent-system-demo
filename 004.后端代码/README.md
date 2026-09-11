@@ -33,6 +33,18 @@ npm run dev
 - `POST /api/auth/logout`：退出并撤销会话
 - `GET /api/health`：健康检查
 
+### 统一准入评测沙盒 - 数据集管理（需要信息科管理员权限）
+
+- `GET /api/evaluation/datasets`：数据集分页列表，支持 `keyword`、`dimension`、`status`
+- `GET /api/evaluation/datasets/meta`：评测维度与题型元数据
+- `GET /api/evaluation/datasets/template.xlsx`：题集导入模板
+- `POST /api/evaluation/datasets/import`：导入数据集，`multipart/form-data` 包含名称、版本、维度、描述和 `file`
+- `GET/PUT/DELETE /api/evaluation/datasets/:id`：数据集详情、维护、删除
+- `PATCH /api/evaluation/datasets/:id/status`：启停，JSON `{ "enabled": true }`
+- `GET /api/evaluation/datasets/:id/questions`：题目分页列表
+- `POST /api/evaluation/datasets/:id/questions/import`：追加题集文件
+- `GET/PUT/DELETE /api/evaluation/datasets/:id/questions/:questionId`：题目详情、维护、删除
+
 ### 用户中心（需要信息科管理员权限）
 
 - `GET /api/users`：用户列表分页及组织、角色、帐号状态筛选

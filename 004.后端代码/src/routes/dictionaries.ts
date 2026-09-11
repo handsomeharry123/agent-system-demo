@@ -21,6 +21,17 @@ const codePattern = /^[a-z][a-z0-9_]*$/;
 const valueTypeToDb = { 字符串: 'STRING', 整数: 'INTEGER', 小数: 'DECIMAL', 日期: 'DATE' } as const;
 const valueTypeToText: Record<string, string> = { STRING: '字符串', INTEGER: '整数', DECIMAL: '小数', DATE: '日期' };
 const sourceToText: Record<string, string> = { BUILTIN: '系统内置', CUSTOM: '自定义' };
+const mvpHiddenDictionaryCodes = [
+  'demand_urgency',
+  'resource_type',
+  'resource_connect_mode',
+  'hl7_protocol_type',
+  'fhir_protocol_type',
+  'db_type',
+  'mq_type',
+  'mq_auth_type',
+] as const;
+const mvpVisibleFilter = `d.dictionary_code NOT IN (${mvpHiddenDictionaryCodes.map(() => '?').join(',')})`;
 
 interface DictionaryInput {
   code: string;
@@ -80,7 +91,7 @@ const dictionaryDto = (row: RowDataPacket) => ({
   source: sourceToText[row.source_type] ?? row.source_type,
   valueType: valueTypeToText[row.value_type] ?? row.value_type,
   enabled: row.status === 'ENABLED', itemCount: Number(row.item_count),
-  updatedBy: row.updated_by_name ?? '系统', updatedAt: formatTime(row.updated_at),
+  updatedBy: row.updated_by_name ?? '系统管理员', updatedAt: formatTime(row.updated_at),
   remark: row.description ?? undefined,
 });
 
@@ -91,16 +102,19 @@ const itemDto = (row: RowDataPacket) => ({
 });
 
 const dictionarySelect = `
-  SELECT d.*, COALESCE(u.real_name, '系统') AS updated_by_name,
+  SELECT d.*, COALESCE(u.real_name, '系统管理员') AS updated_by_name,
     (SELECT COUNT(*) FROM sys_dictionary_item i WHERE i.dictionary_id=d.id AND i.is_deleted=0) AS item_count
   FROM sys_dictionary d LEFT JOIN iam_user u ON u.id=d.updated_by`;
 
 router.get('/export.xlsx', async (req, res, next) => {
   try {
-    const keyword = clean(req.query.keyword ?? req.query.q);
-    const values: string[] = [];
-    let filter = 'd.is_deleted=0';
-    if (keyword) { filter += ' AND (d.dictionary_code LIKE ? OR d.dictionary_name LIKE ?)'; values.push(`%${keyword}%`, `%${keyword}%`); }
+    const rawCodes = Array.isArray(req.query.codes) ? req.query.codes : req.query.codes ? [req.query.codes] : [];
+    const codes = [...new Set(rawCodes.map(clean).filter(Boolean))];
+    if (!codes.length) throw fail(400, '请至少选择一个要导出的字典');
+    if (codes.length > 100 || codes.some((code) => !codePattern.test(code))) throw fail(400, '导出的字典编码不合法');
+    const values: string[] = [...mvpHiddenDictionaryCodes];
+    const filter = `d.is_deleted=0 AND ${mvpVisibleFilter} AND d.dictionary_code IN (${codes.map(() => '?').join(',')})`;
+    values.push(...codes);
     const [rows] = await pool.execute<RowDataPacket[]>(`${dictionarySelect} WHERE ${filter} ORDER BY d.id`, values);
     const data = rows.map((row) => { const d = dictionaryDto(row); return {
       字典编码: d.code, 字典名称: d.name, 字典来源: d.source, 字典值类型: d.valueType,
@@ -120,8 +134,8 @@ router.get('/', async (req, res, next) => {
     const current = Math.max(1, Number(req.query.current) || 1);
     const pageSize = Math.min(100, Math.max(1, Number(req.query.pageSize) || 10));
     const keyword = clean(req.query.keyword ?? req.query.q);
-    const values: string[] = [];
-    let filter = 'd.is_deleted=0';
+    const values: string[] = [...mvpHiddenDictionaryCodes];
+    let filter = `d.is_deleted=0 AND ${mvpVisibleFilter}`;
     if (keyword) { filter += ' AND (d.dictionary_code LIKE ? OR d.dictionary_name LIKE ?)'; values.push(`%${keyword}%`, `%${keyword}%`); }
     const [counts] = await pool.execute<RowDataPacket[]>(`SELECT COUNT(*) AS total FROM sys_dictionary d WHERE ${filter}`, values);
     const [rows] = await pool.query<RowDataPacket[]>(
