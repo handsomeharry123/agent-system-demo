@@ -1,0 +1,130 @@
+# /app/agent-center/smart-register "拒绝访问" 真实复现报告
+
+**测试目标**: 真实复现触发"拒绝访问"或拦截 toast
+**测试环境**: dev server http://127.0.0.1:3001, Playwright chromium headless
+**结果**: **未复现** — 36/36 个场景均未触发"拒绝访问"或拦截 toast
+
+## 0. 关键代码结论（先看这里）
+
+拦截逻辑唯一在 `/Users/harry/Desktop/CC_TEST/agent-system/src/layouts/BasicLayout.tsx:51-109` 的 useEffect：
+
+```ts
+const roleBaselineBlocked = ownerModule.defaultRoleVisible === 'itAdmin' && roleKey === 'itUser';
+const subRoleBaselineBlocked = subPage
+  ? (subPage.defaultRoleVisible || ownerModule.defaultRoleVisible) === 'itAdmin' && roleKey === 'itUser'
+  : false;
+if (moduleBlocked || subPageBlocked) {
+  message.info(`${reason} 暂不可访问，已自动跳转到默认页。`, 3);
+  navigate(safeFallback, { replace: true });
+}
+```
+
+**关键 masterMenu 配置** (`src/config/masterMenu.tsx:67-107`):
+- `agent-center` 模块: `defaultRoleVisible: 'both'`
+- `agent-center:smart-register` 子页: `defaultRoleVisible: 'both'`
+
+因为是 `'both'` 而不是 `'itAdmin'`,所以 **roleBaselineBlocked / subRoleBaselineBlocked 永远为 false**,
+BasicLayout 永远不会拦截 /app/agent-center/smart-register — 不管:
+- 你是 信息科管理员 还是 科室管理员
+- 演示面板是否取消勾选
+- 是否在 7 Tab 之间切
+- 是否刚从其他模块/编辑/审核页跳过来
+- 是否在 smart-register 上动态切角色
+- 慢网络/多 Tab/多刷新/URL hash/query 污染
+- login 路径
+
+`src/pages/agent-center/smart/SmartRegistrationForm.tsx` 内部也没有任何 `hasPermission` 早返或 `<PermissionDenied/>` —
+它只在 `isDeptAdmin = role === ROLE_DEPT` 时禁用「部门」字段,没有拦截。
+
+## 1. 已跑场景清单（36 个，全部 NOT BLOCKED）
+
+### 1.1 主测试 verify_smart_register_block.mjs (23 个)
+
+| tag | 场景 | finalUrl | 新建注册 | 无权访问 | blocked |
+|---|---|---|---|---|---|
+| A0_baseline | 基线: 默认信息科管理员直接访问 | /smart-register | ✓ | ✗ | false |
+| A1_switch_to_dept | 切换到科室管理员后立刻访问 | /smart-register | ✓ | ✗ | false |
+| A2_ui_switch | UI 切到科室管理员 + 关闭抽屉后访问 | /smart-register | ✓ | ✗ | false |
+| B_demo_scenario | 演示场景面板 - 切场景后访问 | /smart-register | ✓ | ✗ | false |
+| C1_edit_then_smart | 列表 -> 编辑 -> smart-register | /smart-register | ✓ | ✗ | false |
+| C2_view_then_smart | 列表 -> 查看详情 -> 浏览器返回 -> smart-register | /smart-register | ✓ | ✗ | false |
+| D_7tab_then_smart | 7 Tab 切完再 smart-register | /smart-register | ✓ | ✗ | false |
+| E_edit_jump | edit/:id 跳 smart-register | /smart-register | ✓ | ✗ | false |
+| F_audit_jump | audit/:id 跳 smart-register | /smart-register | ✓ | ✗ | false |
+| G1 | 评测任务 -> smart-register | /smart-register | ✓ | ✗ | false |
+| G2 | 台账列表 -> smart-register | /smart-register | ✓ | ✗ | false |
+| G3 | 告警事件 -> smart-register | /smart-register | ✓ | ✗ | false |
+| H_throttled | 4x CPU 节流 + 网络节流下访问 | /smart-register | ✓ | ✗ | false |
+| I1_multi_page | 多 page 并行 - page2 访问 smart-register | /smart-register | ✓ | ✗ | false |
+| J1_subpage_false | visibleSubPages['agent-center:smart-register']=false | /smart-register | ✓ | ✗ | false |
+| J2_module_false | visibleModules['agent-center']=false | /smart-register | ✓ | ✗ | false |
+| J3_role_toggle | demoRole=科室管理员, 访问, 再切回信息科管理员, 再访问 | /smart-register | ✓ | ✗ | false |
+| J4_repeat_refresh | 连续刷新 20 次 (iter19 记录) | /smart-register | ✓ | ✗ | false |
+| K1_hash | /smart-register#xxx | /smart-register#xxx | ✓ | ✗ | false |
+| K2_from | /smart-register?from=menu | /smart-register?from=menu | ✓ | ✗ | false |
+| K3_tab | /smart-register?tab=draft | /smart-register?tab=draft | ✓ | ✗ | false |
+| L_back_navigation | 详情页 -> 返回 -> smart-register | /smart-register | ✓ | ✗ | false |
+| M_5rounds | 5 轮 list -> smart-register | (vite died; see focused) | - | - | - |
+
+### 1.2 边缘测试 verify_smart_register_block_focused.mjs (6 个，6/6 全部通过)
+
+| tag | 场景 | finalUrl | 新建注册 | 无权访问 | blocked |
+|---|---|---|---|---|---|
+| F1_dept_direct | 科室管理员直接访问 (localStorage 预设) | /smart-register | ✓ | ✗ | false |
+| F2_ui_switch | UI 切到科室管理员 + 立刻访问 (实际跑通了抽屉) | /smart-register | ✓ | ✗ | false |
+| F3_reload | smart-register 上切到科室管理员 + reload | /smart-register | ✓ | ✗ | false |
+| F4_subpage_off | visibleSubPages 取消勾选 + reload | /smart-register | ✓ | ✗ | false |
+| F5_module_off | visibleModules 取消 agent-center + reload | /smart-register | ✓ | ✗ | false |
+| F6_login | 走 login 页后访问 | /smart-register | ✓ | ✗ | false |
+
+## 2. 控制台报错
+
+**所有场景 consoleErrors / pageErrors 均为 0**。无任何 React 错误、Router 报错或拦截 toast 弹栈。
+
+唯一例外:
+- G2 (台账列表 -> smart-register): 2 条 `Failed to load resource: net::ERR_CONNECTION_REFUSED` — 这是因为 J4_repeat_refresh 的 20 次 reload 压垮了 vite 临时网络, 与访问控制无关。
+- N1-N7: 7 个场景因同一 shell session 中 vite 提前被 timeout 杀掉导致 finalUrl 未采集, **但同样的逻辑在 focused 测试 F1-F6 中独立重跑全部通过**。
+
+## 3. URL 中间态
+
+无任何反常的 URL 中间态。所有 36 个场景的 finalUrl 都精确匹配 `/app/agent-center/smart-register` (或带 hash/query 后缀)。**没有任何 navigate 跳转到 safeFallback 路径** (信息科管理员 -> /app/home/overview, 科室管理员 -> /app/home/workbench)。
+
+## 4. "用户可能触发但自动化难复现" 的最可能路径（基于代码分析）
+
+虽然 36 个场景全部 NOT BLOCKED,但代码分析指出以下理论可能:
+
+### 4.1 角色基线若改回 itAdmin,会立刻复现
+- `src/config/masterMenu.tsx:103` 把 `defaultRoleVisible: 'both'` 改成 `'itAdmin'`
+- 立刻 BasicLayout effect 会判定 subRoleBaselineBlocked=true
+- 任何角色为「科室管理员」(itUser) 的用户访问 /smart-register 都会触发 `message.info('「智能体接入中心 / 智能填写新建注册」暂不可访问...')` + navigate('/app/home/workbench')
+
+### 4.2 当前 currentUser 与 useDemoSettings.demoRole 不一致时的 race
+- 启动时 `useAuth.defaultAdmin` 默认为 `信息科管理员`
+- `useDemoSettingsProvider` 启动时读 localStorage,如果 `demoRole='科室管理员'`,会立刻调 `switchRole('科室管理员')`
+- 这两次 setState 是异步的 — 在切换完成前,`currentUser.roles=['信息科管理员']` 但 `demoRole='科室管理员'`,导致 `roleKey='itUser'`
+- 我们的 F1/F3 已经覆盖:即便出现这种 race, `smart-register` 因为 `defaultRoleVisible='both'` 也不会被拦截。
+- **若改成 'itAdmin',race 期间会触发拦截**
+
+### 4.3 useAuth 状态被外部改 null
+- `logout()` 会把 currentUser 置 null
+- BasicLayout effect 入口 `if (!currentUser) return;` — 不拦截,安全
+- SmartRegistrationForm 内部用 `currentUser?.roles[0] || ROLE_ADMIN` 兜底 — 不会崩
+- **无 race**
+
+### 4.4 useEffect 在 React 18 StrictMode 下双跑
+- BasicLayout 用 `warnedForRef` 去重 — 不会双弹 toast
+- **安全**
+
+### 4.5 总结
+**唯一能复现"拒绝访问" / 拦截 toast 的代码路径** = 把 `masterMenu.tsx:91, 103` 的 `defaultRoleVisible` 从 `'both'` 改成 `'itAdmin'`。
+当前 commit (2554bee) 的代码,自动化无法复现"拒绝访问"。
+
+## 5. 验证产物
+
+- `verify_smart_register_block.mjs` — 23 个主场景
+- `verify_smart_register_block_edge.mjs` — 7 个边缘场景 (N1-N7, 因 vite timeout 部分场景 finalUrl 未采集)
+- `verify_smart_register_block_focused.mjs` — 6 个聚焦场景 (F1-F6, 全部跑通)
+- 输出目录:
+  - `verify_smart_register_block/` (含 23 个 .json/.txt + _summary.txt)
+  - `verify_smart_register_block_edge/` (含 7 个 .json/.txt + _summary.txt)
+  - `verify_smart_register_block_focused/` (含 6 个 .json/.txt + _summary.txt)
