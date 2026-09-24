@@ -3,11 +3,11 @@
  * 需求文档：统一运行监控中心-需求说明文档 V1.9 §1
  *
  * V1.9 关键变化（相对 V1.8）：
- * - 4 张大数字卡片：累计告警总数 / 当日告警总数 / 未处理告警数 / 已处理告警数
+ * - 5 张大数字卡片：累计告警总数 / 当日告警总数 / 未处理告警数 / 累计处理告警数 / 当日处理告警数
  *   - 累计告警总数 → 点击进入事件管理（默认「全部事件」Tab）
  *   - 当日告警总数 → 点击进入事件管理（默认「全部事件」Tab）
  *   - 未处理告警数 → 点击进入「待处理事件」Tab
- *   - 已处理告警数 → 点击进入「已关闭事件」Tab
+ *   - 累计处理告警数 / 当日处理告警数 → 点击进入「已关闭事件」Tab
  * - 1 个告警次数趋势图：支持最近 7 天 / 1 个月 / 半年 / 1 年切换
  * - 新增 告警类型分布饼图（业务 / 状态 / 成本 / 安全）— 图例项可点击进入按告警类型筛选的事件管理页
  * - 新增 智能体告警次数排行 TOP5 条形图 — 下方明细列表可点击进入按关联智能体筛选的事件管理页
@@ -20,10 +20,11 @@ import {
 } from 'antd';
 import {
   ReloadOutlined, AlertOutlined, WarningOutlined, CheckCircleOutlined,
-  HistoryOutlined,
+  HistoryOutlined, CalendarOutlined,
 } from '@ant-design/icons';
 import { Line, Pie, Bar } from '@ant-design/charts';
 import PageHeader from '../../components/PageHeader';
+import MetricLabel from '../../components/MetricLabel';
 import { ErrorRetry } from '../../components/PageStates';
 import {
   alertOverviewKpiV18,
@@ -33,6 +34,7 @@ import {
 } from '../../mock/monitoringV18';
 import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
+import './Overview.css';
 
 const { Text } = Typography;
 
@@ -146,7 +148,7 @@ const Overview = () => {
 
   if (error) return <ErrorRetry onRetry={() => setError(false)} />;
 
-  // 4 张 KPI 卡片（V1.9 新增「累计告警总数」）
+  // 5 张 KPI 卡片：总量在前，处理状态在后；处理类指标按未处理/累计处理/当日处理排列。
   const kpi = [
     {
       key: 'totalAll',
@@ -156,7 +158,6 @@ const Overview = () => {
       icon: <HistoryOutlined />,
       iconBg: '#F4E6FF',
       to: '/app/monitoring/alert-events?tab=all',
-      extra: '自上线以来含未处理 + 已处理',
     },
     {
       key: 'total',
@@ -166,7 +167,6 @@ const Overview = () => {
       icon: <AlertOutlined />,
       iconBg: '#E6F4FF',
       to: '/app/monitoring/alert-events?tab=all',
-      extra: '含未处理 + 已处理',
     },
     {
       key: 'unhandled',
@@ -176,17 +176,24 @@ const Overview = () => {
       icon: <WarningOutlined />,
       iconBg: '#FFE6E6',
       to: '/app/monitoring/alert-events?tab=pending_handle',
-      extra: '当前未完成闭环',
     },
     {
-      key: 'handled',
-      title: '已处理告警数',
-      value: alertOverviewKpiV18.handled,
+      key: 'handledAll',
+      title: '累计处理告警数',
+      value: alertOverviewKpiV18.handledAll,
       color: '#52C41A',
       icon: <CheckCircleOutlined />,
       iconBg: '#E6F7DF',
       to: '/app/monitoring/alert-events?tab=closed',
-      extra: '当日已完成闭环',
+    },
+    {
+      key: 'handledToday',
+      title: '当日处理告警数',
+      value: alertOverviewKpiV18.handledToday,
+      color: '#13A8A8',
+      icon: <CalendarOutlined />,
+      iconBg: '#E6FFFB',
+      to: '/app/monitoring/alert-events?tab=closed',
     },
   ];
 
@@ -194,7 +201,7 @@ const Overview = () => {
     <div style={{ padding: 24, background: '#F5F5F5', minHeight: '100vh' }}>
       <PageHeader
         title="监控告警总览"
-        subTitle="累计 / 当日 / 未处理 / 已处理告警数量 + 告警次数趋势；告警类型分布与智能体告警次数排行；自动刷新 60s"
+        style={{ padding: '16px 20px' }}
         extra={
           <Space size={8}>
             <Button
@@ -209,49 +216,47 @@ const Overview = () => {
       />
 
       <Spin spinning={loading}>
-        {/* 4 张大数字卡片（V1.9 新增「累计告警总数」） */}
-        <Row gutter={[24, 24]} style={{ marginTop: 16, marginBottom: 16 }}>
+        {/* 桌面端 5 等分；中小屏按可用宽度自动降为 2/1 列。 */}
+        <div className="monitoring-kpi-grid">
           {kpi.map((k) => (
-            <Col span={6} key={k.key}>
+            <div className="monitoring-kpi-grid__item" key={k.key}>
               <Link to={k.to}>
                 <Card
                   hoverable
+                  className="monitoring-kpi-card"
                   style={{ background: '#FFFFFF', border: '1px solid #F0F0F0' }}
-                  styles={{ body: { padding: 28, height: 156, overflow: 'hidden' } }}
+                  styles={{ body: { padding: '20px', height: 132, overflow: 'hidden' } }}
                 >
-                  <Space size={12} align="center" style={{ marginBottom: 14 }}>
+                  <Space size={10} align="center" style={{ marginBottom: 16 }}>
                     <span style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: 36, height: 36,
-                      borderRadius: 18,
+                      width: 34, height: 34,
+                      borderRadius: 17,
                       background: k.iconBg,
                       fontSize: 18, color: k.color,
                     }}>{k.icon}</span>
-                    <Text style={{ fontSize: 16, color: 'rgba(0,0,0,0.85)' }}>{k.title}</Text>
+                    <MetricLabel name={k.title} />
                   </Space>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                    <Text strong style={{ fontSize: 48, fontWeight: 600, color: k.color, lineHeight: 1 }}>
+                    <Text strong style={{ fontSize: 40, fontWeight: 600, color: k.color, lineHeight: 1 }}>
                       {k.value.toLocaleString()}
                     </Text>
                     <Text type="secondary" style={{ fontSize: 14 }}>次</Text>
                   </div>
-                  <Text type="secondary" style={{ fontSize: 12, marginTop: 10, display: 'block' }}>
-                    {k.extra} · 点击查看 →
-                  </Text>
                 </Card>
               </Link>
-            </Col>
+            </div>
           ))}
-        </Row>
+        </div>
 
         {/* 合并后的告警次数趋势图 */}
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col span={24}>
             <Card
               bordered={false}
-              title="告警次数趋势"
+              title={<MetricLabel name="告警次数趋势" />}
               extra={
                 <Segmented<TrendRange>
                   aria-label="告警趋势时间范围"
@@ -296,8 +301,7 @@ const Overview = () => {
           <Col span={10} style={{ display: 'flex' }}>
             <Card
               bordered={false}
-              title="告警类型分布"
-              extra={<Text type="secondary" style={{ fontSize: 12 }}>扇区配比 + 外部注解说明，点击条目进入对应事件管理</Text>}
+              title={<MetricLabel name="告警类型分布" />}
               styles={{ body: { padding: 16, height: 420 } }}
               style={{ width: '100%', height: 480 }}
             >
@@ -327,10 +331,7 @@ const Overview = () => {
                 {/* 右侧外部注解说明 + 引导线视觉卡（带左色条 + 圆点模拟与饼图扇区连线） */}
                 <Col span={13}>
                   <Space direction="vertical" size={12} style={{ width: '100%' }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      扇区配比对应下表，点击条目进入对应事件管理
-                    </Text>
-                    {alertTypeDistributionV18.map((d, idx) => (
+                    {alertTypeDistributionV18.map((d) => (
                       <Link
                         key={d.type}
                         to={`/app/monitoring/alert-events?tab=all&type=${d.type}`}
@@ -380,8 +381,7 @@ const Overview = () => {
           <Col span={14} style={{ display: 'flex' }}>
             <Card
               bordered={false}
-              title="智能体告警次数排行 TOP5"
-              extra={<Text type="secondary" style={{ fontSize: 12 }}>点击下方条目进入按关联智能体筛选的事件管理页</Text>}
+              title={<MetricLabel name="智能体告警次数排行 TOP5" />}
               styles={{ body: { padding: 12, height: 420 } }}
               style={{ width: '100%', height: 480 }}
             >

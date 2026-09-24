@@ -212,18 +212,17 @@ const BusinessV18 = () => {
       <Spin spinning={loading}>
         <Row className="business-quality-kpi-row" gutter={[16, 16]} style={{ marginTop: 16 }}>
           {[
-            ['任务执行成功率', `${kpi.taskSuccessRate}%`, '#52C41A', '已完成且无异常终止'],
-            ['任务中断率', `${kpi.taskInterruptRate}%`, '#FAAD14', '超时 / 报错 / 循环卡死'],
-            ['单任务平均推理步数', kpi.avgReasoningSteps, '#1677FF', '推理、决策及工具调用'],
-            ['工具选择准确率', `${kpi.toolSelectionAccuracy}%`, '#52C41A', '正确调用目标工具'],
-            ['工具执行成功率', `${kpi.toolExecutionSuccessRate}%`, '#52C41A', '工具返回成功状态'],
-          ].map(([title, value, color, note]) => (
+            ['任务执行成功率', `${kpi.taskSuccessRate}%`, '#52C41A'],
+            ['任务中断率', `${kpi.taskInterruptRate}%`, '#FAAD14'],
+            ['单任务平均推理步数', kpi.avgReasoningSteps, '#1677FF'],
+            ['工具选择准确率', `${kpi.toolSelectionAccuracy}%`, '#52C41A'],
+            ['工具执行成功率', `${kpi.toolExecutionSuccessRate}%`, '#52C41A'],
+          ].map(([title, value, color]) => (
             <Col flex="1 1 190px" key={String(title)}>
               <Link to="/app/audit">
-                <Card className="monitoring-kpi-card" hoverable bordered={false} styles={{ body: { padding: 16, minHeight: 126 } }}>
+                <Card className="monitoring-kpi-card" hoverable bordered={false} styles={{ body: { padding: 16, minHeight: 104 } }}>
                   <MetricLabel name={String(title)} variant="kpi" />
-                  <Text strong style={{ display: 'block', fontSize: 30, color: String(color), margin: '6px 0 2px' }}>{value}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>{note} · 查看审计日志 →</Text>
+                  <Text strong style={{ display: 'block', fontSize: 30, lineHeight: 1.2, color: String(color), marginTop: 10 }}>{value}</Text>
                 </Card>
               </Link>
             </Col>
@@ -249,7 +248,7 @@ const BusinessV18 = () => {
             </Card>
           </Col>
           <Col span={12}>
-            <Card bordered={false} title="服务患者人数趋势" extra={
+            <Card bordered={false} title={<MetricLabel name="服务患者人数趋势" />} extra={
               <TrendRangeSwitch value={patientRange} onChange={setPatientRange} label="服务患者人数趋势时间范围" />
             } styles={{ body: { padding: 10, height: 122 } }} style={{ height: 170 }}>
               <Line {...chartBase} height={115} data={getTrendWindow(trendDataByMetric.patients, patientRange)} xField="date" yField="value" smooth color="#13C2C2" axis={getTrendAxis(patientRange)} />
@@ -326,7 +325,7 @@ const BusinessV18 = () => {
         {/* 合并后的调用次数趋势 */}
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={24}>
-            <Card bordered={false} title="调用次数趋势" extra={
+            <Card bordered={false} title={<MetricLabel name="调用次数趋势" />} extra={
               <TrendRangeSwitch value={callRange} onChange={setCallRange} label="调用次数趋势时间范围" />
             } styles={{ body: { padding: '16px 20px 12px', height: 320 } }} style={{ height: 380 }}>
               <Line {...chartBase} height={300} data={getTrendWindow(trendDataByMetric.calls, callRange)} xField="date" yField="value" smooth color="#1677FF" axis={getTrendAxis(callRange)} />
@@ -337,7 +336,7 @@ const BusinessV18 = () => {
         {/* TOP5 + 并发 / 吞吐 */}
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={8}>
-            <Card bordered={false} title="高频调用智能体 TOP5"
+            <Card bordered={false} title={<MetricLabel name="高频调用智能体 TOP5" />}
               styles={{ body: { padding: 12, height: 280 } }} style={{ height: 340 }}>
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 {topCallAgentsV18.map((agent, index) => (
@@ -377,7 +376,7 @@ const BusinessV18 = () => {
             </Card>
           </Col>
           <Col span={8}>
-            <Card bordered={false} title="并发数" extra={
+            <Card bordered={false} title={<MetricLabel name="并发数" />} extra={
               <TrendRangeSwitch value={concurrencyRange} onChange={setConcurrencyRange} label="并发数趋势时间范围" />
             }
               styles={{ body: { padding: 12, height: 280 } }} style={{ height: 340 }}>
@@ -400,7 +399,7 @@ const BusinessV18 = () => {
             </Card>
           </Col>
           <Col span={8}>
-            <Card bordered={false} title="吞吐量" extra={
+            <Card bordered={false} title={<MetricLabel name="吞吐量" />} extra={
               <TrendRangeSwitch value={throughputRange} onChange={setThroughputRange} label="吞吐量趋势时间范围" />
             }
               styles={{ body: { padding: 12, height: 280 } }} style={{ height: 340 }}>

@@ -31,6 +31,26 @@
   height: 100%;
 }
 
+.monitoring-status-page .monitoring-kpi-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.monitoring-status-page .monitoring-status-kpi-value {
+  margin-top: 14px;
+}
+
+.monitoring-status-page .monitoring-status-duration-card {
+  height: 132px;
+}
+
+.monitoring-status-page .monitoring-status-duration-card .ant-card-body {
+  display: flex;
+  height: 100%;
+  align-items: center;
+}
+
 .monitoring-business-page .business-quality-kpi-row > .ant-col {
   display: flex;
 }
@@ -50,6 +70,53 @@
 
 .monitoring-security-page .monitoring-security-metric-row .ant-card {
   width: 100%;
+}
+
+.monitoring-security-page .monitoring-security-metric-group {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e5eaf1;
+  border-radius: 12px;
+  background: #f9fbfd;
+  box-shadow: 0 2px 10px rgba(31, 56, 88, 0.04);
+}
+
+.monitoring-security-page .monitoring-security-metric-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.monitoring-security-page .monitoring-security-metric-group-title {
+  display: block;
+  color: #1f2937;
+  font-size: 16px;
+}
+
+.monitoring-security-page .monitoring-security-kpi-card .ant-card-body {
+  display: flex;
+  min-height: 168px;
+  align-items: center;
+  padding: 18px;
+}
+
+.monitoring-security-page .monitoring-security-kpi-value {
+  font-size: clamp(28px, 2vw, 34px);
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.monitoring-security-page .monitoring-security-total-value {
+  display: block;
+  font-size: clamp(28px, 2vw, 32px);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.monitoring-security-page .monitoring-security-distribution-card .ant-card-extra {
+  padding: 8px 0;
 }
 
 .monitoring-dashboard .monitoring-table-scroll {
@@ -77,5 +144,10 @@
   .monitoring-dashboard .ant-page-header-heading,
   .monitoring-dashboard [class*='page-header'] {
     align-items: flex-start;
+  }
+
+  .monitoring-security-page .monitoring-security-metric-group-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

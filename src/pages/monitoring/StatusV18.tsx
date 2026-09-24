@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons';
 import { Pie } from '@ant-design/charts';
 import PageHeader from '../../components/PageHeader';
+import MetricLabel from '../../components/MetricLabel';
 import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
 import './monitoring-dashboard.css';
@@ -192,23 +193,15 @@ const StatusV18 = () => {
     },
   ];
 
-  // 实时刷新标识
-  const liveBadge = (
-    <Tag color="processing" style={{ marginLeft: 8 }}>实时刷新</Tag>
-  );
-
   return (
     <div className="monitoring-dashboard monitoring-status-page">
       <PageHeader
         title="状态监控"
         subTitle="智能体运行状态、故障恢复能力与科室分布"
         extra={
-          <Space size={8}>
-            <Tag color="processing">实时刷新</Tag>
-            <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
-              刷新
-            </Button>
-          </Space>
+          <Button icon={<ReloadOutlined />} onClick={refresh} loading={loading}>
+            刷新
+          </Button>
         }
       />
 
@@ -223,23 +216,22 @@ const StatusV18 = () => {
                   bordered={false}
                   style={{ background: '#FFFFFF' }}
                   className="monitoring-kpi-card"
-                  styles={{ body: { padding: 16, minHeight: 132 } }}
+                  styles={{ body: { padding: 16, minHeight: 116 } }}
                 >
-                  <Space size={8} align="center" style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 22, color: k.color }}>{k.icon}</span>
-                    <Text style={{ fontSize: 14, color: 'rgba(0,0,0,0.85)' }}>{k.title}</Text>
-                    {liveBadge}
+                  <Space size={8} align="center">
+                    <MetricLabel
+                      name={k.title}
+                      variant="inline"
+                      prefix={<span style={{ fontSize: 22, color: k.color }}>{k.icon}</span>}
+                    />
                   </Space>
-                  <Space size={12} align="baseline">
+                  <Space size={12} align="baseline" className="monitoring-status-kpi-value">
                     <Text strong style={{ fontSize: 36, color: k.color, lineHeight: 1 }}>
                       {k.value}
                     </Text>
                     <Text type="secondary" style={{ fontSize: 12 }}>个</Text>
                     <Text style={{ fontSize: 14, color: k.color }}>{k.subValue}</Text>
                   </Space>
-                  <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                    {k.subTitle} · 点击进入台账列表 →
-                  </Text>
                 </Card>
               </Link>
             </Col>
@@ -248,20 +240,18 @@ const StatusV18 = () => {
 
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col xs={24} xl={12}>
-            <Card bordered={false} styles={{ body: { padding: 20 } }}>
-              <Space direction="vertical" size={6}>
-                <Space><Text>平均故障恢复时间</Text>{liveBadge}</Space>
+            <Card bordered={false} className="monitoring-status-duration-card" styles={{ body: { padding: 20 } }}>
+              <Space direction="vertical" size={8}>
+                <MetricLabel name="平均故障恢复时间" />
                 <Text strong style={{ fontSize: 34, color: '#1677FF' }}>{kpi.mttr}</Text>
-                <Text type="secondary">MTTR · 从故障发生到恢复的平均耗时</Text>
               </Space>
             </Card>
           </Col>
           <Col xs={24} xl={12}>
-            <Card bordered={false} styles={{ body: { padding: 20 } }}>
-              <Space direction="vertical" size={6}>
-                <Space><Text>平均故障间隔</Text>{liveBadge}</Space>
+            <Card bordered={false} className="monitoring-status-duration-card" styles={{ body: { padding: 20 } }}>
+              <Space direction="vertical" size={8}>
+                <MetricLabel name="平均故障间隔" />
                 <Text strong style={{ fontSize: 34, color: '#52C41A' }}>{kpi.mtbf}</Text>
-                <Text type="secondary">MTBF · 两次故障之间的平均运行时间</Text>
               </Space>
             </Card>
           </Col>
@@ -270,7 +260,7 @@ const StatusV18 = () => {
         {/* 饼图：各运行状态科室智能体数量比例 */}
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col xs={24} xl={12}>
-            <Card bordered={false} className="monitoring-chart-card" title="各运行状态总占比"
+            <Card bordered={false} className="monitoring-chart-card" title={<MetricLabel name="各运行状态总占比" />}
               styles={{ body: { padding: 12, height: 300 } }} style={{ height: 352 }}>
               <Row gutter={8} style={{ height: 276 }}>
                 <Col span={14}>
@@ -397,7 +387,7 @@ const StatusV18 = () => {
             </Card>
           </Col>
           <Col xs={24} xl={12}>
-            <Card bordered={false} className="monitoring-chart-card" title="各运行状态 - 科室分布"
+            <Card bordered={false} className="monitoring-chart-card" title={<MetricLabel name="各运行状态 - 科室分布" />}
               styles={{ body: { padding: 12, height: 300, overflowY: 'auto' } }} style={{ height: 352 }}>
               <Space direction="vertical" size={4} style={{ width: '100%' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '120px repeat(5, 1fr)', gap: 8, fontSize: 12 }}>
@@ -439,7 +429,7 @@ const StatusV18 = () => {
         </Row>
 
         {/* 智能体实时状态表（精简版） */}
-        <Card bordered={false} style={{ marginTop: 16 }} title="智能体运行状态实时列表">
+        <Card bordered={false} style={{ marginTop: 16 }} title={<MetricLabel name="智能体运行状态实时列表" />}>
           <Space direction="vertical" size={4} style={{ width: '100%' }}>
             <div
               style={{
@@ -457,7 +447,7 @@ const StatusV18 = () => {
               <div>智能体</div>
               <div>科室</div>
               <div>实例</div>
-              <div>心跳成功率</div>
+              <div><MetricLabel name="心跳成功率" variant="kpi" /></div>
               <div>最近心跳</div>
               <div>关联告警</div>
             </div>

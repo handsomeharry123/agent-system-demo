@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons';
 import { Bar } from '@ant-design/charts';
 import PageHeader from '../../components/PageHeader';
+import MetricLabel from '../../components/MetricLabel';
 import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
 import './monitoring-dashboard.css';
@@ -248,7 +249,7 @@ const CostV18 = () => {
                 className="monitoring-kpi-card"
                 styles={{ body: { padding: 16, minHeight: 146 } }}
                 title={
-                  <Text strong style={{ fontSize: 15 }}>{r.title} 使用量</Text>
+                  <MetricLabel name={`${r.title} 使用量`} />
                 }
               >
                 <Row gutter={16}>
@@ -291,7 +292,7 @@ const CostV18 = () => {
             <Col xs={24} xl={12} key={`top-${r.key}`}>
               <Card
                 bordered={false}
-                title={`${r.title} 累计使用量消耗排行 TOP5`}
+                title={<MetricLabel name={`${r.title} 累计使用量消耗排行 TOP5`} />}
                 className="monitoring-chart-card"
                 styles={{ body: { padding: 12, height: 252 } }}
                 style={{ height: 304 }}
@@ -307,7 +308,7 @@ const CostV18 = () => {
             <Col xs={24} xl={12} key={`top-today-${r.key}`}>
               <Card
                 bordered={false}
-                title={`${r.title} 当日使用量消耗排行 TOP5`}
+                title={<MetricLabel name={`${r.title} 当日使用量消耗排行 TOP5`} />}
                 className="monitoring-chart-card"
                 styles={{ body: { padding: 12, height: 252 } }}
                 style={{ height: 304 }}

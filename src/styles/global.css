@@ -732,28 +732,28 @@ html, body {
    - 仅保留末点脉冲呼吸作为科技感细节装饰
      (currentColor 取自内联 color，不影响线条本身连续性)
    ============================================================ */
-.trend-line {
+.profile360-trend-line {
   /* 折线始终完整连续渲染 */
 }
 
-.trend-area {
+.profile360-trend-area {
   opacity: 1;
 }
 
-.trend-dot {
+.profile360-trend-dot {
   opacity: 1;
 }
 
-@keyframes trend-head-pulse {
+@keyframes profile360-trend-head-pulse {
   0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
   50%      { box-shadow: 0 0 6px 3px currentColor; opacity: 0.65; }
 }
-.trend-head {
-  animation: trend-head-pulse 1.8s ease-in-out infinite;
+.profile360-trend-head {
+  animation: profile360-trend-head-pulse 1.8s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trend-head {
+  .profile360-trend-head {
     animation: none !important;
     opacity: 1 !important;
   }

@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
 
-const BASE = 'http://localhost:3001';
+const BASE = 'http://localhost:3002';
 const SHOTS = '/tmp/overview-kpi-shots';
 mkdirSync(SHOTS, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -21,23 +21,18 @@ async function run() {
   await sleep(2000);
   await page.screenshot({ path: join(SHOTS, '1-overview-current.png'), fullPage: false });
 
-  // 2. 仅截 4 张 KPI 卡所在行
-  await page.evaluate(() => {
-    const titles = Array.from(document.querySelectorAll('.ant-card-head-title'));
-    const t = titles.find((el) => el.textContent.includes('累计告警总数'));
-    if (t) t.closest('.ant-card').scrollIntoView({ behavior: 'instant', block: 'start' });
-  });
+  // 2. 仅截 5 张 KPI 卡所在行
+  await page.locator('.monitoring-kpi-grid').scrollIntoViewIfNeeded();
   await sleep(1000);
   await page.screenshot({ path: join(SHOTS, '2-overview-kpi-row.png'), clip: { x: 230, y: 100, width: 1660, height: 300 } });
 
   // 3. 测量 KPI 卡实际尺寸
   const measure = await page.evaluate(() => {
-    const titles = Array.from(document.querySelectorAll('.ant-card-head-title'));
     const out = {};
-    ['累计告警总数', '当日告警总数', '未处理告警数', '已处理告警数'].forEach((label) => {
-      const title = titles.find((el) => el.textContent.includes(label));
-      if (!title) return;
-      const card = title.closest('.ant-card');
+    ['累计告警总数', '当日告警总数', '未处理告警数', '累计处理告警数', '当日处理告警数'].forEach((label) => {
+      const card = Array.from(document.querySelectorAll('.monitoring-kpi-card'))
+        .find((el) => el.textContent.includes(label));
+      if (!card) return;
       const body = card.querySelector('.ant-card-body');
       out[label] = {
         cardW: card.getBoundingClientRect().width,
@@ -48,6 +43,8 @@ async function run() {
         padding: body ? getComputedStyle(body).padding : '',
       };
     });
+    out.order = Array.from(document.querySelectorAll('.monitoring-kpi-card'))
+      .map((card) => card.textContent.trim());
     return out;
   });
   console.log('=== Overview KPI 卡尺寸度量 ===');

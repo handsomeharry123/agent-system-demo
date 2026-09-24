@@ -244,7 +244,7 @@ const MonitoringReport = () => {
           <Tag color="orange">告警次数 {isItAdmin ? 68 : 14}</Tag>
           <Tag color="red">故障次数 {isItAdmin ? 3 : 1}</Tag>
           <Tag color="blue">平均恢复 {isItAdmin ? 42 : 35} 分钟</Tag>
-          <Tag color="green">系统当前已处理 {alertOverviewKpiV18.handled}</Tag>
+          <Tag color="green">系统当日已处理 {alertOverviewKpiV18.handledToday}</Tag>
         </Space>
         <Table
           size="small"

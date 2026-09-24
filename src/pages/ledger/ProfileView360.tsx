@@ -60,6 +60,8 @@ const SOURCE_DISPLAY: Record<string, string> = {
   合作开发: '合作研发',
 };
 
+type MonitorRange = 'daily' | 'weekly' | 'monthly' | 'total';
+
 const riskColor: Record<string, string> = {
   高度关注: '#ff4d4f',
   中度关注: '#faad14',
@@ -305,9 +307,9 @@ const TrendChart: React.FC<{
               vectorEffect="non-scaling-stroke"
             />
           ))}
-          <path className="trend-area" d={area} fill={`url(#${uid}-area)`} />
+          <path className="profile360-trend-area" d={area} fill={`url(#${uid}-area)`} />
           <path
-            className="trend-line"
+            className="profile360-trend-line"
             d={line}
             fill="none"
             stroke={color}
@@ -323,7 +325,7 @@ const TrendChart: React.FC<{
         {pts.map((p, i) => (
           <div
             key={i}
-            className="trend-dot"
+            className="profile360-trend-dot"
             title={`${p.label ?? ''} ${formatValue(p.v)}`.trim()}
             style={{
               position: 'absolute',
@@ -341,7 +343,7 @@ const TrendChart: React.FC<{
         ))}
         {/* 末点脉冲呼吸 */}
         <div
-          className="trend-head"
+          className="profile360-trend-head"
           style={{
             position: 'absolute',
             left: `${pts[n - 1].x}%`,
@@ -491,7 +493,7 @@ export interface ProfileView360Props {
 const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
   const navigate = useNavigate();
   const [secretVisible, setSecretVisible] = useState(false);
-  const [monitorRange, setMonitorRange] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [monitorRange, setMonitorRange] = useState<MonitorRange>('monthly');
 
   const runtime = agent.runtimeStatus ? runtimeTone[agent.runtimeStatus] : undefined;
   const evalData = agent.evaluationReport;
@@ -501,30 +503,66 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
   const securityScores = evalData?.securityDetails ?? [];
   const evalTrend = evalData?.history.map((item) => item.totalScore) ?? [];
   const evalTrendLabels = evalData?.history.map((item) => `v${item.version}`) ?? [];
-  const callTrend = useMemo(() => {
-    const base = agent.callVolume?.[monitorRange] ?? 0;
-    return Array.from({ length: 12 }, (_, index) =>
-      Math.max(0, Math.round(base * (0.62 + index * 0.035 + ((index % 3) - 1) * 0.05))),
-    );
-  }, [agent.callVolume, monitorRange]);
-  const alarmTrend = useMemo(() => {
-    const base = agent.alarmCount?.[monitorRange] ?? 0;
-    return Array.from({ length: 12 }, (_, index) =>
-      Math.max(0, Math.round(base * (0.30 + (index % 4) * 0.18))),
-    );
-  }, [agent.alarmCount, monitorRange]);
-  // 横轴刻度：按 日/周/月 合成最近 12 个刻度（末位为当前，最新在右）
-  const rangeLabels = useMemo(() => {
-    const n = 12;
-    if (monitorRange === 'daily') {
-      return Array.from({ length: n }, (_, i) => `T-${n - 1 - i}`);
-    }
-    if (monitorRange === 'weekly') {
-      return Array.from({ length: n }, (_, i) => `W${i + 1}`);
-    }
-    return Array.from({ length: n }, (_, i) => `${((6 + i) % 12) + 1}月`);
-  }, [monitorRange]);
   const abnormalConnections = agent.linkedResources.filter((item) => item.linkStatus === 'abnormal').length;
+  const monitorData = useMemo(() => {
+    const calls = agent.callVolume?.[monitorRange] ?? 0;
+    const alarms = agent.alarmCount?.[monitorRange] ?? 0;
+    const onlineRate = agent.instanceOnlineRate ?? 0;
+    const hasRuntimeIssue = abnormalConnections > 0 || agent.runtimeStatus === '异常';
+
+    const rangeMeta: Record<MonitorRange, { points: number; onlineFactor: number; abnormalMinutes: number }> = {
+      daily: { points: 12, onlineFactor: 1, abnormalMinutes: alarms > 0 ? 18 : 0 },
+      weekly: { points: 7, onlineFactor: 0.99, abnormalMinutes: alarms > 0 ? 26 : 0 },
+      monthly: { points: 12, onlineFactor: 0.98, abnormalMinutes: alarms > 0 ? 42 : 0 },
+      total: { points: 12, onlineFactor: 0.985, abnormalMinutes: alarms > 0 ? 38 : 0 },
+    };
+    const meta = rangeMeta[monitorRange];
+    const now = new Date();
+
+    let labels: string[];
+    if (monitorRange === 'daily') {
+      labels = Array.from({ length: meta.points }, (_, i) => `${String(i * 2).padStart(2, '0')}时`);
+    } else if (monitorRange === 'weekly') {
+      labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    } else if (monitorRange === 'monthly') {
+      labels = Array.from({ length: meta.points }, (_, i) => {
+        const date = new Date(now);
+        date.setDate(now.getDate() - (meta.points - 1 - i) * 2);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      });
+    } else {
+      const start = new Date(agent.onlineTime || agent.accessTime || now);
+      const duration = Math.max(1, now.getTime() - start.getTime());
+      labels = Array.from({ length: meta.points }, (_, i) => {
+        const date = new Date(start.getTime() + (duration * i) / (meta.points - 1));
+        return `${String(date.getFullYear()).slice(-2)}/${date.getMonth() + 1}`;
+      });
+    }
+
+    const callTrend = Array.from({ length: meta.points }, (_, index) => {
+      if (monitorRange === 'total') {
+        const progress = (index + 1) / meta.points;
+        return Math.round(calls * Math.pow(progress, 1.12));
+      }
+      return Math.max(0, Math.round(calls * (0.64 + index * 0.035 + ((index % 3) - 1) * 0.05)));
+    });
+    const alarmTrend = Array.from({ length: meta.points }, (_, index) => {
+      if (monitorRange === 'total') {
+        return Math.min(alarms, Math.round((alarms * (index + 1)) / meta.points));
+      }
+      return Math.max(0, Math.round(alarms * (0.3 + (index % 4) * 0.18)));
+    });
+
+    return {
+      calls,
+      alarms,
+      averageOnlineHours: Math.round(24 * onlineRate * meta.onlineFactor * 10) / 10,
+      averageAbnormalMinutes: hasRuntimeIssue ? meta.abnormalMinutes : 0,
+      labels,
+      callTrend,
+      alarmTrend,
+    };
+  }, [agent.accessTime, agent.alarmCount, agent.callVolume, agent.instanceOnlineRate, agent.onlineTime, agent.runtimeStatus, abnormalConnections, monitorRange]);
   const maskedSecret = agent.apiKey
     ? `${agent.apiKey.slice(0, 4)}****${agent.apiKey.slice(-2)}`
     : agent.accessType === 'OTel'
@@ -576,9 +614,14 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
               icon={<FileSearchOutlined />}
               bodyFlex
               extra={
-                <Button size="small" ghost icon={<SafetyCertificateOutlined />} onClick={() => navigate(`/app/ledger/risk/${agent.id}`)}>
-                  风险分级
-                </Button>
+                <Space size={6}>
+                  <Button size="small" ghost icon={<EyeOutlined />} onClick={handlePreviewAttachment}>
+                    查看备案材料
+                  </Button>
+                  <Button size="small" ghost icon={<DownloadOutlined />} onClick={() => message.info('下载备案材料')}>
+                    下载
+                  </Button>
+                </Space>
               }
             >
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
@@ -653,15 +696,6 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                   </Tooltip>
                 </DataLine>
               </div>
-              <Divider style={{ borderColor: 'rgba(255,255,255,0.12)', margin: '8px 0' }} />
-              <Flex gap={8} wrap>
-                <Button size="small" ghost icon={<EyeOutlined />} onClick={handlePreviewAttachment}>
-                  查看备案材料
-                </Button>
-                <Button size="small" ghost icon={<DownloadOutlined />} onClick={() => message.info('下载备案材料')}>
-                  下载
-                </Button>
-              </Flex>
             </Panel>
           </div>
 
@@ -809,11 +843,12 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 <Segmented
                   size="small"
                   value={monitorRange}
-                  onChange={(value) => setMonitorRange(value as 'daily' | 'weekly' | 'monthly')}
+                  onChange={(value) => setMonitorRange(value as MonitorRange)}
                   options={[
                     { label: '日', value: 'daily' },
                     { label: '周', value: 'weekly' },
                     { label: '月', value: 'monthly' },
+                    { label: '至今', value: 'total' },
                   ]}
                 />
               }
@@ -823,14 +858,14 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 <Col span={12}>
                   <MiniMetric
                     label="总调用量"
-                    value={formatNumber(agent.callVolume?.[monitorRange])}
+                    value={formatNumber(monitorData.calls)}
                     onClick={() => navigate('/app/monitoring/business')}
                   />
                 </Col>
                 <Col span={12}>
                   <MiniMetric
                     label="告警次数"
-                    value={`${agent.alarmCount?.[monitorRange] ?? 0} 次`}
+                    value={`${monitorData.alarms} 次`}
                     color="#faad14"
                     onClick={() => navigate('/app/monitoring/alerts')}
                   />
@@ -838,7 +873,7 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 <Col span={12}>
                   <MiniMetric
                     label="平均在线持续时长"
-                    value={`${Math.round((agent.instanceOnlineRate ?? 0) * 24 * 10) / 10} h`}
+                    value={`${monitorData.averageOnlineHours} h`}
                     color="#35f2c9"
                     onClick={() => navigate('/app/monitoring/status')}
                   />
@@ -846,7 +881,7 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 <Col span={12}>
                   <MiniMetric
                     label="平均异常持续时长"
-                    value={`${abnormalConnections > 0 || agent.runtimeStatus === '异常' ? 42 : 0} min`}
+                    value={`${monitorData.averageAbnormalMinutes} min`}
                     color={abnormalConnections > 0 || agent.runtimeStatus === '异常' ? '#ff4d4f' : '#8c8c8c'}
                     onClick={() => navigate('/app/monitoring/status')}
                   />
@@ -864,8 +899,8 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 </Flex>
                 <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
                   <TrendChart
-                    values={alarmTrend}
-                    labels={rangeLabels}
+                    values={monitorData.alarmTrend}
+                    labels={monitorData.labels}
                     color="#faad14"
                     formatValue={(v) => `${Math.round(v)}`}
                   />
@@ -880,8 +915,8 @@ const ProfileView360: React.FC<ProfileView360Props> = ({ agent }) => {
                 </Flex>
                 <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
                   <TrendChart
-                    values={callTrend}
-                    labels={rangeLabels}
+                    values={monitorData.callTrend}
+                    labels={monitorData.labels}
                     color="#35f2ff"
                   />
                 </div>
