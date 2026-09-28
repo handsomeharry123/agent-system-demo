@@ -2016,7 +2016,7 @@ export interface OverviewRangeStat {
 
 export const getCallVolumeStat = (
   list: LedgerAgent[] = getVisibleAgents(),
-  range: 'today' | '7d' | '30d' | '90d' | 'custom' = '30d',
+  range: 'today' | '7d' | '30d' | '90d' | '365d' | 'all' | 'custom' = 'all',
 ): OverviewRangeStat => {
   const total = list.reduce((s, a) => s + (a.callVolume?.total ?? 0), 0);
   const daily = list.reduce((s, a) => s + (a.callVolume?.daily ?? 0), 0);
@@ -2028,7 +2028,7 @@ export const getCallVolumeStat = (
 
 export const getAlarmStat = (
   list: LedgerAgent[] = getVisibleAgents(),
-  range: 'today' | '7d' | '30d' | '90d' | 'custom' = '30d',
+  range: 'today' | '7d' | '30d' | '90d' | '365d' | 'all' | 'custom' = 'all',
 ): OverviewRangeStat => {
   const total = list.reduce((s, a) => s + (a.alarmCount?.total ?? 0), 0);
   const daily = list.reduce((s, a) => s + (a.alarmCount?.daily ?? 0), 0);

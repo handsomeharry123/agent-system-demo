@@ -64,6 +64,7 @@ import {
   BgColorsOutlined,
   UndoOutlined,
   ArrowLeftOutlined,
+  ApiOutlined,
 } from '@ant-design/icons';
 import ProfileView360 from './ProfileView360';
 import AgentLifecycleProgress, { type AgentLifecycleStage } from '../../components/AgentLifecycleProgress';
@@ -506,6 +507,14 @@ const LedgerDetail = () => {
   const [basicForm] = Form.useForm();
   const [techForm] = Form.useForm();
   const [saving, setSaving] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [techDraft, setTechDraft] = useState({
+    accessType: 'API' as LedgerAgent['accessType'],
+    apiKey: '',
+    interfaceUrl: '',
+    sdkLanguage: 'Java' as NonNullable<LedgerAgent['sdkLanguage']>,
+  });
   const [previewFile, setPreviewFile] = useState<FilingAttachment | null>(null);
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
@@ -640,6 +649,15 @@ const LedgerDetail = () => {
       techContact: agent.techContact,
       techContactPhone: agent.techContactPhone,
     });
+    const nextTechDraft = {
+      accessType: agent.accessType,
+      apiKey: agent.apiKey || '',
+      interfaceUrl: agent.interfaceUrl || '',
+      sdkLanguage: agent.sdkLanguage || 'Java',
+    };
+    techForm.setFieldsValue(nextTechDraft);
+    setTechDraft(nextTechDraft);
+    setConnectionStatus('idle');
     setEditing(true);
   };
 
@@ -655,6 +673,7 @@ const LedgerDetail = () => {
           setEditing(false);
           basicForm.resetFields();
           techForm.resetFields();
+          setConnectionStatus('idle');
         },
       });
     } else {
@@ -664,10 +683,15 @@ const LedgerDetail = () => {
 
   const handleSave = async () => {
     try {
-      const values = await basicForm.validateFields();
+      const [basicValues, techValues] = await Promise.all([
+        basicForm.validateFields(),
+        techForm.validateFields(),
+      ]);
       Modal.confirm({
         title: '确认是否保存',
-        content: '保存后将同步更新至台账列表与总览页。',
+        content: connectionStatus === 'success'
+          ? '技术信息已通过联通测试。保存后将同步更新至台账列表与总览页。'
+          : '技术信息尚未通过本次联通测试，仍要保存吗？保存后将同步更新至台账列表与总览页。',
         okText: '是',
         cancelText: '否',
         onOk: async () => {
@@ -675,10 +699,11 @@ const LedgerDetail = () => {
           try {
             // 模拟接口调用
             await new Promise((r) => setTimeout(r, 500));
-            Object.assign(agent, values, techForm.getFieldsValue());
+            Object.assign(agent, basicValues, techValues);
             setRevision((value) => value + 1);
             message.success('保存成功，台账列表已同步更新');
             setEditing(false);
+            setConnectionStatus('idle');
           } catch {
             message.error('保存失败，请稍后重试');
           } finally {
@@ -686,8 +711,11 @@ const LedgerDetail = () => {
           }
         },
         onCancel: () => {
-          // 放弃修改并回到详情页（不做保存）
+          // PRD：“否”保留修改前的信息并回到详情页。
           setEditing(false);
+          basicForm.resetFields();
+          techForm.resetFields();
+          setConnectionStatus('idle');
         },
       });
     } catch {
@@ -696,6 +724,30 @@ const LedgerDetail = () => {
         const firstError = document.querySelector('.ant-form-item-has-error');
         firstError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
+    }
+  };
+
+  const handleTestConnection = async () => {
+    try {
+      const values = editing
+        ? await techForm.validateFields(['accessType', 'apiKey', 'interfaceUrl'])
+        : { apiKey: agent.apiKey || '', interfaceUrl: agent.interfaceUrl || '' };
+      setTestingConnection(true);
+      setConnectionStatus('idle');
+      await new Promise((resolve) => setTimeout(resolve, 900));
+      const unavailable = /(?:invalid|unreachable|fail)/i.test(values.interfaceUrl);
+      if (unavailable) {
+        setConnectionStatus('error');
+        message.error('连接失败，请检查 URL 地址、网络环境及鉴权密钥');
+        return;
+      }
+      setConnectionStatus('success');
+      message.success('连接成功，服务响应与鉴权校验均正常');
+    } catch {
+      setConnectionStatus('error');
+      message.warning('请先完善正确的密钥与 URL 地址');
+    } finally {
+      setTestingConnection(false);
     }
   };
 
@@ -1025,269 +1077,129 @@ const LedgerDetail = () => {
   );
 
   // ============== Tab: 技术信息（V1.8 §2.2.2）==============
+  const effectiveTech = editing
+    ? techDraft
+    : {
+        accessType: agent.accessType,
+        apiKey: agent.apiKey || '',
+        interfaceUrl: agent.interfaceUrl || '',
+        sdkLanguage: agent.sdkLanguage || 'Java',
+      };
+  const techKeyLabel = effectiveTech.accessType === 'API' ? 'API Key' : `平台密钥 Key（${effectiveTech.accessType}）`;
+  const techUrlLabel = effectiveTech.accessType === 'API' ? '接口地址' : `平台 URL 地址（${effectiveTech.accessType}）`;
+  const generatedCode = effectiveTech.accessType === 'OTel'
+    ? `# OpenTelemetry instrumentation 示例（自动生成）\nfrom opentelemetry import trace\nfrom opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter\n\nexporter = OTLPSpanExporter(\n    endpoint="${effectiveTech.interfaceUrl}",\n    headers={"x-api-key": "${apiKeyVisible ? effectiveTech.apiKey : 'sk-****'}"}\n)`
+    : effectiveTech.accessType === 'SDK'
+      ? `# SDK 接入示例（${effectiveTech.sdkLanguage}）\n# 根据 URL + Key 自动生成\nimport ${effectiveTech.sdkLanguage === 'Java' ? 'java' : 'sdk'}\n\nclient = new Client(\n    url="${effectiveTech.interfaceUrl}",\n    api_key="${apiKeyVisible ? effectiveTech.apiKey : 'sk-****'}"\n)\nresult = client.invoke("...")\nprint(result)`
+      : `# API 接入示例（自动生成）\nimport requests\n\nAPI_KEY = "${apiKeyVisible ? effectiveTech.apiKey : 'sk-****'}"\nENDPOINT = "${effectiveTech.interfaceUrl}"\n\nresponse = requests.post(\n    ENDPOINT,\n    headers={"Authorization": f"Bearer {API_KEY}"},\n    json={"query": "..."}\n)\nprint(response.json())`;
   const TechInfoBlock = (
     <div style={{ paddingTop: 12 }}>
-      <div style={{ marginBottom: 12, padding: '8px 12px', background: '#FFF7E6', borderRadius: 4 }}>
-        <Text style={{ fontSize: 12 }}>
-          <ExclamationCircleOutlined style={{ color: '#FA8C16', marginRight: 6 }} />
-          当前接入方式 <strong>{agent.accessType}</strong>。
-          切换接入方式请到「智能体接入中心」修改注册信息，台账侧不支持切换。
-        </Text>
-      </div>
-
-      <Descriptions
-        column={2}
-        size="small"
-        bordered
-        labelStyle={{ width: 140, color: '#595959' }}
+      <Form
+        form={techForm}
+        component={false}
+        preserve
+        onValuesChange={(_, values) => {
+          setTechDraft((current) => ({ ...current, ...values }));
+          setConnectionStatus('idle');
+        }}
       >
+        <Descriptions
+          column={2}
+          size="small"
+          bordered
+          labelStyle={{ width: 160, color: '#595959' }}
+        >
         <Descriptions.Item label="接入方式" span={2}>
-          <Radio.Group value={agent.accessType} disabled>
-            {ENUMS.accessType.map((t) => (
-              <Radio.Button key={t} value={t}>
-                {t}
-              </Radio.Button>
-            ))}
-          </Radio.Group>
+          {editing ? (
+            <Form.Item name="accessType" style={{ marginBottom: 0 }} rules={[{ required: true }]}>
+              <Radio.Group buttonStyle="solid">
+                {ENUMS.accessType.map((t) => (
+                  <Radio.Button key={t} value={t}>{t}</Radio.Button>
+                ))}
+              </Radio.Group>
+            </Form.Item>
+          ) : (
+            <Tag color="blue">{effectiveTech.accessType}</Tag>
+          )}
         </Descriptions.Item>
-
-        {agent.accessType === 'API' && (
-          <>
-            <Descriptions.Item label="API Key" span={2}>
-              <Space>
-                <Text code style={{ fontFamily: 'monospace' }}>
-                  {apiKeyVisible ? agent.apiKey : '********'}
-                </Text>
-                <Tooltip title={apiKeyVisible ? '隐藏密钥' : '显示密钥'}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={apiKeyVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setApiKeyVisible((v) => !v)}
-                  />
-                </Tooltip>
-                <Tooltip title="复制">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => message.success('已复制')}
-                  />
-                </Tooltip>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  密文展示，限制 8-64 字符；修改请到接入中心
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="接口地址" span={2}>
-              <Space>
-                <Text code>{agent.interfaceUrl}</Text>
-                <Tooltip title="测试连接">
-                  <Button
-                    size="small"
-                    type="link"
-                    onClick={() => message.success('连接成功（演示）')}
-                  >
-                    测试连接
-                  </Button>
-                </Tooltip>
-              </Space>
-              <div style={{ marginTop: 4 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  需为合法 URL（http/https 开头）
-                </Text>
-              </div>
-            </Descriptions.Item>
-            <Descriptions.Item label="埋点代码生成（API）" span={2}>
-              <pre
-                style={{
-                  background: '#F5F5F5',
-                  padding: 12,
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  overflowX: 'auto',
-                  margin: 0,
-                }}
+          <Descriptions.Item label={techKeyLabel} span={2}>
+            {editing ? (
+              <Form.Item
+                name="apiKey"
+                style={{ marginBottom: 0, maxWidth: 560 }}
+                rules={[
+                  { required: true, message: `请输入${techKeyLabel}` },
+                  { min: 8, max: 64, message: '密钥长度须为 8-64 个字符' },
+                ]}
               >
-{`# API 接入示例（自动生成）
-import requests
-
-API_KEY = "${apiKeyVisible ? agent.apiKey : 'sk-****'}"
-ENDPOINT = "${agent.interfaceUrl}"
-
-response = requests.post(
-    ENDPOINT,
-    headers={"Authorization": f"Bearer {API_KEY}"},
-    json={"query": "..."}
-)
-print(response.json())`}
-              </pre>
-              <Tooltip title="复制代码">
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<CopyOutlined />}
-                  style={{ marginTop: 4 }}
-                  onClick={() => message.success('代码已复制')}
-                >
-                  复制代码
-                </Button>
-              </Tooltip>
-            </Descriptions.Item>
-          </>
-        )}
-
-        {agent.accessType === 'SDK' && (
-          <>
-            <Descriptions.Item label="平台密钥 Key（SDK）" span={2}>
+                <Input.Password placeholder={`请输入${techKeyLabel}`} autoComplete="new-password" />
+              </Form.Item>
+            ) : (
               <Space>
-                <Text code style={{ fontFamily: 'monospace' }}>
-                  {apiKeyVisible ? agent.apiKey : 'sk-****'}
-                </Text>
+                <Text code>{apiKeyVisible ? effectiveTech.apiKey : 'sk-****'}</Text>
                 <Tooltip title={apiKeyVisible ? '隐藏密钥' : '显示密钥'}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={apiKeyVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setApiKeyVisible((v) => !v)}
-                  />
+                  <Button type="text" size="small" icon={apiKeyVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />} onClick={() => setApiKeyVisible((v) => !v)} />
                 </Tooltip>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  SDK 鉴权密钥，由接入中心自动签发
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="平台 URL 地址（SDK）" span={2}>
-              <Space>
-                <Text code>{agent.interfaceUrl}</Text>
-                <Tooltip title="复制">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => message.success('已复制')}
-                  />
+                <Tooltip title="复制密钥">
+                  <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => { navigator.clipboard?.writeText(effectiveTech.apiKey); message.success('密钥已复制'); }} />
                 </Tooltip>
               </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="埋点代码生成（SDK）" span={2}>
-              <Space style={{ marginBottom: 8 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  语言：
-                </Text>
-                <Radio.Group size="small" value={agent.sdkLanguage || 'Java'} disabled>
-                  <Radio.Button value="Java">Java</Radio.Button>
-                  <Radio.Button value="Python">Python</Radio.Button>
-                  <Radio.Button value="Node.js">Node.js</Radio.Button>
-                </Radio.Group>
-              </Space>
-              <pre
-                style={{
-                  background: '#F5F5F5',
-                  padding: 12,
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  overflowX: 'auto',
-                  margin: 0,
-                }}
+            )}
+          </Descriptions.Item>
+          <Descriptions.Item label={techUrlLabel} span={2}>
+            {editing ? (
+              <Form.Item
+                name="interfaceUrl"
+                style={{ marginBottom: 0 }}
+                rules={[
+                  { required: true, message: `请输入${techUrlLabel}` },
+                  { pattern: /^https?:\/\/\S+$/i, message: '请输入以 http:// 或 https:// 开头的合法 URL' },
+                ]}
               >
-{`# SDK 接入示例（${agent.sdkLanguage || 'Java'}）
-# 由接入中心根据 URL + Key 自动生成
-import ${agent.sdkLanguage === 'Java' ? 'java' : 'sdk'}
-
-client = new Client(
-    url="${agent.interfaceUrl}",
-    api_key="${apiKeyVisible ? agent.apiKey : 'sk-****'}"
-)
-result = client.invoke("...")
-print(result)`}
-              </pre>
-              <Tooltip title="复制代码">
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<CopyOutlined />}
-                  style={{ marginTop: 4 }}
-                  onClick={() => message.success('代码已复制')}
-                >
-                  复制代码
-                </Button>
-              </Tooltip>
-            </Descriptions.Item>
-          </>
-        )}
-
-        {agent.accessType === 'OTel' && (
-          <>
-            <Descriptions.Item label="平台密钥 Key（OTel）" span={2}>
+                <Input placeholder="https://example.com/api" />
+              </Form.Item>
+            ) : (
               <Space>
-                <Text code style={{ fontFamily: 'monospace' }}>
-                  {apiKeyVisible ? agent.apiKey : 'sk-****'}
-                </Text>
-                <Tooltip title={apiKeyVisible ? '隐藏密钥' : '显示密钥'}>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={apiKeyVisible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-                    onClick={() => setApiKeyVisible((v) => !v)}
-                  />
-                </Tooltip>
-                <Text type="secondary" style={{ fontSize: 12 }}>
-                  OTel 鉴权密钥，由接入中心自动签发
-                </Text>
-              </Space>
-            </Descriptions.Item>
-            <Descriptions.Item label="平台 URL 地址（OTel）" span={2}>
-              <Space>
-                <Text code>{agent.interfaceUrl}</Text>
-                <Tooltip title="复制">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    onClick={() => message.success('已复制')}
-                  />
+                <Text code>{effectiveTech.interfaceUrl}</Text>
+                <Tooltip title="复制地址">
+                  <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => { navigator.clipboard?.writeText(effectiveTech.interfaceUrl); message.success('地址已复制'); }} />
                 </Tooltip>
               </Space>
+            )}
+          </Descriptions.Item>
+          {effectiveTech.accessType === 'SDK' && (
+            <Descriptions.Item label="SDK 语言" span={2}>
+              {editing ? (
+                <Form.Item name="sdkLanguage" style={{ marginBottom: 0 }}>
+                  <Radio.Group size="small">
+                    <Radio.Button value="Java">Java</Radio.Button>
+                    <Radio.Button value="Python">Python</Radio.Button>
+                    <Radio.Button value="Node.js">Node.js</Radio.Button>
+                  </Radio.Group>
+                </Form.Item>
+              ) : <Tag color="blue">{effectiveTech.sdkLanguage}</Tag>}
             </Descriptions.Item>
-            <Descriptions.Item label="埋点代码生成（OTel）" span={2}>
-              <pre
-                style={{
-                  background: '#F5F5F5',
-                  padding: 12,
-                  borderRadius: 4,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                  overflowX: 'auto',
-                  margin: 0,
-                }}
-              >
-{`# OpenTelemetry instrumentation 示例（自动生成）
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-
-exporter = OTLPSpanExporter(
-    endpoint="${agent.interfaceUrl}",
-    headers={"x-api-key": "${apiKeyVisible ? agent.apiKey : 'sk-****'}"}
-)`}
-              </pre>
-              <Tooltip title="复制代码">
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<CopyOutlined />}
-                  style={{ marginTop: 4 }}
-                  onClick={() => message.success('代码已复制')}
-                >
-                  复制代码
-                </Button>
-              </Tooltip>
-            </Descriptions.Item>
-          </>
-        )}
-      </Descriptions>
+          )}
+          <Descriptions.Item label="联通测试" span={2}>
+            <Space wrap>
+              <Button icon={<ApiOutlined />} loading={testingConnection} onClick={handleTestConnection}>
+                {testingConnection ? '正在测试' : '测试连接'}
+              </Button>
+              {connectionStatus === 'success' && <Tag icon={<CheckCircleOutlined />} color="success">连接成功</Tag>}
+              {connectionStatus === 'error' && <Tag icon={<ExclamationCircleOutlined />} color="error">连接失败</Tag>}
+              <Text type="secondary" style={{ fontSize: 12 }}>验证服务地址可达性与密钥鉴权</Text>
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label={`埋点代码生成（${effectiveTech.accessType}）`} span={2}>
+            <pre style={{ background: '#F5F5F5', padding: 12, borderRadius: 4, fontSize: 12, fontFamily: 'monospace', overflowX: 'auto', margin: 0 }}>
+              {generatedCode}
+            </pre>
+            <Button type="link" size="small" icon={<CopyOutlined />} style={{ marginTop: 4 }} onClick={() => { navigator.clipboard?.writeText(generatedCode); message.success('代码已复制'); }}>
+              复制代码
+            </Button>
+          </Descriptions.Item>
+        </Descriptions>
+      </Form>
     </div>
   );
 

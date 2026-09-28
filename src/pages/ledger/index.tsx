@@ -1,9 +1,9 @@
 /**
  * 统一台账中心 - 台账总览（V1.5 + V2.x 角色可见性）
  *
- * 依据《统一台账中心-需求说明文档 V1.5》§1.1：
+ * 依据《统一台账中心-需求说明文档 V1.9》§1.1：
  *   - 11 项可视化元素（5 卡片 + 1 趋势图 + 1 KPI + 4 图表）
- *   - 顶部时间筛选：今日 / 近 7 天 / 近 30 天 / 近 90 天 / 自定义（V1.6 联动所有卡片）
+ *   - 顶部时间筛选：今日 / 7 天 / 1个月 / 半年 / 1年 / 至今 / 自定义（默认至今）
  *   - 右上角「数据更新于 YYYY-MM-DD HH:MM:SS」角标（>5 分钟变橙）
  *   - 各卡片 / 图表均支持下钻至台账列表页并预填筛选条件
  *   - 风险分级 = 嵌套环图（外环=复核，内环=初判），含三种下钻选项
@@ -35,6 +35,8 @@ import {
   Tag,
   List,
   Checkbox,
+  Input,
+  Select,
   message,
 } from 'antd';
 import {
@@ -56,6 +58,7 @@ import {
 import { Bar, Pie, Line, Column } from '@ant-design/charts';
 import dayjs from 'dayjs';
 import PageHeader from '../../components/PageHeader';
+import { useAuth } from '../../hooks/useAuth';
 import {
   getVisibleAgents,
   currentUser,
@@ -73,6 +76,8 @@ import {
 } from '../../mock/ledger';
 
 const { Text } = Typography;
+
+type OverviewTimeRange = 'today' | '7d' | '30d' | '90d' | '365d' | 'all' | 'custom';
 
 // ============== 视觉规范（V1.5 §1.1）==============
 const RISK_COLOR_MAP: Record<string, string> = {
@@ -116,26 +121,41 @@ const PHASE_COLOR_PALETTE = [
 const Overview = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUser: authUser } = useAuth();
   const user: LedgerUser = currentUser;
   const isPlatformAdmin = user.role === 'platform_admin';
 
-  // 顶部时间筛选（V1.6 联动所有卡片/图表，本版本仅 UI 占位）
-  const [timeRange, setTimeRange] = useState<'today' | '7d' | '30d' | '90d' | 'custom'>('30d');
+  // 顶部时间筛选（V1.9 §1.1）：页面加载时默认选中「至今」。
+  const [timeRange, setTimeRange] = useState<OverviewTimeRange>('all');
   const [customRange, setCustomRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   // V1：速读订阅抽屉（PRD §3.3.3 / §3.1.1 汇报引导）
   const [subDrawerOpen, setSubDrawerOpen] = useState(false);
   const [subActiveTab, setSubActiveTab] = useState<'settings' | 'history'>('settings');
-  // 多选订阅频率：可同时勾选「每日」「每周」;推送日共享(每日+每周都按同一组星期几推送)
-  const [briefingFreqs, setBriefingFreqs] = useState<Array<'daily' | 'weekly'>>(['daily']);
+  // 订阅频率：每周 / 每月单选切换。
+  const [briefingFreq, setBriefingFreq] = useState<'weekly' | 'monthly'>('weekly');
   const [pushDays, setPushDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [monthlyPushDay, setMonthlyPushDay] = useState(1);
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [contactName, setContactName] = useState(authUser?.name ?? user.name);
+  const [contactEmail, setContactEmail] = useState(authUser?.email ?? '');
   const [selectedReportIds, setSelectedReportIds] = useState<Array<string | number>>([]);
 
   // 历史报告 mock：抽屉打开时取数
   const subscriptionHistory = useMemo(() => getSubscriptionHistoryReports(), []);
+  const emailValid = /^\S+@\S+\.\S+$/.test(contactEmail.trim());
+  const needsWeekday = briefingFreq === 'weekly';
+  const subscriptionValid =
+    (!needsWeekday || pushDays.length > 0) &&
+    (!emailEnabled || (contactName.trim().length > 0 && emailValid));
 
   const handleGenerateReport = () => {
-    navigate('/app/ledger-demo/report');
+    const params = new URLSearchParams({ range: timeRange });
+    if (timeRange === 'custom' && customRange) {
+      params.set('startDate', customRange[0].format('YYYY-MM-DD'));
+      params.set('endDate', customRange[1].format('YYYY-MM-DD'));
+    }
+    navigate(`/app/ledger-demo/report?${params.toString()}`);
   };
   const handleSubscribeBriefing = () => {
     setSubDrawerOpen(true);
@@ -158,6 +178,11 @@ const Overview = () => {
   // ===== 列表下钻 =====
   const goList = (params: Record<string, string | undefined> = {}) => {
     const qs = new URLSearchParams();
+    qs.set('range', timeRange);
+    if (timeRange === 'custom' && customRange) {
+      qs.set('startDate', customRange[0].format('YYYY-MM-DD'));
+      qs.set('endDate', customRange[1].format('YYYY-MM-DD'));
+    }
     Object.entries(params).forEach(([k, v]) => v && qs.set(k, v));
     navigate(`/app/ledger/list${qs.toString() ? `?${qs}` : ''}`);
   };
@@ -211,7 +236,6 @@ const Overview = () => {
       <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#1677FF', lineHeight: 1.1 }}>
         {totalCount}
       </div>
-      <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>个</div>
     </Card>
   );
 
@@ -222,13 +246,9 @@ const Overview = () => {
     const covered = coverageStat.covered;
     const total = coverageStat.total;
     const rate = coverageStat.rate;
-    const avgRate = 0.62; // 全院均值（演示）
     const tooltipText = isDeptUser
       ? `本科室已接入智能体占本科室平均接入率（科室数=${total}）`
       : `当前已部署智能体的科室数占医院总科室数的比例（已覆盖 ${covered}/${total} 个科室）`;
-    const compareText = isDeptUser
-      ? `本科室 ${(rate * 100).toFixed(1)}% / 全院均值 ${(avgRate * 100).toFixed(1)}%`
-      : `已覆盖 ${covered} / 共 ${total} 个科室`;
     return (
       <Card
         hoverable
@@ -263,7 +283,6 @@ const Overview = () => {
         <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#722ED1', lineHeight: 1.1 }}>
           {(rate * 100).toFixed(1)}<span style={{ fontSize: 18, marginLeft: 2 }}>%</span>
         </div>
-        <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>{compareText}</div>
       </Card>
     );
   };
@@ -310,9 +329,6 @@ const Overview = () => {
       <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#13C2C2', lineHeight: 1.1 }}>
         {callStat.total >= 10000 ? `${(callStat.total / 10000).toFixed(2)}万` : callStat.total.toLocaleString()}
       </div>
-      <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>
-        日 {callStat.daily.toLocaleString()} · 周 {callStat.weekly.toLocaleString()} · 月 {callStat.monthly.toLocaleString()}
-      </div>
     </Card>
   );
 
@@ -357,9 +373,6 @@ const Overview = () => {
       </div>
       <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#FF4D4F', lineHeight: 1.1 }}>
         {alarmStat.total}
-      </div>
-      <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>
-        日 {alarmStat.daily} · 周 {alarmStat.weekly} · 月 {alarmStat.monthly}
       </div>
     </Card>
   );
@@ -406,47 +419,16 @@ const Overview = () => {
       <div style={{ marginTop: 10, fontSize: 30, fontWeight: 600, color: '#52C41A', lineHeight: 1.1 }}>
         {(onlineStat.rate * 100).toFixed(1)}<span style={{ fontSize: 18, marginLeft: 2 }}>%</span>
       </div>
-      <div style={{ marginTop: 6, fontSize: 12, color: '#8C8C8C' }}>
-        在线 {onlineStat.online} / 应在线 {onlineStat.total} 个实例
-      </div>
     </Card>
   );
 
-  // ===== 6. 每月新增纳管智能体数量（趋势图，按周/月/季度切换）=====
-  const [trendUnit, setTrendUnit] = useState<'week' | 'month' | 'quarter'>('month');
-  // 趋势图维度映射（G2 v5 Bar/Line 在 seriesField 缺省时会按 xField 序列化，
+  // ===== 6. 新增纳管智能体数量（月度趋势）=====
+  // 趋势图字段映射（G2 v5 Bar/Line 在 seriesField 缺省时会按 xField 序列化，
   //   tooltip 默认会把 xField/yField 都渲染出来 → 出现「2025-12 / 2025-12」重复。
   //   修复方案：把 xField/yField 同时打到一个 dataKey，并关闭默认 title，避免重复。）
-  //
-  // V1.6 横坐标规范化：
-  //   - 按周：x 存该周周一的 yyyy-mm-dd（如 W19 → 2025-05-05），标签展示 yyyy-mm-dd
-  //   - 按月：x 存 YYYY-MM，标签展示 YYYY-MM（横向 + 自动换行，避免旋转成竖排）
-  //   - 按季度：x 存 YYYYQn，标签展示 YYYYQn（横向 + 自动换行）
-  //   tooltip 仍直接读 x 显示，handleTrendPointClick 同步识别 yyyy-mm-dd 走下钻。
+  // x 存 YYYY-MM，标签展示 YYYY-MM。
   const trendData = useMemo(() => {
-    if (trendUnit === 'week') {
-      // 近 12 周：以 W19(2025-05-05) 为起点，每周一向后递推 12 周
-      const baseMonday = new Date(2025, 4, 5); // 月份 0 起始 → 4 = 五月
-      const vals = [2, 1, 3, 2, 4, 1, 5, 3, 2, 4, 3, 2];
-      return Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(baseMonday);
-        d.setDate(baseMonday.getDate() + i * 7);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return { x: `${yyyy}-${mm}-${dd}`, y: vals[i] };
-      });
-    }
-    if (trendUnit === 'quarter') {
-      // 近 4 季度
-      return [
-        { x: '2025Q3', y: 8 },
-        { x: '2025Q4', y: 10 },
-        { x: '2026Q1', y: 6 },
-        { x: '2026Q2', y: 6 },
-      ];
-    }
-    // 近 12 个月（默认）
+    // 近 12 个月
     return [
       { x: '2025-07', y: 3 },
       { x: '2025-08', y: 2 },
@@ -461,7 +443,7 @@ const Overview = () => {
       { x: '2026-05', y: 6 },
       { x: '2026-06', y: 3 },
     ];
-  }, [trendUnit]);
+  }, []);
   const trendHasData = trendData.some((d) => d.y > 0);
   // G2 v5 默认会把 xField/yField 都渲染到 tooltip 里（标题 + 数值各一），
   //   hover 出来变成「2025-12 / 2025-12」。这里把 label 文本预标注到数据上，
@@ -485,16 +467,10 @@ const Overview = () => {
       style: { fill: '#595959', fontSize: 11 },
     },
     xAxis: {
-      // V1.6：横坐标按当前粒度格式化 + 横向展示
-      //   - 显式 type='cat' 强制 G2 v5 走分类轴，避免 G2 把 yyyy-mm-dd
-      //     误识别为时间类型 → 按 ISO 周（W{n}）格式化展示
-      //   - 周：x 已是 yyyy-mm-dd，直接展示
-      //   - 月/季度：原值就是 YYYY-MM / YYYYQn，直接展示
+      // 显式 type='cat' 强制 G2 v5 走分类轴，横向展示全部月份。
       //   - autoRotate=false / rotate=0 避免标签被旋转成竖排
-      //   - autoWrap=true 让长标签（如 yyyy-mm-dd / YYYY-MM）走横向多行
+      //   - autoWrap=true 让 YYYY-MM 走横向多行
       //   - autoHide=false 保证所有刻度都可见
-      //   - formatter 兜底：若 G2 仍把 yyyy-mm-dd 解析为 Date，
-      //     这里再补一次格式化，避免出现 W{n} / undefined
       type: 'cat',
       label: {
         style: { fill: '#8C8C8C', fontSize: 11 },
@@ -533,22 +509,8 @@ const Overview = () => {
   };
   const handleTrendPointClick = (e: any) => {
     const x = e?.data?.x as string | undefined;
-    if (!x) return;
-    // V1.6：横坐标规范化后
-    //   周: yyyy-mm-dd → 取所在月（YYYY-MM）下钻
-    //   月: YYYY-MM → 接入时间范围 = 该月
-    //   季度: YYYYQn → 取季度首月
-    let monthRange: string | undefined;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(x)) {
-      // 周一日期 → 截取年月
-      monthRange = x.slice(0, 7);
-    } else if (/^\d{4}-\d{2}$/.test(x)) {
-      monthRange = x;
-    } else if (/^\d{4}Q[1-4]$/.test(x)) {
-      const q = Number(x.slice(-1));
-      monthRange = `${x.slice(0, 4)}-${String((q - 1) * 3 + 1).padStart(2, '0')}`;
-    }
-    goList({ accessMonth: monthRange });
+    if (!x || !/^\d{4}-\d{2}$/.test(x)) return;
+    goList({ accessMonth: x });
   };
 
   // ===== 7. 智能体科室分布（条形图）=====
@@ -829,34 +791,34 @@ const Overview = () => {
     <div style={{ padding: 16, background: '#F5F5F5', minHeight: 'calc(100vh - 64px)' }}>
       <PageHeader
         title="台账总览"
-        subTitle={
-          isPlatformAdmin
-            ? '全院智能体台账总览 · 数量 / 覆盖率 / 调用 / 告警 / 风险分级'
-            : `${user.department} 智能体台账总览 · 本科室数据自动收窄`
-        }
         extra={
           <Space size={12} align="center">
             {/* V2:医小管 inline 状态提示(让用户进入总览页立即感知右下角 Agent 在工作)
                 复用现有 AgentFloatHost,不新建智能体,点击直跳右下角机器人 */}
             {/* PRD §3.1.1/§4.1.1:态势汇报由 Agent 气泡承担,不再在标题区放置 chip */}
-            {/* 时间筛选（V1.6 联动所有卡片，本版本仅 UI 占位）*/}
+            {/* 时间筛选（V1.9 §1.1） */}
             <Radio.Group
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={(e) => setTimeRange(e.target.value as OverviewTimeRange)}
               size="small"
               optionType="button"
               buttonStyle="solid"
             >
               <Radio.Button value="today">今日</Radio.Button>
-              <Radio.Button value="7d">近 7 天</Radio.Button>
-              <Radio.Button value="30d">近 30 天</Radio.Button>
-              <Radio.Button value="90d">近 90 天</Radio.Button>
+              <Radio.Button value="7d">7 天</Radio.Button>
+              <Radio.Button value="30d">1个月</Radio.Button>
+              <Radio.Button value="90d">半年</Radio.Button>
+              <Radio.Button value="365d">1年</Radio.Button>
+              <Radio.Button value="all">至今</Radio.Button>
               <Radio.Button value="custom">自定义</Radio.Button>
             </Radio.Group>
             {timeRange === 'custom' && (
               <DatePicker.RangePicker
                 size="small"
                 value={customRange as any}
+                allowClear
+                disabledDate={(current) => current != null && current.endOf('day').isAfter(dayjs().endOf('day'))}
+                placeholder={['开始日期', '结束日期']}
                 onChange={(v: any) => {
                   if (v && v[0] && v[1]) setCustomRange([v[0], v[1]]);
                   else setCustomRange(null);
@@ -925,24 +887,11 @@ const Overview = () => {
             bodyStyle={{ padding: '8px 12px 12px' }}
             title={
               <Space size={8} align="center">
-                <span style={{ fontSize: 14, fontWeight: 600 }}>每月新增纳管智能体数量</span>
-                <Tooltip title="按月展示近 12 个月；支持按周/季度切换。点击数据点下钻该月份的新增智能体明细列表。">
+                <span style={{ fontSize: 14, fontWeight: 600 }}>新增纳管智能体数量</span>
+                <Tooltip title="按月展示近 12 个月；点击数据点下钻该月份的新增智能体明细列表。">
                   <InfoCircleOutlined style={{ fontSize: 12, color: '#BFBFBF' }} />
                 </Tooltip>
               </Space>
-            }
-            extra={
-              <Radio.Group
-                size="small"
-                value={trendUnit}
-                onChange={(e) => setTrendUnit(e.target.value)}
-                optionType="button"
-                buttonStyle="solid"
-              >
-                <Radio.Button value="week">按周</Radio.Button>
-                <Radio.Button value="month">按月</Radio.Button>
-                <Radio.Button value="quarter">按季度</Radio.Button>
-              </Radio.Group>
             }
           >
             {trendHasData ? (
@@ -1190,7 +1139,6 @@ const Overview = () => {
                 </Tooltip>
               </Space>
             }
-            extra={<Text type="secondary" style={{ fontSize: 12 }}>按智能体所属环节聚合（多选智能体计入多个环节）</Text>}
           >
             {hasData && phaseDist.length > 0 ? (
               <Row gutter={8} style={{ height: 296 }}>
@@ -1708,36 +1656,19 @@ const Overview = () => {
                 <Space direction="vertical" size={16} style={{ width: '100%' }}>
                   <div>
                     <Text strong>订阅频率</Text>
-                    <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
-                      <Checkbox
-                        checked={briefingFreqs.includes('daily')}
-                        onChange={(e) =>
-                          setBriefingFreqs((prev) =>
-                            e.target.checked ? [...prev, 'daily'] : prev.filter((f) => f !== 'daily'),
-                          )
-                        }
-                      >
-                        每日速读
-                      </Checkbox>
-                      <Checkbox
-                        checked={briefingFreqs.includes('weekly')}
-                        onChange={(e) =>
-                          setBriefingFreqs((prev) =>
-                            e.target.checked ? [...prev, 'weekly'] : prev.filter((f) => f !== 'weekly'),
-                          )
-                        }
-                      >
-                        每周速读
-                      </Checkbox>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      速读为轻量版,侧重异常告警/故障及相较前一日/前一周的数据变化;支持同时配置
-                    </Text>
+                    <Radio.Group
+                      value={briefingFreq}
+                      onChange={(e) => setBriefingFreq(e.target.value)}
+                      style={{ marginTop: 6, display: 'flex', gap: 16 }}
+                    >
+                      <Radio value="weekly">每周速读</Radio>
+                      <Radio value="monthly">每月速读</Radio>
+                    </Radio.Group>
                   </div>
 
-                  {(briefingFreqs.includes('daily') || briefingFreqs.includes('weekly')) && (
+                  {needsWeekday && (
                     <div data-testid="push-day-picker">
-                      <Text strong>推送日（每日 + 每周共享）</Text>
+                      <Text strong>推送日</Text>
                       <div style={{ marginTop: 6 }}>
                         <Checkbox.Group
                           value={pushDays}
@@ -1759,18 +1690,65 @@ const Overview = () => {
                           ))}
                         </Checkbox.Group>
                       </div>
+                    </div>
+                  )}
+
+                  {briefingFreq === 'monthly' && (
+                    <div data-testid="monthly-push-day-picker">
+                      <Text strong>每月推送日</Text>
+                      <div style={{ marginTop: 6 }}>
+                        <Select
+                          value={monthlyPushDay}
+                          onChange={setMonthlyPushDay}
+                          style={{ width: 180 }}
+                          options={Array.from({ length: 28 }, (_, index) => ({
+                            value: index + 1,
+                            label: `每月 ${index + 1} 日`,
+                          }))}
+                        />
+                      </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        多选表示多天推送,至少选 1 天;勾选的星期对每日/每周速读都生效
+                        为确保每月都能正常推送，可选择每月 1 至 28 日
                       </Text>
                     </div>
                   )}
+
+                  <div data-testid="push-method-settings">
+                    <Text strong>推送方式</Text>
+                    <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
+                      <Checkbox checked disabled>站内信</Checkbox>
+                      <Checkbox checked={emailEnabled} onChange={(e) => setEmailEnabled(e.target.checked)}>
+                        邮箱
+                      </Checkbox>
+                    </div>
+                    {emailEnabled && (
+                      <Space direction="vertical" size={10} style={{ width: '100%', marginTop: 12 }}>
+                        <Input
+                          addonBefore="联系人名称"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="请输入联系人名称"
+                        />
+                        <Input
+                          addonBefore="邮箱地址"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          status={contactEmail.length > 0 && !emailValid ? 'error' : undefined}
+                          placeholder="请输入邮箱地址"
+                        />
+                        {contactEmail.length > 0 && !emailValid && (
+                          <Text type="danger" style={{ fontSize: 12 }}>请输入正确的邮箱地址</Text>
+                        )}
+                      </Space>
+                    )}
+                  </div>
 
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
                     <Button
                       type="primary"
                       icon={<RocketOutlined />}
                       style={{ width: 200 }}
-                      disabled={briefingFreqs.length === 0 || pushDays.length === 0}
+                      disabled={!subscriptionValid}
                       onClick={() => {
                         setSubDrawerOpen(false);
                         const parts: string[] = [];
@@ -1782,18 +1760,19 @@ const Overview = () => {
                             .map((d) => dayMap[d])
                             .join('/');
                         const daysText = fmtDays(pushDays);
-                        if (briefingFreqs.includes('daily')) {
-                          parts.push(`每日(${daysText})`);
-                        }
-                        if (briefingFreqs.includes('weekly')) {
+                        if (briefingFreq === 'weekly') {
                           parts.push(`每周${daysText}`);
                         }
+                        if (briefingFreq === 'monthly') {
+                          parts.push(`每月${monthlyPushDay}日`);
+                        }
+                        const channels = emailEnabled ? `站内信 + 邮箱（${contactEmail.trim()}）` : '站内信';
                         message.success(
-                          `订阅已开启: ${parts.join(' + ')} · ${isPlatformAdmin ? '全院' : '本科室'}`,
+                          `设置已保存: ${parts.join(' + ')} · ${channels} · ${isPlatformAdmin ? '全院' : '本科室'}`,
                         );
                       }}
                     >
-                      立即开启订阅
+                      保存设置
                     </Button>
                   </div>
                 </Space>

@@ -106,6 +106,14 @@ const RISK_TAG: Record<string, { color: string; tag: string }> = {
   一般关注: { color: 'default', tag: '一般关注' },
 };
 
+const RUNTIME_STATUS_COLOR: Record<string, string> = {
+  在线: 'green',
+  离线: 'default',
+  更新: 'gold',
+  禁用: 'orange',
+  异常: 'red',
+};
+
 const AGENT_AVATAR: Record<string, { background: string; icon: React.ReactNode }> = {
   智能问诊: { background: 'linear-gradient(135deg, #1677ff, #69b1ff)', icon: <RobotOutlined /> },
   导诊分诊: { background: 'linear-gradient(135deg, #13c2c2, #5cdbd3)', icon: <MedicineBoxOutlined /> },
@@ -167,15 +175,24 @@ const LedgerList = () => {
   // V1：速读订阅抽屉（PRD §3.1.1 / §3.3.1 汇报引导）
   const [subDrawerOpen, setSubDrawerOpen] = useState(false);
   const [subActiveTab, setSubActiveTab] = useState<'settings' | 'history'>('settings');
-  // 订阅频率:多选(每日 + 每周 可同时配置)
-  const [briefingFreqs, setBriefingFreqs] = useState<Array<'daily' | 'weekly'>>(['daily']);
+  // 订阅频率：每周 / 每月单选切换
+  const [briefingFreq, setBriefingFreq] = useState<'weekly' | 'monthly'>('weekly');
   // 推送日(每日 + 每周共享;0=周日,1=周一...6=周六),默认周一~周五
   const [pushDays, setPushDays] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [monthlyPushDay, setMonthlyPushDay] = useState(1);
+  const [emailEnabled, setEmailEnabled] = useState(false);
+  const [contactName, setContactName] = useState(authUser?.name ?? currentUser.name);
+  const [contactEmail, setContactEmail] = useState(authUser?.email ?? '');
   // 历史报告多选导出
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
 
   // 历史报告 mock：抽屉打开时取数
   const subscriptionHistory = useMemo(() => getSubscriptionHistoryReports(), []);
+  const emailValid = /^\S+@\S+\.\S+$/.test(contactEmail.trim());
+  const needsWeekday = briefingFreq === 'weekly';
+  const subscriptionValid =
+    (!needsWeekday || pushDays.length > 0) &&
+    (!emailEnabled || (contactName.trim().length > 0 && emailValid));
 
   // 从 URL 预筛（总览页 → 列表页的预筛状态）
   useEffect(() => {
@@ -741,7 +758,7 @@ const LedgerList = () => {
                   placeholder="运行状态"
                   allowClear
                   style={{ width: '100%' }}
-                  options={['在线', '离线', '更新', '禁用', '异常'].map((d) => ({ label: d, value: d }))}
+                  options={['在线', '离线', '禁用', '异常'].map((d) => ({ label: d, value: d }))}
                   value={filters.runtimeStatus}
                   onChange={(v) => setFilters((f) => ({ ...f, runtimeStatus: v }))}
                 />
@@ -874,21 +891,29 @@ const LedgerList = () => {
                               }}
                             />
                             <div style={{ minWidth: 0, flex: 1 }}>
-                              <a
-                                onClick={() => handleViewDetail(agent)}
-                                style={{
-                                  display: 'block',
-                                  color: '#1f1f1f',
-                                  fontSize: 17,
-                                  fontWeight: 600,
-                                  lineHeight: 1.5,
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                {agent.name}
-                              </a>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                                <a
+                                  onClick={() => handleViewDetail(agent)}
+                                  style={{
+                                    minWidth: 0,
+                                    color: '#1f1f1f',
+                                    fontSize: 17,
+                                    fontWeight: 600,
+                                    lineHeight: 1.5,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  {agent.name}
+                                </a>
+                                <Tag
+                                  color={RUNTIME_STATUS_COLOR[agent.runtimeStatus || '在线'] ?? 'default'}
+                                  style={{ flex: '0 0 auto', marginInlineEnd: 0 }}
+                                >
+                                  {agent.runtimeStatus || '在线'}
+                                </Tag>
+                              </div>
                               <Text type="secondary" style={{ fontSize: 13 }}>
                                 V{agent.version}
                               </Text>
@@ -1040,36 +1065,19 @@ const LedgerList = () => {
                 <Space direction="vertical" size={16} style={{ width: '100%' }}>
                   <div>
                     <Text strong>订阅频率</Text>
-                    <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
-                      <Checkbox
-                        checked={briefingFreqs.includes('daily')}
-                        onChange={(e) =>
-                          setBriefingFreqs((prev) =>
-                            e.target.checked ? [...prev, 'daily'] : prev.filter((f) => f !== 'daily'),
-                          )
-                        }
-                      >
-                        每日速读
-                      </Checkbox>
-                      <Checkbox
-                        checked={briefingFreqs.includes('weekly')}
-                        onChange={(e) =>
-                          setBriefingFreqs((prev) =>
-                            e.target.checked ? [...prev, 'weekly'] : prev.filter((f) => f !== 'weekly'),
-                          )
-                        }
-                      >
-                        每周速读
-                      </Checkbox>
-                    </div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      速读为轻量版,侧重异常告警/故障及相较前一日/前一周的数据变化
-                    </Text>
+                    <Radio.Group
+                      value={briefingFreq}
+                      onChange={(e) => setBriefingFreq(e.target.value)}
+                      style={{ marginTop: 6, display: 'flex', gap: 16 }}
+                    >
+                      <Radio value="weekly">每周速读</Radio>
+                      <Radio value="monthly">每月速读</Radio>
+                    </Radio.Group>
                   </div>
 
-                  {(briefingFreqs.includes('daily') || briefingFreqs.includes('weekly')) && (
+                  {needsWeekday && (
                     <div data-testid="push-day-picker">
-                      <Text strong>推送日（每日 + 每周共享）</Text>
+                      <Text strong>推送日</Text>
                       <div style={{ marginTop: 6 }}>
                         <Checkbox.Group
                           value={pushDays}
@@ -1091,18 +1099,65 @@ const LedgerList = () => {
                           ))}
                         </Checkbox.Group>
                       </div>
+                    </div>
+                  )}
+
+                  {briefingFreq === 'monthly' && (
+                    <div data-testid="monthly-push-day-picker">
+                      <Text strong>每月推送日</Text>
+                      <div style={{ marginTop: 6 }}>
+                        <Select
+                          value={monthlyPushDay}
+                          onChange={setMonthlyPushDay}
+                          style={{ width: 180 }}
+                          options={Array.from({ length: 28 }, (_, index) => ({
+                            value: index + 1,
+                            label: `每月 ${index + 1} 日`,
+                          }))}
+                        />
+                      </div>
                       <Text type="secondary" style={{ fontSize: 12 }}>
-                        多选表示多天推送,至少选 1 天;勾选的星期对每日/每周速读都生效
+                        为确保每月都能正常推送，可选择每月 1 至 28 日
                       </Text>
                     </div>
                   )}
+
+                  <div data-testid="push-method-settings">
+                    <Text strong>推送方式</Text>
+                    <div style={{ marginTop: 6, display: 'flex', gap: 16 }}>
+                      <Checkbox checked disabled>站内信</Checkbox>
+                      <Checkbox checked={emailEnabled} onChange={(e) => setEmailEnabled(e.target.checked)}>
+                        邮箱
+                      </Checkbox>
+                    </div>
+                    {emailEnabled && (
+                      <Space direction="vertical" size={10} style={{ width: '100%', marginTop: 12 }}>
+                        <Input
+                          addonBefore="联系人名称"
+                          value={contactName}
+                          onChange={(e) => setContactName(e.target.value)}
+                          placeholder="请输入联系人名称"
+                        />
+                        <Input
+                          addonBefore="邮箱地址"
+                          value={contactEmail}
+                          onChange={(e) => setContactEmail(e.target.value)}
+                          status={contactEmail.length > 0 && !emailValid ? 'error' : undefined}
+                          placeholder="请输入邮箱地址"
+                        />
+                        {contactEmail.length > 0 && !emailValid && (
+                          <Text type="danger" style={{ fontSize: 12 }}>请输入正确的邮箱地址</Text>
+                        )}
+                      </Space>
+                    )}
+                  </div>
 
                   <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
                     <Button
                       type="primary"
                       icon={<RocketOutlined />}
                       style={{ width: 200 }}
-                      disabled={briefingFreqs.length === 0 || pushDays.length === 0}
+                      disabled={!subscriptionValid}
                       onClick={() => {
                         setSubDrawerOpen(false);
                         const parts: string[] = [];
@@ -1114,18 +1169,19 @@ const LedgerList = () => {
                             .map((d) => dayMap[d])
                             .join('/');
                         const daysText = fmtDays(pushDays);
-                        if (briefingFreqs.includes('daily')) {
-                          parts.push(`每日(${daysText})`);
-                        }
-                        if (briefingFreqs.includes('weekly')) {
+                        if (briefingFreq === 'weekly') {
                           parts.push(`每周${daysText}`);
                         }
+                        if (briefingFreq === 'monthly') {
+                          parts.push(`每月${monthlyPushDay}日`);
+                        }
+                        const channels = emailEnabled ? `站内信 + 邮箱（${contactEmail.trim()}）` : '站内信';
                         message.success(
-                          `订阅已开启: ${parts.join(' + ')} · ${isPlatformAdmin ? '全院' : '本科室'}`,
+                          `设置已保存: ${parts.join(' + ')} · ${channels} · ${isPlatformAdmin ? '全院' : '本科室'}`,
                         );
                       }}
                     >
-                      立即开启订阅
+                      保存设置
                     </Button>
                   </div>
                 </Space>
