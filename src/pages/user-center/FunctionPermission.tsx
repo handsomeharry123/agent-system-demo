@@ -91,7 +91,6 @@ const permissionTree: DataNode[] = [
       { key: 'monitor:rules', title: '告警规则管理', children: [page('monitor:rules:list', '告警规则管理页', ['新建规则', '查看详情', '编辑', '删除'])] },
       { key: 'monitor:event', title: '告警事件处置', children: [
         page('monitor:event:all', '全部告警事件页', ['查看详情', '分派', '处理', '审核']),
-        page('monitor:event:assign', '待分派告警事件页', ['查看详情', '分派']),
         page('monitor:event:handle', '待处理告警事件页', ['查看详情', '处理（信息科管理员仅限本科室智能体产生的告警事件）']),
         page('monitor:event:handling', '处理中告警事件页'),
         page('monitor:event:pending', '待审核告警事件页', ['查看详情', '审核']),

@@ -2,7 +2,7 @@
  * 统一运行监控中心 V1.8 Mock 数据
  *
  * 相对 V1.6/V1.7 的核心变化：
- * 1) 告警事件状态机扩展为 7 态：待分派 / 待处理 / 处理中 / 待审核 / 审核中 / 已关闭 / 已忽略
+ * 1) 告警事件状态机为 6 态：待处理 / 处理中 / 待审核 / 审核中 / 已关闭 / 已忽略
  * 2) 「触发告警内容 / 规则配置」按统一结构展示：
  *    rule_name / trigger_time / trigger_condition(metric/operator/threshold/sustain_duration) /
  *    trigger_action(notify/warn/throttle/degrade/disable) / output_prompt
@@ -125,18 +125,16 @@ export type MonitorDimensionV18 = AlertRuleType;
 export const MonitorDimensionLabelsV18: Record<AlertRuleType, string> = AlertRuleTypeLabels;
 
 // ---------------------------------------------------------------------------
-// 告警事件状态机：7 态
+// 告警事件状态机：6 态（新告警直接进入待处理）
 // ---------------------------------------------------------------------------
 export type AlertEventStatus =
-  | 'pending_assign'   // 待分派（仅管理员）
-  | 'pending_handle'   // 待处理
+  | 'pending_handle'   // 待处理（自动通知智能体技术负责人）
   | 'handling'         // 处理中
   | 'pending_review'   // 待审核
   | 'reviewing'        // 审核中
   | 'closed'           // 已关闭
   | 'ignored';         // 已忽略
 export const AlertEventStatusLabels: Record<AlertEventStatus, string> = {
-  pending_assign: '待分派',
   pending_handle: '待处理',
   handling: '处理中',
   pending_review: '待审核',
@@ -145,7 +143,6 @@ export const AlertEventStatusLabels: Record<AlertEventStatus, string> = {
   ignored: '已忽略',
 };
 export const AlertEventStatusColors: Record<AlertEventStatus, string> = {
-  pending_assign: 'orange',
   pending_handle: 'error',
   handling: 'processing',
   pending_review: 'gold',
@@ -248,7 +245,7 @@ export interface AlertEventV18 {
   status: AlertEventStatus;
   /** 触发时间 */
   triggerTime: string;
-  /** 分派时间（待分派 → 待处理 时填充） */
+  /** 历史分派时间（兼容旧事件数据） */
   assignTime?: string;
   /** 分派人（仅管理员） */
   assigner?: string;
@@ -297,6 +294,16 @@ export interface AlertRuleV18 {
   name: string;
   /** 规则类型 */
   type: AlertRuleType;
+  /** 监控对象；all 表示全部 Agent */
+  monitorTargets?: string[];
+  /** 固定执行周期（分钟，1~1440） */
+  executionIntervalMinutes?: number;
+  /** 告警通知抑制间隔（分钟） */
+  notificationIntervalMinutes?: number;
+  /** 连续满足触发条件的监控周期数 */
+  alertConsecutiveCycles?: number;
+  /** 告警命中后的通知内容模板 */
+  notificationContent?: string;
   /** 触发条件（结构化 + 可折叠） */
   triggerCondition: TriggerCondition;
   /** 触发动作 */
@@ -711,7 +718,12 @@ export const mockAlertEventsV18: AlertEventV18[] = [
     },
     notifyTarget: { account: '内科 · 智能体运维群组', owner: '王芳', phone: '139****5678', email: 'wangfang@hospital.com' },
     notifyChannels: ['系统通知', '邮箱通知'],
-    status: 'pending_assign',
+    status: 'pending_handle',
+    handler: '王芳',
+    handlerContact: { account: '内科 · 智能体运维群组', owner: '王芳', phone: '139****5678', email: 'wangfang@hospital.com' },
+    handleTimeline: [
+      { time: '2026-06-26 12:32:15', action: '通知', operator: '系统', remark: '已通知智能体技术负责人王芳' },
+    ],
     triggerTime: '2026-06-26 12:32:15',
   }),
   makeEvent({
@@ -729,7 +741,12 @@ export const mockAlertEventsV18: AlertEventV18[] = [
     },
     notifyTarget: { account: '影像科 · 智能体运维群组', owner: '李华', phone: '137****9012', email: 'lihua@hospital.com' },
     notifyChannels: ['系统通知'],
-    status: 'pending_assign',
+    status: 'pending_handle',
+    handler: '李华',
+    handlerContact: { account: '影像科 · 智能体运维群组', owner: '李华', phone: '137****9012', email: 'lihua@hospital.com' },
+    handleTimeline: [
+      { time: '2026-06-26 11:20:00', action: '通知', operator: '系统', remark: '已通知智能体技术负责人李华' },
+    ],
     triggerTime: '2026-06-26 11:20:00',
   }),
 

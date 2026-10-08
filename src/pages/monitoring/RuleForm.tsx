@@ -29,6 +29,7 @@ import {
 import {
   ArrowLeftOutlined, CloudUploadOutlined,
   QuestionCircleOutlined, BookOutlined, CheckOutlined, SearchOutlined,
+  MinusOutlined, PlusOutlined,
 } from '@ant-design/icons';
 import PageHeader from '../../components/PageHeader';
 import { PermissionDenied } from '../../components/PageStates';
@@ -37,6 +38,7 @@ import {
   AlertRuleTypeToMetricGroup, type AlertRuleV18, type AlertRuleType,
   type AlertRuleContent, type MetricOption,
 } from '../../mock/monitoringV18';
+import { mockAgentMonitoringData } from '../../mock/monitoring';
 import { useMonitoringGuard } from './useMonitoringGuard';
 
 const { Text } = Typography;
@@ -46,13 +48,104 @@ const operatorOptions = [
   { label: '>=', value: '>=' }, { label: '<=', value: '<=' }, { label: '=', value: '=' },
 ];
 
-const actionOptions = [
-  { label: '通知', value: 'notify' },
-  { label: '预警', value: 'warn' },
-  { label: '限流智能体', value: 'throttle' },
-  { label: '降级模型', value: 'degrade' },
-  { label: '停用智能体', value: 'disable' },
+const ALL_AGENTS = 'all';
+const DEFAULT_NOTIFICATION_CONTENT = `智能体【{agent_name}】在{time_window}内出现异常：
+指标：{metric}
+当前值：{current_value}
+阈值：{threshold}`;
+
+const agentOptions = [
+  { label: '全部 Agent', value: ALL_AGENTS },
+  ...mockAgentMonitoringData.map((agent) => ({
+    label: `${agent.agentName}（${agent.department}）`,
+    value: agent.agentId,
+  })),
 ];
+
+const alertFrequencyOptions = [
+  { label: '始终重复告警', value: 0 },
+  { label: '每5分钟告警一次', value: 5 },
+  { label: '每10分钟告警一次', value: 10 },
+  { label: '每15分钟告警一次', value: 15 },
+  { label: '每30分钟告警一次', value: 30 },
+  { label: '每1小时告警一次', value: 60 },
+  { label: '每2小时告警一次', value: 120 },
+  { label: '每3小时告警一次', value: 180 },
+  { label: '每6小时告警一次', value: 360 },
+  { label: '每1天告警一次', value: 1440 },
+];
+
+const fieldLabelWithHelp = (label: string, help: string) => (
+  <Space size={4}>
+    {label}
+    <Tooltip title={help}>
+      <QuestionCircleOutlined style={{ color: '#8c8c8c', cursor: 'help' }} />
+    </Tooltip>
+  </Space>
+);
+
+const EXECUTION_INTERVAL_MIN = 1;
+const EXECUTION_INTERVAL_MAX = 1440;
+
+type ExecutionIntervalInputProps = {
+  value?: number | null;
+  onChange?: (value: number | null) => void;
+};
+
+const ExecutionIntervalInput = ({ value, onChange }: ExecutionIntervalInputProps) => {
+  const currentValue = typeof value === 'number' ? value : EXECUTION_INTERVAL_MIN;
+  const normalizeValue = (nextValue: number) => (
+    Math.min(EXECUTION_INTERVAL_MAX, Math.max(EXECUTION_INTERVAL_MIN, nextValue))
+  );
+  const updateValue = (nextValue: number) => onChange?.(normalizeValue(nextValue));
+
+  return (
+    <Space.Compact>
+      <span
+        style={{
+          height: 32, display: 'inline-flex', alignItems: 'center', padding: '0 14px',
+          border: '1px solid #d9d9d9', borderRight: 0, borderRadius: '6px 0 0 6px',
+          background: '#fafafa', color: 'rgba(0, 0, 0, 0.88)', whiteSpace: 'nowrap',
+        }}
+      >
+        每
+      </span>
+      <Button
+        icon={<MinusOutlined />}
+        aria-label="执行周期减 1 分钟"
+        disabled={currentValue <= EXECUTION_INTERVAL_MIN}
+        onClick={() => updateValue(currentValue - 1)}
+        style={{ width: 40 }}
+      />
+      <InputNumber
+        min={EXECUTION_INTERVAL_MIN}
+        max={EXECUTION_INTERVAL_MAX}
+        precision={0}
+        controls={false}
+        value={value}
+        onChange={(nextValue) => onChange?.(nextValue === null ? null : normalizeValue(nextValue))}
+        aria-label="执行周期（分钟）"
+        style={{ width: 88, textAlign: 'center' }}
+      />
+      <Button
+        icon={<PlusOutlined />}
+        aria-label="执行周期加 1 分钟"
+        disabled={currentValue >= EXECUTION_INTERVAL_MAX}
+        onClick={() => updateValue(currentValue + 1)}
+        style={{ width: 40 }}
+      />
+      <span
+        style={{
+          height: 32, display: 'inline-flex', alignItems: 'center', padding: '0 14px',
+          border: '1px solid #d9d9d9', borderLeft: 0, borderRadius: '0 6px 6px 0',
+          background: '#fafafa', color: 'rgba(0, 0, 0, 0.88)', whiteSpace: 'nowrap',
+        }}
+      >
+        分钟
+      </span>
+    </Space.Compact>
+  );
+};
 
 // 「选择模板」抽屉 5 个分类
 const DRAWER_TABS = [
@@ -84,6 +177,10 @@ const RuleForm = () => {
   const [drawerTab, setDrawerTab] = useState<string>('all');
   const [drawerKeyword, setDrawerKeyword] = useState('');
   const [drawerSelectedId, setDrawerSelectedId] = useState<string | undefined>();
+  const previewMetric = Form.useWatch('metric', form);
+  const previewOperator = Form.useWatch('operator', form);
+  const previewThreshold = Form.useWatch('threshold', form);
+  const previewUnit = Form.useWatch('unit', form);
 
   useEffect(() => {
     if (isEditing && params.id) {
@@ -94,12 +191,15 @@ const RuleForm = () => {
         form.setFieldsValue({
           name: rule.name,
           type: rule.type,
+          monitorTargets: rule.monitorTargets || [ALL_AGENTS],
+          executionIntervalMinutes: rule.executionIntervalMinutes || 5,
+          notificationIntervalMinutes: rule.notificationIntervalMinutes ?? 30,
+          alertConsecutiveCycles: rule.alertConsecutiveCycles || 1,
+          notificationContent: rule.notificationContent || DEFAULT_NOTIFICATION_CONTENT,
           metric: rule.triggerCondition.metric,
           operator: rule.triggerCondition.operator,
           threshold: rule.triggerCondition.threshold,
           unit: rule.triggerCondition.thresholdUnit,
-          sustainDuration: rule.triggerCondition.sustainDuration,
-          triggerAction: rule.triggerAction,
         });
       }
     }
@@ -157,10 +257,7 @@ const RuleForm = () => {
 
   if (!isAdmin) return <PermissionDenied message="告警规则管理仅面向 IT 管理员" />;
 
-  const buildPreview = (v: any): string => {
-    const cond = `${v.metric || '指标'} ${v.operator || '>'} ${v.threshold ?? '阈值'}${v.unit || ''}，${v.sustainDuration || '持续时间'}`;
-    return `当 ${cond} 时，触发${actionOptions.find((o) => o.value === v.triggerAction)?.label || '预警'}动作`;
-  };
+  const previewText = `当 ${previewMetric || '指标'} ${previewOperator || '>'} ${previewThreshold ?? '阈值'}${previewUnit || ''} 时触发告警`;
 
   // 点击【确认带入】 → 写入表单
   const handleConfirmImportTemplate = () => {
@@ -188,10 +285,6 @@ const RuleForm = () => {
     const numMatch = after.match(/(\d+(\.\d+)?)/);
     const threshold = numMatch ? Number(numMatch[1]) : 0;
     const unit = (after.match(/[%a-zA-Z\/]+/) || [''])[0] || undefined;
-    // 提取时间窗口
-    const timeMatch = condStr.match(/[（(]([^）)]+)[）)]/);
-    const sustainDuration = timeMatch ? timeMatch[1] : '实时';
-
     const tplType: AlertRuleType =
       tpl.category === '业务执行' ? 'business' :
       tpl.category === '运行状态' ? 'status' :
@@ -206,8 +299,7 @@ const RuleForm = () => {
       operator,
       threshold,
       unit,
-      sustainDuration,
-      triggerAction: tpl.action,
+      notificationContent: tpl.outputPromptTemplate || DEFAULT_NOTIFICATION_CONTENT,
     });
     message.success(`已带入模板：${tpl.name}`);
     setDrawerOpen(false);
@@ -242,22 +334,27 @@ const RuleForm = () => {
         operator: values.operator,
         threshold: values.threshold,
         thresholdUnit: values.unit,
-        sustainDuration: values.sustainDuration,
-        description: `${values.metric} ${values.operator} ${values.threshold}${values.unit || ''}，${values.sustainDuration}`,
+        sustainDuration: '实时',
+        description: `${values.metric} ${values.operator} ${values.threshold}${values.unit || ''}`,
       };
       const newRule: AlertRuleV18 = {
         id: isEditing && params.id ? params.id : newId,
         name: values.name,
         type: values.type,
+        monitorTargets: values.monitorTargets,
+        executionIntervalMinutes: values.executionIntervalMinutes,
+        notificationIntervalMinutes: values.notificationIntervalMinutes,
+        alertConsecutiveCycles: values.alertConsecutiveCycles,
+        notificationContent: values.notificationContent,
         triggerCondition,
-        triggerAction: values.triggerAction,
+        triggerAction: 'warn',
         ruleContentId: selectedContentId,
         ruleConfig: {
           rule_name: values.name,
           trigger_time: now,
           trigger_condition: triggerCondition,
-          trigger_action: values.triggerAction,
-          output_prompt: content?.outputPromptTemplate || '',
+          trigger_action: 'warn',
+          output_prompt: values.notificationContent || content?.outputPromptTemplate || '',
         },
         enabled: true,
         createdBy: '黄帅帅',
@@ -309,12 +406,10 @@ const RuleForm = () => {
         <Form
           form={form} layout="vertical" requiredMark="optional"
           initialValues={{
-            type: 'business', operator: '>', sustainDuration: '连续 5 分钟',
-            triggerAction: 'warn', unit: '%',
-          }}
-          onValuesChange={(_, all) => {
-            const c = document.getElementById('rule-preview-text');
-            if (c) c.textContent = buildPreview(all);
+            type: 'business', operator: '>', unit: '%',
+            monitorTargets: [ALL_AGENTS], executionIntervalMinutes: 5,
+            notificationIntervalMinutes: 30, alertConsecutiveCycles: 1,
+            notificationContent: DEFAULT_NOTIFICATION_CONTENT,
           }}
         >
             {/* ① 基本信息 */}
@@ -342,7 +437,24 @@ const RuleForm = () => {
                   </Form.Item>
                 </Col>
               </Row>
-                          </Card>
+              <Form.Item name="monitorTargets" label="监控对象" rules={[{ required: true, message: '请选择监控对象' }]}>
+                <Select
+                  mode="multiple"
+                  allowClear
+                  maxTagCount="responsive"
+                  placeholder="请选择一个或多个 Agent"
+                  options={agentOptions}
+                  onSelect={(value: string) => {
+                    if (value === ALL_AGENTS) {
+                      form.setFieldValue('monitorTargets', [ALL_AGENTS]);
+                    } else {
+                      const selected = form.getFieldValue('monitorTargets') as string[];
+                      form.setFieldValue('monitorTargets', selected.filter((item) => item !== ALL_AGENTS));
+                    }
+                  }}
+                />
+              </Form.Item>
+            </Card>
 
             {/* ② 触发条件 */}
             <Card id="sec-trigger" bordered={false} style={{ marginBottom: 16 }} title="② 触发条件">
@@ -383,27 +495,40 @@ const RuleForm = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item name="sustainDuration" label={
-                    <Space>持续时间 <Tooltip title="如「连续 3 分钟」、「10 分钟窗口」"><QuestionCircleOutlined style={{ color: '#999' }} /></Tooltip></Space>
-                  } rules={[{ required: true, message: '请输入持续时间' }]}>
-                    <Input placeholder="如：连续 5 分钟 / 10 分钟窗口" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item name="triggerAction" label="触发动作" rules={[{ required: true, message: '请选择触发动作' }]}>
-                    <Select placeholder="请选择" options={actionOptions} />
-                  </Form.Item>
-                </Col>
-              </Row>
               <Form.Item label="条件预览">
                 <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
                   <Space>
                     <Tag color="blue">实时预览</Tag>
-                    <Text id="rule-preview-text">{buildPreview(form.getFieldsValue(true))}</Text>
+                    <Text>{previewText}</Text>
                   </Space>
                 </Card>
+              </Form.Item>
+            </Card>
+
+            <Card id="sec-notification" bordered={false} style={{ marginBottom: 16 }} title="③ 监控与通知配置">
+              <Row gutter={[32, 0]} align="top" wrap>
+                <Col flex="0 0 300px">
+                  <Form.Item name="executionIntervalMinutes" label={fieldLabelWithHelp('执行周期', '按固定时间间隔执行一次监控任务，支持 1～1440 分钟')} rules={[{ required: true, message: '请输入执行周期' }]}>
+                    <ExecutionIntervalInput />
+                  </Form.Item>
+                </Col>
+                <Col flex="1 1 620px" style={{ maxWidth: 820 }}>
+                  <Form.Item label={fieldLabelWithHelp('告警频率', '连续多个监控周期满足触发条件后产生告警；可设置重复告警的最短时间间隔')} required>
+                    <Space.Compact style={{ width: '100%' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 12px', border: '1px solid #d9d9d9', borderRight: 0, borderRadius: '6px 0 0 6px', background: '#fafafa', whiteSpace: 'nowrap' }}>持续</span>
+                      <Form.Item name="alertConsecutiveCycles" noStyle rules={[{ required: true, message: '请输入持续监控周期数' }]}>
+                        <InputNumber min={1} max={100} precision={0} controls style={{ width: 92 }} aria-label="持续监控周期数" />
+                      </Form.Item>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 12px', borderTop: '1px solid #d9d9d9', borderBottom: '1px solid #d9d9d9', background: '#fafafa', whiteSpace: 'nowrap' }}>个监控周期满足触发条件，则</span>
+                      <Form.Item name="notificationIntervalMinutes" noStyle rules={[{ required: true, message: '请选择告警频率' }]}>
+                        <Select options={alertFrequencyOptions} style={{ flex: 1, minWidth: 190 }} popupMatchSelectWidth />
+                      </Form.Item>
+                    </Space.Compact>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item name="notificationContent" label={fieldLabelWithHelp('通知内容', '支持变量：{agent_name}、{time_window}、{metric}、{current_value}、{threshold}')} rules={[{ required: true, whitespace: true, message: '请输入通知内容' }]}>
+                <Input.TextArea rows={6} maxLength={500} showCount placeholder="请输入告警命中后发送的通知内容" />
               </Form.Item>
             </Card>
 
@@ -493,7 +618,7 @@ const RuleForm = () => {
                       <Text strong style={{ fontSize: 13 }}>{c.name}</Text>
                     </Space>
                     <Text type="secondary" style={{ fontSize: 12 }}>触发条件：{c.condition}</Text>
-                    <Text type="secondary" style={{ fontSize: 11 }}>动作：{actionOptions.find((o) => o.value === c.action)?.label} · ID：{c.id}</Text>
+                    <Text type="secondary" style={{ fontSize: 11 }}>模板 ID：{c.id}</Text>
                   </Space>
                 </List.Item>
               );

@@ -94,7 +94,6 @@ import Monitoring, {
   CostV18,
   SecurityV21,
   AlertEventListV18,
-  AlertEventAssign,
   AlertEventHandle,
   AlertEventReview,
   AlertEventDetail,
@@ -344,7 +343,6 @@ const routes: RouteObject[] = [
           { path: 'alert-rules/:id/edit', element: <MonitoringRuleForm /> },
           // 6. 告警事件处置
           { path: 'alert-events', element: <AlertEventListV18 /> },
-          { path: 'alert-events/assign', element: <AlertEventAssign /> },
           { path: 'alert-events/:id', element: <AlertEventDetail /> },
           { path: 'alert-events/:id/handle', element: <AlertEventHandle /> },
           { path: 'alert-events/:id/review', element: <AlertEventReview /> },

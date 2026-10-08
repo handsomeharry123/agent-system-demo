@@ -1,18 +1,19 @@
 /**
- * 6.1 事件管理列表页（V1.8 — 8 Tab）
- * 需求文档：统一运行监控中心-需求说明文档 V1.8 §6.1
+ * 7.1 事件管理列表页（V2.3 — 7 Tab）
+ * 需求文档：统一运行监控中心-需求说明文档 V2.3 §7.1
  *
  * Tab 顺序：
- *   全部事件 / 待分派事件（仅管理员）/ 待处理事件 / 处理中事件 /
+ *   全部事件 / 待处理事件 / 处理中事件 /
  *   待审核事件 / 审核中事件 / 已关闭事件 / 已忽略事件
  *
  * 每个 Tab 的字段口径不同（按 §6.1.1 ~ §6.1.8）；
  * 各 Tab 列表默认按触发时间排序。
  *
  * 角色 × Tab 数据范围（V1.8.2 修订）：
- *   - 「待分派」仅信息科管理员可见；其余 Tab 科室管理员只看到分派给自己的事件（handler === 当前用户）。
- *   - 信息科管理员在「待处理 / 处理中」Tab 对非自己处理的事件仅展示「查看详情」；
- *     开始处理 / 处理 / 转派 仅在 handler === 当前用户 时展示。
+ *   - 告警产生后自动通知对应智能体技术负责人，并直接进入其「待处理事件」。
+ *   - 科室管理员只看到由自己负责的事件（handler === 当前用户）。
+ *   - 信息科管理员在「待处理 / 处理中」Tab 可代替科室管理员处理所有事件，
+ *     对所有事件均展示开始处理 / 处理 / 转派操作。
  *   - 信息科管理员在「待审核」Tab 拥有「审核」按钮；科室管理员进入审核 Tab 仅查看详情。
  *   - 信息科管理员在「审核中」Tab 同样拥有「审核」按钮（支持继续审核）；
  *     科室管理员仅展示分派给自己的事件，且仅展示「查看详情」。
@@ -43,12 +44,11 @@ const { Text } = Typography;
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
-type TabKey = 'all' | 'pending_assign' | 'pending_handle' | 'handling' | 'pending_review' | 'reviewing' | 'closed' | 'ignored';
+type TabKey = 'all' | 'pending_handle' | 'handling' | 'pending_review' | 'reviewing' | 'closed' | 'ignored';
 
 // 各 Tab 标题与基础状态过滤
-const tabMeta: Record<TabKey, { label: string; filter: (e: AlertEventV18) => boolean; adminOnly?: boolean }> = {
+const tabMeta: Record<TabKey, { label: string; filter: (e: AlertEventV18) => boolean }> = {
   all: { label: '全部事件', filter: () => true },
-  pending_assign: { label: '待分派事件', filter: (e) => e.status === 'pending_assign', adminOnly: true },
   pending_handle: { label: '待处理事件', filter: (e) => e.status === 'pending_handle' },
   handling: { label: '处理中事件', filter: (e) => e.status === 'handling' },
   pending_review: { label: '待审核事件', filter: (e) => e.status === 'pending_review' },
@@ -76,7 +76,10 @@ const AlertEventListV18 = () => {
   const actionRef = useRef<ActionType | undefined>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState<AlertEventV18[]>(mockAlertEventsV18);
-  const [activeTab, setActiveTab] = useState<TabKey>((searchParams.get('tab') as TabKey) || 'pending_handle');
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    const requestedTab = searchParams.get('tab');
+    return requestedTab && requestedTab in tabMeta ? requestedTab as TabKey : 'pending_handle';
+  });
   const [keyword, setKeyword] = useState(searchParams.get('search') || searchParams.get('agentName') || '');
   const [typeFilter, setTypeFilter] = useState<string | undefined>(
     searchParams.get('type') || undefined,
@@ -84,8 +87,8 @@ const AlertEventListV18 = () => {
 
   // 操作弹窗
   const [actionModal, setActionModal] = useState<{
-    open: boolean; mode: 'assign' | 'reassign' | 'handle' | 'start_handle' | 'review'; event: AlertEventV18 | null;
-  }>({ open: false, mode: 'assign', event: null });
+    open: boolean; mode: 'reassign' | 'handle' | 'start_handle' | 'review'; event: AlertEventV18 | null;
+  }>({ open: false, mode: 'handle', event: null });
   const [actionForm] = Form.useForm();
 
   // 联动：URL 参数消费 — 只清掉 search/agentName/type（避免重复预筛）；tab 保留以便刷新后仍停留在对应 Tab
@@ -109,22 +112,20 @@ const AlertEventListV18 = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // 角色切换后的 activeTab 校正：若当前 Tab 对当前角色不可见，回退到「待处理事件」
-  // （如信息科管理员 → 科室管理员，停留在「待分派」时回退）
+  // 兼容旧链接：V2.3 已取消「待分派」，旧 URL 自动落到「待处理事件」。
   useEffect(() => {
-    if (!isAdmin && activeTab === 'pending_assign') {
+    if (searchParams.get('tab') === 'pending_assign') {
       setActiveTab('pending_handle');
+      setSearchParams({ tab: 'pending_handle' }, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin]);
+  }, [searchParams]);
 
   // 角色 × Tab 可见性过滤：
-  //   - 待分派：仅管理员
-  //   - 全部：管理员看全部 / 科室管理员仅看到分派给自己的事件
+  //   - 全部：管理员看全部 / 科室管理员仅看到自己负责的事件
   //   - 其余 Tab：管理员看全部；科室管理员仅 handler === currentUserName 且状态匹配
   const roleScopedFilter = useMemo(() => {
     return (tab: TabKey, e: AlertEventV18): boolean => {
-      if (tab === 'pending_assign') return isAdmin && e.status === 'pending_assign';
       if (!isAdmin) {
         // 科室管理员：所有 Tab 统一收窄到 handler === 自己
         return tab === 'all'
@@ -150,16 +151,6 @@ const AlertEventListV18 = () => {
     // 按触发时间排序
     return list.slice().sort((a, b) => +new Date(b.triggerTime) - +new Date(a.triggerTime));
   }, [events, activeTab, keyword, typeFilter, roleScopedFilter]);
-
-  // V2.3：删除早期 `if (!isAdmin && activeTab === 'pending_assign') return <PermissionDenied/>`
-  //   早期 early return 出现在 useMemo（filtered、tabCounts）等 hooks 之前，
-  //   导致 React 在科室管理员 + URL ?tab=pending_assign 场景下触发
-  //   "Rendered fewer hooks than expected" 错误（页面被 ErrorBoundary 替换为 "Something went wrong."，
-  //   用户感知为「拒绝访问」/「页面打不开」）。
-  //   改用派生过滤 + useEffect 自动收敛：
-  //     1. roleScopedFilter 对科室管理员的 pending_assign 永远返回 false（已实现），
-  //        → 列表为空，配合 Tabs 处对 adminOnly Tab 的隐藏，自然不会展示「待分派」内容。
-  //     2. 上方 useEffect 会在科室管理员进入页面后立即把 activeTab 收敛到 pending_handle。
 
   // 序号列渲染
   const renderIndex = (_: any, __: any, index: number) => index + 1;
@@ -268,13 +259,6 @@ const AlertEventListV18 = () => {
         // === 全部事件 Tab：「查看详情 + 更多操作」下拉 ===
         if (activeTab === 'all') {
           const moreItems: { key: string; label: React.ReactNode; onClick?: () => void }[] = [];
-          if (isAdmin && r.status === 'pending_assign') {
-            moreItems.push({
-              key: 'assign',
-              label: <><SwapOutlined /> 分派</>,
-              onClick: () => openAction(r, 'assign'),
-            });
-          }
           if (r.status === 'pending_handle' && (isAdmin ? self : true)) {
             moreItems.push({
               key: 'start_handle',
@@ -316,18 +300,8 @@ const AlertEventListV18 = () => {
         }
 
         // === 其它状态 Tab：平铺按钮 ===
-        // 待分派（仅管理员）：查看详情 + 分派
-        if (isAdmin && r.status === 'pending_assign') {
-          return (
-            <Space size={2} split={<span style={{ color: '#D9D9D9' }}>|</span>}>
-              {viewBtn}
-              <Button key="assign" type="link" size="small" icon={<SwapOutlined />}
-                onClick={() => openAction(r, 'assign')}>分派</Button>
-            </Space>
-          );
-        }
-        // 待处理：管理员看全部但「开始处理/转派」仅本人；科室管理员在 Tab 内已过滤到本人
-        if (r.status === 'pending_handle' && (isAdmin ? self : true)) {
+        // 待处理：信息科管理员可代操作全部事件；科室管理员仅操作本人负责的事件
+        if (r.status === 'pending_handle' && (isAdmin || self)) {
           return (
             <Space size={2} split={<span style={{ color: '#D9D9D9' }}>|</span>}>
               {viewBtn}
@@ -338,8 +312,8 @@ const AlertEventListV18 = () => {
             </Space>
           );
         }
-        // 处理中：同上，「处理/转派」仅本人
-        if (r.status === 'handling' && (isAdmin ? self : true)) {
+        // 处理中：信息科管理员可代操作全部事件；科室管理员仅操作本人负责的事件
+        if (r.status === 'handling' && (isAdmin || self)) {
           return (
             <Space size={2} split={<span style={{ color: '#D9D9D9' }}>|</span>}>
               {viewBtn}
@@ -383,7 +357,6 @@ const AlertEventListV18 = () => {
   // 不同 Tab 追加的列
   // 操作列宽度按 Tab 平铺按钮数量分发：
   //   pending_handle / handling 三按钮(查看详情 + 开始处理/处理 + 转派)= 240
-  //   pending_assign 二按钮(查看详情 + 分派) = 160
   //   pending_review / reviewing 二按钮(查看详情 + 审核) = 160
   //   closed / ignored 单按钮 = 160
   const extendedColumns: ProColumns<AlertEventV18>[] = [
@@ -411,7 +384,7 @@ const AlertEventListV18 = () => {
         );
       },
     },
-    { title: '分派时间', dataIndex: 'assignTime', key: 'assignTime', width: 140, render: formatTime },
+    { title: '触发时间', dataIndex: 'triggerTime', key: 'triggerTime', width: 140, render: formatTime },
     ...extendedColumns.slice(8, 9),
     { ...baseColumns[8], width: 240 }, // 操作列：三按钮（查看详情 + 开始处理 + 转派）
   ];
@@ -483,7 +456,6 @@ const AlertEventListV18 = () => {
   // 各 Tab 使用的列
   const tabColumns: Record<TabKey, ProColumns<AlertEventV18>[]> = {
     all: baseColumns,
-    pending_assign: extendedColumns,
     pending_handle: pendingHandleColumns,
     handling: handlingColumns,
     pending_review: reviewColumns,
@@ -493,7 +465,7 @@ const AlertEventListV18 = () => {
   };
 
   // 打开操作弹窗
-  const openAction = (e: AlertEventV18, mode: 'assign' | 'reassign' | 'handle' | 'start_handle' | 'review') => {
+  const openAction = (e: AlertEventV18, mode: 'reassign' | 'handle' | 'start_handle' | 'review') => {
     actionForm.resetFields();
     // 「开始处理」直接走 submitAction 写库 + 提示，不再弹窗
     if (mode === 'start_handle') {
@@ -537,20 +509,7 @@ const AlertEventListV18 = () => {
       const operator = currentUserName || '当前用户';
       const next = [...events];
 
-      if (actionModal.mode === 'assign') {
-        next[idx] = {
-          ...e,
-          status: 'pending_handle',
-          assignTime: now,
-          assigner: operator,
-          handler: values.assignee,
-          handleTimeline: [
-            ...(e.handleTimeline || []),
-            { time: now, action: '分派', operator, remark: `分派给 ${values.assignee}` },
-          ],
-        };
-        message.success('已分派给处理人，事件进入「待处理事件」');
-      } else if (actionModal.mode === 'reassign') {
+      if (actionModal.mode === 'reassign') {
         // 转派：状态保持 pending_handle / handling 不变，仅替换处理人 + 写时间线
         const prevHandler = e.handler || '—';
         next[idx] = {
@@ -599,7 +558,7 @@ const AlertEventListV18 = () => {
       }
 
       setEvents(next);
-      setActionModal({ open: false, mode: 'assign', event: null });
+      setActionModal({ open: false, mode: 'handle', event: null });
       actionRef.current?.reload();
     } catch (e) { /* ignore */ }
   };
@@ -609,7 +568,7 @@ const AlertEventListV18 = () => {
   // Tab 计数：按角色可见性过滤后再统计
   const tabCounts = useMemo(() => {
     const out: Record<TabKey, number> = {
-      all: 0, pending_assign: 0, pending_handle: 0, handling: 0,
+      all: 0, pending_handle: 0, handling: 0,
       pending_review: 0, reviewing: 0, closed: 0, ignored: 0,
     };
     (Object.keys(tabMeta) as TabKey[]).forEach((k) => {
@@ -619,21 +578,17 @@ const AlertEventListV18 = () => {
   }, [events, roleScopedFilter]);
 
   const switchToTab = useCallback((tab: TabKey) => {
-    if (!tabMeta[tab] || (tabMeta[tab].adminOnly && !isAdmin)) return;
+    if (!tabMeta[tab]) return;
     setActiveTab(tab);
     setSearchParams({ tab }, { replace: true });
-  }, [isAdmin, setSearchParams]);
+  }, [setSearchParams]);
 
   useEffect(() => {
-    if (activeTab !== 'all' && activeTab !== 'pending_assign' && activeTab !== 'pending_handle' && activeTab !== 'handling' && activeTab !== 'pending_review' && activeTab !== 'reviewing' && activeTab !== 'closed' && activeTab !== 'ignored') {
+    if (activeTab !== 'all' && activeTab !== 'pending_handle' && activeTab !== 'handling' && activeTab !== 'pending_review' && activeTab !== 'reviewing' && activeTab !== 'closed' && activeTab !== 'ignored') {
       consumeWelcome();
       return undefined;
     }
-    if (activeTab === 'pending_assign') {
-      pushWelcomeGreeting('monitoring-alert-pending-assign', 'admin', () => [tabCounts.pending_assign], {
-        windowReplacements: [tabCounts.pending_assign],
-      });
-    } else if (activeTab === 'all') {
+    if (activeTab === 'all') {
       const replacements = [tabCounts.all, tabCounts.pending_handle, tabCounts.pending_review];
       pushWelcomeGreeting('monitoring-alert-events', isAdmin ? 'admin' : 'dept', () => replacements, {
         windowReplacements: replacements,
@@ -675,7 +630,7 @@ const AlertEventListV18 = () => {
       });
     }
     return () => consumeWelcome();
-  }, [activeTab, consumeWelcome, isAdmin, pushWelcomeGreeting, tabCounts.all, tabCounts.closed, tabCounts.handling, tabCounts.ignored, tabCounts.pending_assign, tabCounts.pending_handle, tabCounts.pending_review, tabCounts.reviewing]);
+  }, [activeTab, consumeWelcome, isAdmin, pushWelcomeGreeting, tabCounts.all, tabCounts.closed, tabCounts.handling, tabCounts.ignored, tabCounts.pending_handle, tabCounts.pending_review, tabCounts.reviewing]);
 
   // 医小管对话联动：筛选待处理事件、直达详情、将事件转入处理中。
   useEffect(() => {
@@ -683,55 +638,6 @@ const AlertEventListV18 = () => {
       const detail = (rawEvent as CustomEvent<{ text: string; respond?: (answer: string) => void }>).detail;
       const text = detail?.text?.trim();
       if (!text) return;
-
-      if (activeTab === 'pending_assign') {
-        if (!isAdmin) {
-          detail.respond?.('待分派事件仅支持信息科管理员操作。');
-          return;
-        }
-        const pendingAssignEvents = events.filter((e) => roleScopedFilter('pending_assign', e));
-        if (pendingAssignEvents.length === 0) {
-          detail.respond?.('当前没有待分派告警事件。');
-          return;
-        }
-        const assignee = mockUsers.find((user) => user.status === '在职' && text.includes(user.name));
-        if (!assignee) {
-          detail.respond?.('请告诉我分派对象的姓名，例如“全部分派给王建国”。');
-          return;
-        }
-        const explicitlyMatched = pendingAssignEvents.filter((event) =>
-          text.includes(event.agentName) || text.includes(event.id) ||
-          text.includes(event.triggerContent.rule_name) || text.includes(event.triggerContent.trigger_condition.metric),
-        );
-        const targets = explicitlyMatched.length > 0 ? explicitlyMatched : pendingAssignEvents;
-        const targetIds = new Set(targets.map((event) => event.id));
-        const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
-        const operator = currentUserName || '当前用户';
-        const assignEvent = (event: AlertEventV18): AlertEventV18 => ({
-          ...event,
-          status: 'pending_handle',
-          assignTime: now,
-          assigner: operator,
-          handler: assignee.name,
-          handlerContact: {
-            account: assignee.employeeId,
-            owner: assignee.name,
-            phone: assignee.phone,
-            email: assignee.email,
-          },
-          handleTimeline: [
-            ...(event.handleTimeline || []),
-            { time: now, action: '分派', operator, remark: `由医小管自动分派给 ${assignee.name}` },
-          ],
-        });
-        setEvents((current) => current.map((event) => targetIds.has(event.id) ? assignEvent(event) : event));
-        mockAlertEventsV18.forEach((event, index) => {
-          if (targetIds.has(event.id)) mockAlertEventsV18[index] = assignEvent(event);
-        });
-        detail.respond?.(`已将 ${targets.length} 项告警事件分派给${assignee.name}，事件已进入「待处理事件」。`);
-        message.success(`已自动分派 ${targets.length} 项事件给${assignee.name}`);
-        return;
-      }
 
       if (activeTab === 'closed') {
         const closedEvents = events.filter((e) => roleScopedFilter('closed', e));
@@ -913,7 +819,7 @@ const AlertEventListV18 = () => {
     <div style={{ padding: '16px 24px', background: '#F5F5F5', minHeight: '100vh' }}>
       <PageHeader
         title="告警事件处置"
-        subTitle="按状态分 8 个 Tab 管理告警事件全生命周期（待分派 → 待处理 → 处理中 → 待审核 → 审核中 → 已关闭 / 已忽略）"
+        subTitle="按状态分 7 个 Tab 管理告警事件全生命周期（待处理 → 处理中 → 待审核 → 审核中 → 已关闭 / 已忽略）"
         breadcrumb={[
           { path: '/app/monitoring', breadcrumbName: '统一运行监控中心' },
           { path: '', breadcrumbName: '告警事件处置' },
@@ -926,8 +832,6 @@ const AlertEventListV18 = () => {
           onChange={(k) => switchToTab(k as TabKey)}
           type="line"
           items={Object.entries(tabMeta).map(([key, m]) => {
-            // 「待分派」仅管理员可见
-            if (m.adminOnly && !isAdmin) return null;
             return {
               key,
               label: <Space>
@@ -998,12 +902,11 @@ const AlertEventListV18 = () => {
       <Modal
         open={actionModal.open}
         title={
-          actionModal.mode === 'assign' ? '事件分派' :
           actionModal.mode === 'reassign' ? '事件转派' :
           actionModal.mode === 'handle' ? '事件处理' :
           '处理审核'
         }
-        onCancel={() => setActionModal({ open: false, mode: 'assign', event: null })}
+        onCancel={() => setActionModal({ open: false, mode: 'handle', event: null })}
         onOk={submitAction}
         okText={actionModal.mode === 'reassign' ? '确认转派' : '提交'}
         cancelText="取消"
@@ -1011,7 +914,7 @@ const AlertEventListV18 = () => {
         destroyOnClose
       >
         <Form form={actionForm} layout="vertical">
-          {(actionModal.mode === 'assign' || actionModal.mode === 'reassign') && (
+          {actionModal.mode === 'reassign' && (
             <Form.Item
               name="assignee"
               label="处理人"

@@ -8889,7 +8889,7 @@ function monitorScope(role: '信息科管理员' | '科室管理员') {
 }
 
 function openMonitorAlerts(role: '信息科管理员' | '科室管理员') {
-  const openStatuses = new Set(['pending_assign', 'pending_handle', 'handling', 'pending_review', 'reviewing']);
+  const openStatuses = new Set(['pending_handle', 'handling', 'pending_review', 'reviewing']);
   const scopeDept = role === '信息科管理员' ? null : '内科';
   return mockAlertEventsV18
     .filter((event) => openStatuses.has(event.status))
