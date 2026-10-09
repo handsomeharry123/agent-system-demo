@@ -58,6 +58,7 @@ import type { MenuProps } from 'antd';
 import type { UploadFile } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import PageHeader from '../../components/PageHeader';
+import { masterMenu } from '../../config/masterMenu';
 import { useSmartDraft } from '../agent-center/smart/store';
 import auditMaterialPdfUrl from '../../../output/pdf/项目审计填报材料-完成度100%-已使用金额136.8万元.pdf?url';
 import auditProjectHeroUrl from '../../assets/audit-project-hero-v10.png';
@@ -67,6 +68,11 @@ const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 type AuditSection = 'project' | 'behavior' | 'logs';
+
+const undevelopedAuditModuleKeys = new Set(['workbench', 'orchestration', 'data-asset', 'environment']);
+const auditModuleOptions = masterMenu
+  .filter((module) => !undevelopedAuditModuleKeys.has(module.key))
+  .map((module) => module.name);
 
 const departments = ['全部科室', '0301 心内科', '0302 影像科', '0303 药剂科', '0304 医务科'];
 // 按市场常规的综合估算价格折算：50 元 / 百万 Token。
@@ -181,7 +187,7 @@ const logRows = [
   { key: 'l1', user: '张明华', role: '信息科管理员', org: '信息中心', module: '审计中心', type: '导出', desc: '用户批量导出项目审计列表中选中的 4 条项目记录', result: '成功', ip: '10.24.8.16', time: '2026-07-28 09:45:12' },
   { key: 'l2', user: '周明', role: '科室管理员', org: '心内科', module: '立项申报管理中心', type: '审计', desc: '用户提交“AI 辅助心衰患者全程管理平台”项目审计申请', result: '成功', ip: '10.24.31.88', time: '2026-07-28 09:31:26' },
   { key: 'l3', user: '王越', role: '科室管理员', org: '影像科', module: '智能体接入中心', type: '上传', desc: '用户上传胸部 CT 影像智能分析平台 V3.0 备案材料', result: '失败：仅支持 PDF 类型文件', ip: '10.24.42.19', time: '2026-07-28 09:18:43' },
-  { key: 'l4', user: '李嘉', role: '医院领导', org: '医务科', module: '统一运行监控中心', type: '查看', desc: '用户查看 2026 年 7 月智能体运行成本监控报告', result: '成功', ip: '10.24.5.107', time: '2026-07-28 08:55:07' },
+  { key: 'l4', user: '李嘉', role: '医院领导', org: '医务科', module: '态势感知中心', type: '查看', desc: '用户查看 2026 年 7 月智能体运行成本监控报告', result: '成功', ip: '10.24.5.107', time: '2026-07-28 08:55:07' },
   { key: 'l5', user: '钱文博', role: '信息科管理员', org: '信息中心', module: '用户中心', type: '停用', desc: '用户停用离岗人员账号 sunyue，并回收关联角色权限', result: '成功', ip: '10.24.8.22', time: '2026-07-27 17:40:55' },
 ];
 
@@ -1189,7 +1195,7 @@ function NewProjectDetail({ project, onBack, onDeleteMaterial }: { project: Proj
   const percentage = (value: number) => `${value.toFixed(2)}%`;
   const sections = [
     { key: 'quality', title: '服务质量', icon: <CheckCircleOutlined />, items: [['任务执行成功率', percentage(project.taskSuccessRate)], ['响应时间 P99', `${project.responseP99} 秒`], ['医生采纳率', percentage(project.doctorAdoptionRate)], ['异常故障次数', `${project.faultCount} 次`], ['平均故障恢复时间', `${project.recoveryTime} 分钟`], ['服务可用率', percentage(project.availabilityRate)]] },
-    { key: 'efficiency', title: '服务效率', icon: <RiseOutlined />, items: [['日均服务患者人数', `${project.dailyPatients} 人`], ['日均服务患者人数增长率', percentage(project.growthRate)]] },
+    { key: 'efficiency', title: '服务效率', icon: <RiseOutlined />, items: [['日均服务人数', `${project.dailyPatients} 人`], ['日均服务人数增长率', percentage(project.growthRate)]] },
     { key: 'benefit', title: '服务效益', icon: <WalletOutlined />, items: [['投资金额', `${project.investment.toFixed(2)} 万元`], ['Token 消耗量', project.tokenConsumption.toLocaleString()], ['Token 使用金额', `¥ ${project.tokenCost.toFixed(2)}`], ['投入产出比', percentage(project.investmentRatio)]] },
     { key: 'safety', title: '服务安全', icon: <SafetyCertificateOutlined />, items: [['风险行为拦截次数', `${project.riskInterceptCount.toLocaleString()} 次`], ['安全可控率', percentage(project.safetyRate)]] },
   ];
@@ -1245,8 +1251,8 @@ function ProjectAudit() {
   const columns: ColumnsType<ProjectAuditRow> = [
     { title: '项目名称', dataIndex: 'name', fixed: 'left', width: 220, ellipsis: true },
     { title: '申报科室', dataIndex: 'dept', width: 105 }, { title: '申报赛道', dataIndex: 'track', width: 105 },
-    { title: <span style={{ whiteSpace: 'nowrap' }}>日均服务患者人数</span>, dataIndex: 'dailyPatients', width: 190, sorter: sortable('dailyPatients'), render: (v) => `${v} 人` },
-    { title: '日均服务患者人数增长率', dataIndex: 'growthRate', width: 205, sorter: sortable('growthRate'), render: rate },
+    { title: <span style={{ whiteSpace: 'nowrap' }}>日均服务人数</span>, dataIndex: 'dailyPatients', width: 190, sorter: sortable('dailyPatients'), render: (v) => `${v} 人` },
+    { title: '日均服务人数增长率', dataIndex: 'growthRate', width: 205, sorter: sortable('growthRate'), render: rate },
     { title: '任务执行成功率', dataIndex: 'taskSuccessRate', width: 150, sorter: sortable('taskSuccessRate'), render: rate },
     { title: '响应时间 P99', dataIndex: 'responseP99', width: 170, sorter: sortable('responseP99'), render: (v) => `${v} 秒` },
     { title: '医生采纳率', dataIndex: 'doctorAdoptionRate', width: 130, sorter: sortable('doctorAdoptionRate'), render: rate },
@@ -1272,7 +1278,7 @@ function ProjectAudit() {
       message.warning('请先选择需要导出的项目');
       return;
     }
-    const headers = ['项目名称', '申报科室', '申报赛道', '日均服务患者人数', '日均服务患者人数增长率', '医生采纳率', '投资金额(万元)', 'Token消耗量', 'Token使用金额(元)', '投入产出比', '风险行为拦截次数', '安全可控率', '附件材料数量'];
+    const headers = ['项目名称', '申报科室', '申报赛道', '日均服务人数', '日均服务人数增长率', '医生采纳率', '投资金额(万元)', 'Token消耗量', 'Token使用金额(元)', '投入产出比', '风险行为拦截次数', '安全可控率', '附件材料数量'];
     const values = exportRows.map((row) => [row.name, row.dept, row.track, row.dailyPatients, rate(row.growthRate), rate(row.doctorAdoptionRate), row.investment, row.tokenConsumption, row.tokenCost.toFixed(2), rate(row.investmentRatio), row.riskInterceptCount, rate(row.safetyRate), row.materials.length]);
     const csv = [headers, ...values].map((line) => line.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
     const extension = format === 'excel' ? 'xls' : 'csv';
@@ -1281,7 +1287,7 @@ function ProjectAudit() {
   };
   const metrics = [
     {
-      key: 'efficiency', dimension: '服务效率', title: '日均服务患者人数增长率', value: 25.38, suffix: '%',
+      key: 'efficiency', dimension: '服务效率', title: '日均服务人数增长率', value: 25.38, suffix: '%',
       icon: <TeamOutlined />, bars: [34, 42, 48, 55, 63, 70, 78, 88],
     },
     {
@@ -1418,22 +1424,19 @@ function BehaviorAudit() {
   const [session, setSession] = useState<(typeof sessions)[number] | null>(null);
   const [query, setQuery] = useState('');
   const [department, setDepartment] = useState<string>();
-  const [lastCalledRange, setLastCalledRange] = useState<[string, string] | null>(null);
   const [selected, setSelected] = useState<React.Key[]>([]);
   const agents = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     return agentRows.filter((item) => {
       const matchesKeyword = !keyword || `${item.id} ${item.name}`.toLowerCase().includes(keyword);
       const matchesDepartment = !department || item.dept === department;
-      const matchesLastCalled = !lastCalledRange
-        || (item.last >= lastCalledRange[0] && item.last <= lastCalledRange[1]);
-      return matchesKeyword && matchesDepartment && matchesLastCalled;
+      return matchesKeyword && matchesDepartment;
     });
-  }, [department, lastCalledRange, query]);
+  }, [department, query]);
   if (agent) return <div><Header title="智能体会话记录" description={`${agent.id} · ${agent.name}`} extra={<><Button icon={<ReloadOutlined />} onClick={() => message.success('会话数据已刷新')}>刷新</Button><Button icon={<ArrowLeftOutlined />} onClick={() => { setAgent(null); setSession(null); navigate('/app/audit/behavior'); }}>返回智能体列表</Button></>} />
-    <Toolbar><Space wrap><Input prefix={<SearchOutlined />} placeholder="搜索会话标题或摘要" style={{ width: 280 }} /><RangePicker showTime /></Space></Toolbar>
+    <Toolbar><Space wrap><Input prefix={<SearchOutlined />} placeholder="搜索会话标题或摘要" style={{ width: 280 }} /></Space></Toolbar>
     <Card bordered={false} className="audit-table-card"><Table dataSource={sessions} columns={[
-      { title: '会话标题', dataIndex: 'title', width: 190 }, { title: '首轮输入摘要', dataIndex: 'input', ellipsis: true, render: truncate }, { title: '末轮输出摘要', dataIndex: 'output', ellipsis: true, render: truncate }, { title: '会话时长', dataIndex: 'duration', width: 110, sorter: (a, b) => a.duration - b.duration, render: (v) => `${Math.floor(v / 60)} 分 ${v % 60} 秒` }, { title: '会话开始时间', dataIndex: 'start', width: 175 }, { title: '会话结束时间', dataIndex: 'end', width: 175 }, { title: '操作', width: 90, fixed: 'right', render: (_, r) => <Button type="link" onClick={() => setSession(r)}>查看详情</Button> },
+      { title: '会话标题', dataIndex: 'title', width: 190 }, { title: '首轮输入摘要', dataIndex: 'input', ellipsis: true, render: truncate }, { title: '末轮输出摘要', dataIndex: 'output', ellipsis: true, render: truncate }, { title: '会话时长', dataIndex: 'duration', width: 110, sorter: (a, b) => a.duration - b.duration, render: (v) => `${Math.floor(v / 60)} 分 ${v % 60} 秒` }, { title: '会话开始时间', dataIndex: 'start', width: 210, sorter: (a, b) => a.start.localeCompare(b.start), render: (v) => <span style={{ whiteSpace: 'nowrap' }}>{v}</span> }, { title: '会话结束时间', dataIndex: 'end', width: 210, sorter: (a, b) => a.end.localeCompare(b.end), render: (v) => <span style={{ whiteSpace: 'nowrap' }}>{v}</span> }, { title: '操作', width: 90, fixed: 'right', render: (_, r) => <Button type="link" onClick={() => setSession(r)}>查看详情</Button> },
     ]} scroll={{ x: 1250 }} /></Card>
     <Drawer
       title={session?.title}
@@ -1447,7 +1450,7 @@ function BehaviorAudit() {
     </Drawer>
   </div>;
   return <div><Header title="智能体行为审计" description="按智能体查看会话规模、最近调用时间并下钻追溯完整交互。" />
-    <Toolbar><Space wrap><Input value={query} onChange={(e) => setQuery(e.target.value)} prefix={<SearchOutlined />} placeholder="搜索智能体编号或名称" allowClear style={{ width: 280 }} /><Select value={department} onChange={setDepartment} options={departments.slice(1).map((x) => ({ label: x, value: x }))} placeholder="所属科室" allowClear style={{ width: 190 }} /><RangePicker onChange={(dates) => setLastCalledRange(dates?.[0] && dates[1] ? [dates[0].startOf('day').format('YYYY-MM-DD HH:mm:ss'), dates[1].endOf('day').format('YYYY-MM-DD HH:mm:ss')] : null)} placeholder={['最近调用开始', '最近调用结束']} /></Space></Toolbar>
+    <Toolbar><Space wrap><Input value={query} onChange={(e) => setQuery(e.target.value)} prefix={<SearchOutlined />} placeholder="搜索智能体编号或名称" allowClear style={{ width: 280 }} /><Select value={department} onChange={setDepartment} options={departments.slice(1).map((x) => ({ label: x, value: x }))} placeholder="所属科室" allowClear style={{ width: 190 }} /></Space></Toolbar>
     <Card bordered={false} className="audit-table-card"><Table rowSelection={{ selectedRowKeys: selected, onChange: setSelected }} dataSource={agents} columns={[
       { title: '智能体编号', dataIndex: 'id', render: (v, r) => <Button type="link" onClick={() => setAgent(r)}>{v}</Button> }, { title: '智能体名称', dataIndex: 'name' }, { title: '版本', dataIndex: 'version', width: 90 }, { title: '所属科室', dataIndex: 'dept' }, { title: '会话数', dataIndex: 'sessions', sorter: (a, b) => a.sessions - b.sessions, render: (v) => v.toLocaleString() }, { title: '最近调用时间', dataIndex: 'last', sorter: (a, b) => a.last.localeCompare(b.last) }, { title: '操作', render: (_, r) => <Button type="link" onClick={() => setAgent(r)}>查看所有会话记录</Button> },
     ]} /></Card></div>;
@@ -1460,7 +1463,7 @@ function OperationLogs() {
   const filtered = useMemo(() => logRows.filter((x) => (filters.org === '全部组织' || x.org === filters.org) && (filters.module === '全部模块' || x.module === filters.module) && (filters.type === '全部类型' || x.type === filters.type) && (filters.result === '全部结果' || x.result.startsWith(filters.result))), [filters]);
   const choose = (key: keyof typeof filters, value: string) => setFilters((p) => ({ ...p, [key]: value }));
   return <div><Header title="操作日志" description="记录平台关键操作、执行结果和登录 IP，满足全过程留痕与责任追溯。" />
-    <Toolbar><div className="filter-grid"><Select value={filters.org} onChange={(v) => choose('org', v)} options={['全部组织', '信息中心', '心内科', '影像科', '医务科'].map((x) => ({ label: x, value: x }))} /><Select value={filters.module} onChange={(v) => choose('module', v)} options={['全部模块', ...new Set(logRows.map((x) => x.module))].map((x) => ({ label: x, value: x }))} /><Select value={filters.type} onChange={(v) => choose('type', v)} options={['全部类型', '新建', '编辑', '删除', '查看', '上传', '导出', '审计', '撤销', '停用'].map((x) => ({ label: x, value: x }))} /><Select value={filters.result} onChange={(v) => choose('result', v)} options={['全部结果', '成功', '失败'].map((x) => ({ label: x, value: x }))} /><RangePicker showTime /></div></Toolbar>
+    <Toolbar><div className="filter-grid"><Select value={filters.org} onChange={(v) => choose('org', v)} options={['全部组织', '信息中心', '心内科', '影像科', '医务科'].map((x) => ({ label: x, value: x }))} /><Select value={filters.module} onChange={(v) => choose('module', v)} options={['全部模块', ...auditModuleOptions].map((x) => ({ label: x, value: x }))} /><Select value={filters.type} onChange={(v) => choose('type', v)} options={['全部类型', '新建', '编辑', '删除', '查看', '上传', '导出', '审计', '撤销', '停用'].map((x) => ({ label: x, value: x }))} /><Select value={filters.result} onChange={(v) => choose('result', v)} options={['全部结果', '成功', '失败'].map((x) => ({ label: x, value: x }))} /><RangePicker showTime /></div></Toolbar>
     <Card bordered={false} className="audit-table-card"><Table rowSelection={{ selectedRowKeys: selected, onChange: setSelected }} dataSource={filtered} columns={[
       { title: '用户名称', dataIndex: 'user', width: 100 }, { title: '用户角色', dataIndex: 'role', width: 125 }, { title: '所属组织', dataIndex: 'org', width: 100 }, { title: '操作模块', dataIndex: 'module', width: 165, ellipsis: true }, { title: '操作类型', dataIndex: 'type', width: 90, render: (v) => <Tag color="blue">{v}</Tag> }, { title: '操作描述', dataIndex: 'desc', width: 250, ellipsis: true, render: truncate }, { title: '操作结果', dataIndex: 'result', width: 190, render: (v: string) => <Tag color={v === '成功' ? 'success' : 'error'}>{v}</Tag> }, { title: '登录 IP 地址', dataIndex: 'ip', width: 130 }, { title: '操作时间', dataIndex: 'time', width: 175, sorter: (a, b) => a.time.localeCompare(b.time) }, { title: '操作', fixed: 'right', width: 90, render: (_, r) => <Button type="link" icon={<EyeOutlined />} onClick={() => setDetail(r)}>详情</Button> },
     ]} scroll={{ x: 1450 }} pagination={{ pageSize: 8, showTotal: (n) => `共 ${n} 条` }} /></Card>
