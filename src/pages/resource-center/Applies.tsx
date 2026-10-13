@@ -112,6 +112,20 @@ const loadFilters = (): { keyword: string; dept?: string } => {
 /** V1.2 §2.1.2 草稿 / §2.1.5 撤销修改 用户隔离判断:仅本人可编辑/删除 */
 const isOwner = (it: ApplyItem, currentAccount: string) => it.applicantAccount === currentAccount;
 
+/** 旧版 mock 记录会把多个资源用 / 拼在一起；列表中将它们展开为可独立操作的行。 */
+const expandResourceRows = (items: ApplyItem[]): ApplyItem[] => items.flatMap((item) => {
+  if (item.resourceCode || !item.resourceName.includes('/')) return [item];
+  const names = item.resourceName.split('/').map((name) => name.trim()).filter(Boolean);
+  if (names.length < 2) return [item];
+  return names.map((resourceName, index) => ({
+    ...item,
+    id: `${item.id}#resource-${index + 1}`,
+    resourceName,
+    resourceCode: resourceName,
+    resourceRowLabel: resourceName,
+  } as ApplyItem & { resourceRowLabel: string }));
+});
+
 const ApplyList = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -152,8 +166,12 @@ const ApplyList = () => {
    *   - 草稿 / 撤销修改 Tab 均为「仅自己创建」语义
    */
   const scoped = useMemo(() => {
-    if (isAdmin) return data;
-    return data.filter((it) => it.applicantAccount === current.account);
+    return data.filter((it) => {
+      // 新提交的权限申请由所申请资源的负责人审核；历史记录没有分配人，仍沿用原有可见范围。
+      if (it.reviewerAccount) return it.reviewerAccount === current.account;
+      if (isAdmin) return true;
+      return it.applicantAccount === current.account;
+    });
   }, [data, isAdmin, current.account]);
 
   useEffect(() => {
@@ -171,7 +189,7 @@ const ApplyList = () => {
 
   /** 当前 Tab 下的数据 */
   const tabData = useMemo(() => {
-    return scoped.filter((it) => {
+    const filtered = scoped.filter((it) => {
       if (tab === 'all') {
         // 全部申请:展示所有状态(含 archived,带「已归档」标识)
       } else if (it.status === 'archived') {
@@ -190,6 +208,7 @@ const ApplyList = () => {
         it.resourceName.toLowerCase().includes(k)
       );
     });
+    return expandResourceRows(filtered);
   }, [tab, dept, keyword, scoped]);
 
   useEffect(() => {
@@ -378,8 +397,9 @@ const ApplyList = () => {
 
   /** 各 Tab 计数(按当前角色数据范围) */
   const tabCounts = useMemo(() => {
-    const m: Record<string, number> = { all: scoped.length };
-    scoped.forEach((it) => { if (it.status !== 'archived') m[it.status] = (m[it.status] || 0) + 1; });
+    const expanded = expandResourceRows(scoped);
+    const m: Record<string, number> = { all: expanded.length };
+    expanded.forEach((it) => { if (it.status !== 'archived') m[it.status] = (m[it.status] || 0) + 1; });
     return m;
   }, [scoped]);
 
@@ -604,20 +624,7 @@ const ApplyList = () => {
       title: '申请资源名称',
       dataIndex: 'resourceName',
       width: 200,
-      render: (s: string) => (
-        <Tooltip title={s}>
-          <span
-            style={{
-              display: 'block',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {s}
-          </span>
-        </Tooltip>
-      ),
+      render: (s: string) => <span style={{ display: 'block', whiteSpace: 'nowrap' }}>{s}</span>,
     },
   ];
 
@@ -703,7 +710,6 @@ const ApplyList = () => {
     <>
       <PageHeader
         title="申请管理"
-        subTitle="管理智能体对院内资源的权限申请,覆盖申请 / 审批 / 撤销 / 退回 / 归档全流程"
         breadcrumb={[
           { path: '/app/resource-center', breadcrumbName: '医院资源管理中心' },
           { path: '/app/resource-center/applies', breadcrumbName: '申请管理' },

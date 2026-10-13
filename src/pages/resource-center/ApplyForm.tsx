@@ -35,6 +35,8 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import PageHeader from '../../components/PageHeader';
+import { mockUsers } from '../../mock/users';
+import { initialCenterUsers } from '../user-center/UserList';
 import { useSmartDraft } from '../agent-center/smart/store';
 import {
   useResources,
@@ -87,7 +89,12 @@ const ApplyForm = () => {
         setSelectedAgentId(values.agentId);
       }
       if (values.resourceIds) {
-        const ids = values.resourceIds.split(/[；;,，]/).filter((rid) => resources.some((resource) => resource.id === rid));
+        const rawIds = values.resourceIds.split(/[；;,，]/).map((rid) => rid.trim());
+        const ids = rawIds.flatMap((rid) => {
+          if (rid.includes('::')) return rid;
+          const resource = resources.find((item) => item.id === rid);
+          return resource ? resource.resources.map((code) => `${resource.id}::${code}`) : [];
+        });
         if (ids.length) {
           form.setFieldValue('resourceIds', ids);
           setSelectedResourceIds(ids);
@@ -107,13 +114,18 @@ const ApplyForm = () => {
     ? mockAgents.find((a) => a.name === presetAgentName || a.name.includes(presetAgentName) || presetAgentName.includes(a.name))
     : undefined;
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(init?.agentId ?? presetAgentFromName?.id);
-  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>(init ? [init.resourceId] : []);
+  const initialSelections = init
+    ? (init.resourceCode
+        ? [`${init.resourceId}::${init.resourceCode}`]
+        : (resources.find((r) => r.id === init.resourceId)?.resources || []).map((code) => `${init.resourceId}::${code}`))
+    : [];
+  const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>(initialSelections);
 
   useEffect(() => {
     if (init) {
       form.setFieldsValue({
         agentId: init.agentId,
-        resourceIds: [init.resourceId],
+        resourceIds: initialSelections,
         reason: init.reason || '',
       });
     } else if (presetAgentFromName) {
@@ -130,15 +142,6 @@ const ApplyForm = () => {
   }, []);
 
   const selectedAgent = mockAgents.find((a) => a.id === selectedAgentId);
-
-  // 越权范围校验:申请人选了未在已通过申请中的资源
-  const unauthorizedResources = selectedResourceIds.filter((rid) => {
-    const r = resources.find((x) => x.id === rid);
-    if (!r) return false;
-    // 演示规则:每个资源若没有对应的 approved 申请,标记为越权风险
-    const hasApproved = applies.some((a) => a.resourceId === rid && a.status === 'approved');
-    return !hasApproved && selectedAgent !== undefined; // 已选智能体但资源未在已通过列表中
-  });
 
   /** 智能体基础信息(只读展示,源自台账侧) */
   const agentInfoView = selectedAgent ? (
@@ -182,44 +185,48 @@ const ApplyForm = () => {
     }, 1200);
   };
 
-  /** 构造新申请记录 */
-  const buildApplyItem = (status: ApplyStatus): ApplyItem | null => {
-    if (!selectedAgent) return null;
-    const resourceId = selectedResourceIds[0];
-    const resource = resources.find((r) => r.id === resourceId);
-    if (!resource) return null;
+  /** 每个系统生成一条权限申请，保留底层注册资源 ID 以便审批查找接入配置 */
+  const buildApplyItems = (status: ApplyStatus): ApplyItem[] => {
+    if (!selectedAgent) return [];
     const now = nowAt();
-    const seq = (applies.length + 1).toString().padStart(4, '0');
-    const baseId = init?.id || `A-2026-${seq}`;
-    const it: ApplyItem = {
-      id: baseId,
-      agentId: selectedAgent.id,
-      agentName: selectedAgent.name,
-      department: selectedAgent.dept,
-      stage: selectedAgent.stage,
-      description: selectedAgent.description,
-      resourceId: resource.id,
-      resourceName: resource.resources.join('/'),
-      reason: form.getFieldValue('reason') || '',
-      status,
-      applicant: current.name,
-      applicantAccount: current.account, // V1.1 §3.1 数据隔离:归属于当前演示账号
-      trail: [],
-    };
-    return it;
+    return selectedResourceIds.flatMap((selection, index) => {
+      const [resourceId, resourceCode] = selection.split('::');
+      const resource = resources.find((item) => item.id === resourceId);
+      if (!resource || !resourceCode) return [];
+      const reviewer = resource.owner;
+      const reviewerAccount = mockUsers.find((user) => user.name === reviewer)?.id
+        || initialCenterUsers.find((user) => user.name === reviewer)?.id;
+      const seq = (applies.length + index + 1).toString().padStart(4, '0');
+      const itemId = init && index === 0 ? init.id : `A-2026-${seq}`;
+      return [{
+        id: itemId,
+        agentId: selectedAgent.id,
+        agentName: selectedAgent.name,
+        department: selectedAgent.dept,
+        stage: selectedAgent.stage,
+        description: selectedAgent.description,
+        resourceId: resource.id,
+        resourceCode,
+        resourceName: resourceCode,
+        reviewerAccount,
+        reviewerName: reviewer,
+        reason: form.getFieldValue('reason') || '',
+        status,
+        applicant: current.name,
+        applicantAccount: current.account,
+        trail: [],
+      }];
+    });
   };
 
   /** 暂存 */
   const handleDraft = async () => {
     try {
       await form.validateFields(['agentId', 'resourceIds']);
-      const it = buildApplyItem('draft');
-      if (!it) { message.error('资源不存在'); return; }
-      if (init) {
-        updateApply(init.id, { ...it, status: 'draft', draftAt: nowAt() });
-      } else {
-        addApply({ ...it, draftAt: nowAt() });
-      }
+      const items = buildApplyItems('draft');
+      if (!items.length) { message.error('资源不存在'); return; }
+      if (init) updateApply(init.id, { ...items[0], status: 'draft', draftAt: nowAt() });
+      items.slice(init ? 1 : 0).forEach((item) => addApply({ ...item, draftAt: nowAt() }));
       message.success('申请已暂存到「草稿 Tab」');
       setTimeout(() => navigate('/app/resource-center/applies?tab=draft'), 600);
     } catch {
@@ -231,17 +238,6 @@ const ApplyForm = () => {
   const handleSubmit = async () => {
     try {
       await form.validateFields();
-      if (unauthorizedResources.length > 0) {
-        Modal.confirm({
-          title: '检测到可能越权的资源',
-          content: `所选资源 [${unauthorizedResources.join(', ')}] 暂未在已通过的申请中;提交后若智能体实际访问这些资源,平台将进行告警阻断。是否继续提交?`,
-          okText: '仍要提交',
-          okType: 'danger',
-          cancelText: '取消',
-          onOk: () => doSubmit(),
-        });
-        return;
-      }
       doSubmit();
     } catch {
       message.error('存在未填写的必填字段,请检查');
@@ -250,14 +246,15 @@ const ApplyForm = () => {
 
   const doSubmit = () => {
     setSubmitting(true);
-    const it = buildApplyItem('pending');
-    if (!it) {
+    const items = buildApplyItems('pending');
+    if (!items.length) {
       setSubmitting(false);
       message.error('资源不存在');
       return;
     }
     const now = nowAt();
     if (init) {
+      const it = items[0];
       // 重新提交(rejected / revoked → pending)
       updateApply(init.id, {
         ...it,
@@ -268,13 +265,12 @@ const ApplyForm = () => {
         approvedAt: undefined,
         appendTrail: { action: '重新提交', operator: it.applicant, at: now, comment: '修改后重新提交审核', status: 'process', targetStatus: 'pending' },
       });
-    } else {
-      addApply({
-        ...it,
-        submittedAt: now,
-        trail: [{ action: '提交', operator: it.applicant, at: now, status: 'process', targetStatus: 'pending' }],
-      });
     }
+    items.slice(init ? 1 : 0).forEach((it) => addApply({
+      ...it,
+      submittedAt: now,
+      trail: [{ action: '提交', operator: it.applicant, at: now, status: 'process', targetStatus: 'pending' }],
+    }));
     setSubmitting(false);
     message.success('申请已提交,进入「待审核」Tab');
     setTimeout(() => navigate('/app/resource-center/applies?tab=pending'), 600);
@@ -284,7 +280,6 @@ const ApplyForm = () => {
     <>
       <PageHeader
         title={init ? `编辑申请 - ${init.id}` : '申请权限'}
-        subTitle="为智能体发起院内业务系统资源访问权限申请"
         showBack
         onBack={() => navigate('/app/resource-center/applies')}
         breadcrumb={[
@@ -295,7 +290,7 @@ const ApplyForm = () => {
       />
 
       <Card bordered={false}>
-        <Form form={form} layout="vertical" initialValues={{ agentId: init?.agentId ?? presetAgentFromName?.id, resourceIds: init ? [init.resourceId] : [] }} style={{ maxWidth: 960 }}>
+        <Form form={form} layout="vertical" initialValues={{ agentId: init?.agentId ?? presetAgentFromName?.id, resourceIds: initialSelections }} style={{ maxWidth: 960 }}>
           {/* 台账列表「申请资源」联动提示:展示已带入的智能体,支持手动改选 */}
           {presetAgentName && (
             <Alert
@@ -313,7 +308,6 @@ const ApplyForm = () => {
           <Form.Item
             name="agentId"
             label="选择智能体"
-            extra="智能体基础信息(编号/名称/所属科室/诊疗环节/功能描述/申请人)从台账侧实时回填,不可编辑"
             rules={[{ required: true, message: '请选择智能体' }]}
           >
             <Select
@@ -333,7 +327,6 @@ const ApplyForm = () => {
           <Form.Item
             name="resourceIds"
             label="申请资源名称"
-            extra="从已注册资源列表多选;至少选择 1 项,提交前可发起连通性测试"
             rules={[{ required: true, message: '请至少选择 1 个资源' }]}
           >
             <Select
@@ -341,24 +334,28 @@ const ApplyForm = () => {
               placeholder="选择要申请的院内业务系统资源"
               maxTagCount="responsive"
               optionLabelProp="label"
+              optionFilterProp="label"
               onChange={(v: string[]) => setSelectedResourceIds(v)}
             >
-              {resources.map((r) => (
-                <Select.Option key={r.id} value={r.id} label={`${r.id} ${r.resources.join('/')}`}>
-                  <Space wrap>
-                    <Tag color="default">{r.id}</Tag>
-                    <Text>{r.resources.join(' / ')}</Text>
-                    <Tag color={PROTOCOL_COLOR[r.protocol as ProtocolType]}>{PROTOCOL_LABEL[r.protocol as ProtocolType]}</Tag>
-                  </Space>
-                </Select.Option>
-              ))}
+              {resources.flatMap((r) => r.resources.map((code) => {
+                const protocol = r.resourceProtocols?.[code]?.protocol || r.protocol;
+                const value = `${r.id}::${code}`;
+                return (
+                  <Select.Option key={value} value={value} label={`${code} ${r.id}`}>
+                    <Space wrap>
+                      <Tag color="default">{r.id}</Tag>
+                      <Text>{code}</Text>
+                      <Tag color={PROTOCOL_COLOR[protocol]}>{PROTOCOL_LABEL[protocol]}</Tag>
+                    </Space>
+                  </Select.Option>
+                );
+              }))}
             </Select>
           </Form.Item>
 
           <Form.Item
             name="reason"
             label="申请理由(选填)"
-            extra="≤200 字,辅助管理员理解业务场景"
             rules={[{ max: 200, message: '申请理由不超过 200 字' }]}
           >
             {/* 申请理由为选填,V1.1 字段外但对评审可读性有帮助 */}
@@ -405,7 +402,5 @@ const ApplyForm = () => {
   );
 };
 
-// Modal reference
-import { Modal } from 'antd';
 
 export default ApplyForm;

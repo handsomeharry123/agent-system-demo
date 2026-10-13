@@ -38,6 +38,7 @@ import {
   ReloadOutlined,
 } from '@ant-design/icons';
 import PageHeader from '../../components/PageHeader';
+import { initialCenterUsers, type CenterUser } from '../user-center/UserList';
 import {
   RESOURCE_CATALOG,
   PROTOCOL_LABEL,
@@ -102,10 +103,41 @@ const ResourceForm = () => {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
   const [form] = Form.useForm();
+  const watchedOwner = Form.useWatch('owner', form);
+  const [ownerUsers, setOwnerUsers] = useState<CenterUser[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('user-center-users');
+      return saved ? JSON.parse(saved) as CenterUser[] : initialCenterUsers;
+    } catch {
+      return initialCenterUsers;
+    }
+  });
+  useEffect(() => {
+    const syncUsers = () => {
+      try {
+        const saved = sessionStorage.getItem('user-center-users');
+        setOwnerUsers(saved ? JSON.parse(saved) as CenterUser[] : initialCenterUsers);
+      } catch {
+        setOwnerUsers(initialCenterUsers);
+      }
+    };
+    window.addEventListener('storage', syncUsers);
+    window.addEventListener('user-center-users-updated', syncUsers);
+    return () => {
+      window.removeEventListener('storage', syncUsers);
+      window.removeEventListener('user-center-users-updated', syncUsers);
+    };
+  }, []);
   const resources = useResources();
   const drafts = useDrafts();
+  const registeredResourceCodes = useMemo(() => {
+    const codes = new Set<string>();
+    resources.filter((item) => item.id !== id).forEach((item) => item.resources.forEach((code) => codes.add(code)));
+    return codes;
+  }, [resources, id]);
   const current = useCurrentUser();
-  const [protocol, setProtocol] = useState<ProtocolType>('HL7');
+  const [selectedResources, setSelectedResources] = useState<string[]>([]);
+  const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
   const [resourceSearch, setResourceSearch] = useState('');
   const [testState, setTestState] = useState<'idle' | 'loading' | 'success' | 'fail'>('idle');
   const [testMsg, setTestMsg] = useState<{ code?: string; reason?: string }>({});
@@ -146,13 +178,8 @@ const ResourceForm = () => {
           : value;
         pendingAiFieldsRef.current.add(fieldKey);
       });
-      const nextProtocol = values.protocol as ProtocolType | undefined;
-      if (nextProtocol && nextProtocol !== protocol) {
-        PROTOCOL_FIELDS[protocol].forEach((field) => form.setFieldValue(field.name, undefined));
-        setProtocol(nextProtocol);
-        lastProtocolRef.current = nextProtocol;
-      }
       form.setFieldsValue(values);
+      if (Array.isArray(values.resources)) handleResourceChange(values.resources);
       setAiFilledFields((previous) => new Set([...previous, ...Object.keys(values)]));
       setTestState('idle');
       setTestMsg({});
@@ -180,7 +207,7 @@ const ResourceForm = () => {
       window.removeEventListener('resource-center-ai-fill', onAiFill);
       window.removeEventListener('resource-center-prefill-acknowledged', onPrefillAcknowledged);
     };
-  }, [form, protocol]);
+  }, [form]);
 
   /** 资源目录按 group 分组 */
   const groupedCatalog = useMemo(() => {
@@ -206,69 +233,58 @@ const ResourceForm = () => {
     if (isEdit && id) {
       const found = [...resources, ...drafts].find((r) => r.id === id);
       if (found) {
+        // 编辑资源列表中的单个资源时，只编辑当前列表行对应的系统配置。
+        // 旧数据可能包含多个系统，保留记录中第一个系统作为当前资源。
+        const resourceCode = found.resourceCode || found.resources[0];
+        const currentResource = resourceCode ? { ...found, resources: [resourceCode] } : found;
+        setEditingResource(currentResource);
         form.setFieldsValue({
-          resources: found.resources,
+          resources: currentResource.resources,
           owner: found.owner,
           contact: found.contact,
-          protocol: found.protocol,
         });
-        setProtocol(found.protocol);
+        setSelectedResources(currentResource.resources);
         // 子字段:用 name 直接匹配(由 SAMPLE_CONFIG 构造回填值)
         const vals: Record<string, string> = {};
-        const fieldDef = PROTOCOL_FIELDS[found.protocol];
-        const labelToName = new Map(fieldDef.map((f) => [f.label, f.name]));
         // 1) 优先用 name
-        const cfg = found.protocolConfig as ProtocolConfig & { valuesByName?: Record<string, string> };
-        if (cfg.valuesByName) {
-          Object.entries(cfg.valuesByName).forEach(([k, v]) => { vals[k] = v; });
-        } else {
-          // 2) 兼容老 mock:用 label 映射
-          found.protocolConfig.fields.forEach((f) => {
-            const name = labelToName.get(f.label);
-            if (name) vals[name] = f.value;
-          });
-        }
-        form.setFieldsValue(vals);
-        lastProtocolRef.current = found.protocol;
+        const perResource = found.resourceProtocols || Object.fromEntries(
+          currentResource.resources.map((code) => [code, { protocol: found.protocol, protocolConfig: found.protocolConfig }]),
+        );
+        const resourceValues: Record<string, unknown> = {};
+        currentResource.resources.forEach((code) => {
+          const item = perResource[code] || { protocol: found.protocol, protocolConfig: found.protocolConfig };
+          const itemVals: Record<string, string> = {};
+          const itemCfg = item.protocolConfig as ProtocolConfig & { valuesByName?: Record<string, string> };
+          if (itemCfg.valuesByName) Object.assign(itemVals, itemCfg.valuesByName);
+          else {
+            const itemLabelToName = new Map(PROTOCOL_FIELDS[item.protocol].map((f) => [f.label, f.name]));
+            itemCfg.fields.forEach((f) => { const name = itemLabelToName.get(f.label); if (name) itemVals[name] = f.value; });
+          }
+          resourceValues[code] = { protocol: item.protocol, ...itemVals };
+        });
+        form.setFieldsValue({ resourceConfigs: resourceValues, ...vals });
         window.setTimeout(() => handleFieldsChange(), 0);
       }
     }
   }, [isEdit, id, form, resources, drafts]);
 
-  /** 协议切换:弹确认 + 清空子字段 */
-  const handleProtocolChange = (newProtocol: ProtocolType, oldProtocol: ProtocolType) => {
-    if (newProtocol === oldProtocol) return;
-    const oldValues = form.getFieldsValue(PROTOCOL_FIELDS[oldProtocol].map((f) => f.name));
-    const hasOldData = Object.values(oldValues).some((v) => v !== undefined && v !== '');
-    if (hasOldData) {
-      Modal.confirm({
-        title: '切换对接方式将清空已填写的子字段',
-        content: `当前已填的 ${PROTOCOL_LABEL[oldProtocol]} 子字段将被清空,是否继续?`,
-        okText: '确认切换',
-        cancelText: '取消',
-        onOk: () => {
-          form.resetFields(['protocol', ...PROTOCOL_FIELDS[oldProtocol].map((f) => f.name)]);
-          setProtocol(newProtocol);
-          form.setFieldsValue({ protocol: newProtocol });
-          setTestState('idle');
-          setTestMsg({});
-        },
-      });
-    } else {
-      form.setFieldsValue({ protocol: newProtocol });
-      setProtocol(newProtocol);
-      setTestState('idle');
-      setTestMsg({});
-    }
+  const handleResourceChange = (codes: string[]) => {
+    const availableCodes = codes.filter((code) => !registeredResourceCodes.has(code));
+    const oldConfigs = form.getFieldValue('resourceConfigs') || {};
+    const nextConfigs: Record<string, unknown> = {};
+    availableCodes.forEach((code) => { nextConfigs[code] = oldConfigs[code] || { protocol: 'HL7' }; });
+    form.setFieldValue('resourceConfigs', nextConfigs);
+    form.setFieldValue('resources', availableCodes);
+    setSelectedResources(availableCodes);
+    setTestState('idle');
+    setTestMsg({});
   };
 
-  /** Select onChange 包装:Antd onChange 触发时 form 已写入新值,getFieldValue 拿到的就是新值,
-   *  所以这里改用 useRef 维护上一次值,真正区分新旧 */
-  const lastProtocolRef = useRef<ProtocolType>('HL7');
-  const handleProtocolSelect = (newProtocol: ProtocolType) => {
-    const oldProtocol = lastProtocolRef.current;
-    lastProtocolRef.current = newProtocol;
-    handleProtocolChange(newProtocol, oldProtocol);
+  const handleResourceProtocolChange = (code: string, nextProtocol: ProtocolType) => {
+    form.setFieldValue(['resourceConfigs', code], { protocol: nextProtocol });
+    setSelectedResources((current) => [...current]);
+    setTestState('idle');
+    setTestMsg({});
   };
 
   /** 协议子字段变化时自动 reset 测试态 */
@@ -282,13 +298,6 @@ const ResourceForm = () => {
       setAiFilledFields((previous) => {
         const next = new Set(previous);
         changedKeys.forEach((key) => next.delete(key));
-        if (changedKeys.includes('protocol')) {
-          Object.values(PROTOCOL_FIELDS).flat().forEach((field) => {
-            next.delete(field.name);
-            pendingAiFieldsRef.current.delete(field.name);
-            delete pendingRecognizedFieldsRef.current[field.name];
-          });
-        }
         return next;
       });
     }
@@ -312,6 +321,12 @@ const ResourceForm = () => {
     }, 600);
   };
 
+  const handleOwnerChange = (userId: string) => {
+    const user = ownerUsers.find((item) => item.id === userId);
+    form.setFieldsValue({ owner: user?.name || '', contact: user?.phone || '' });
+    handleFieldsChange({ owner: user?.name || '', contact: user?.phone || '' });
+  };
+
   useEffect(() => () => {
     if (autoTestTimerRef.current) clearTimeout(autoTestTimerRef.current);
   }, []);
@@ -321,14 +336,17 @@ const ResourceForm = () => {
     try {
       await form.validateFields();
     } catch {
-      message.warning('请先完善必填字段后再进行访问测试');
+      message.warning('请先完善所有已选系统的接入信息后再进行访问测试');
       return;
     }
     setTestState('loading');
     setTestMsg({});
     setTimeout(() => {
-      const values = form.getFieldsValue(true) as Record<string, string>;
-      const endpoint = [values.ip, values.url, values.broker, values.port].filter(Boolean).join(' ');
+      const values = form.getFieldsValue(true) as Record<string, any>;
+      const endpoint = Object.values(values.resourceConfigs || {})
+        .flatMap((config: any) => [config.ip, config.url, config.broker, config.port])
+        .filter(Boolean)
+        .join(' ');
       const hasConnectionProblem = /(?:0\.0\.0\.0|127\.0\.0\.1|unreachable|invalid|0000)/i.test(endpoint);
       if (!hasConnectionProblem) {
         setTestState('success');
@@ -397,18 +415,22 @@ const ResourceForm = () => {
     }, 1200);
   };
 
-  /** 构造新资源并入 store */
+  /** 按系统分别构造接入配置，整条多系统注册仍保存为一条记录 */
   const buildResource = (asDraft: boolean): ResourceItem => {
     const all = form.getFieldsValue(true);
-    const fields = PROTOCOL_FIELDS[protocol].map((f) => ({
-      label: f.label,
-      value: all[f.name] || '',
-    }));
-    const valuesByName: Record<string, string> = {};
-    PROTOCOL_FIELDS[protocol].forEach((f) => {
-      valuesByName[f.name] = all[f.name] || '';
+    const resourceProtocols: NonNullable<ResourceItem['resourceProtocols']> = {};
+    (all.resources || []).forEach((code: string) => {
+      const values = all.resourceConfigs?.[code] || {};
+      const p = (values.protocol || 'HL7') as ProtocolType;
+      const fields = PROTOCOL_FIELDS[p].map((f) => ({ label: f.label, value: values[f.name] || '' }));
+      const valuesByName: Record<string, string> = {};
+      PROTOCOL_FIELDS[p].forEach((f) => { valuesByName[f.name] = values[f.name] || ''; });
+      resourceProtocols[code] = {
+        protocol: p,
+        protocolConfig: { fields, valuesByName } as ProtocolConfig,
+      };
     });
-    const config: ProtocolConfig = { fields, valuesByName } as ProtocolConfig;
+    const first = resourceProtocols[(all.resources || [])[0]];
     const now = nowAt();
     const prefix = asDraft ? 'D' : 'R';
     const seq = asDraft
@@ -419,11 +441,12 @@ const ResourceForm = () => {
       resources: all.resources || [],
       owner: all.owner || '',
       contact: all.contact || '',
-      protocol,
-      protocolConfig: config,
+      protocol: first?.protocol || 'HL7',
+      protocolConfig: first?.protocolConfig || { fields: [] },
+      resourceProtocols,
       status: asDraft ? 'draft' : 'registered',
       updatedAt: now,
-      creator: current.account, // V1.1 §2.1.2:草稿创建人用于"管理员之间数据隔离"
+      creator: current.account,
     };
   };
 
@@ -462,7 +485,7 @@ const ResourceForm = () => {
   /** 暂存 */
   const handleDraft = async () => {
     try {
-      await form.validateFields(['resources', 'owner', 'contact', 'protocol']);
+      await form.validateFields(['resources', 'owner', 'contact']);
       const d = buildResource(true);
       addDraft(d);
       message.success(`资源已暂存到「资源管理 - 草稿 Tab」,草稿 ID: ${d.id}`);
@@ -476,7 +499,6 @@ const ResourceForm = () => {
     <>
       <PageHeader
         title={isEdit ? `编辑资源 - ${id}` : '注册资源'}
-        subTitle="新增或编辑院内业务系统资源;支持连通性测试、提交与暂存"
         showBack
         onBack={() => navigate('/app/resource-center/resources')}
         breadcrumb={[
@@ -490,18 +512,27 @@ const ResourceForm = () => {
         <Form
           form={form}
           layout="vertical"
-          initialValues={{ protocol: 'HL7' }}
+          initialValues={{ resourceConfigs: {} }}
           onValuesChange={handleFieldsChange}
           style={{ maxWidth: 960 }}
         >
-          <Form.Item
+        <Form.Item
             name="resources"
             label="资源列表"
             className={aiFieldClass('resources')}
-            extra="支持多选,从医院业务系统分类中搜索;至少选择 1 项"
-            rules={[{ required: true, message: '请至少选择 1 个资源' }]}
+            rules={[
+              { required: true, message: '请至少选择 1 个资源' },
+              {
+                validator: async (_, codes: string[] = []) => {
+                  const duplicates = codes.filter((code) => registeredResourceCodes.has(code));
+                  if (duplicates.length) throw new Error(`以下资源已注册，不能重复注册：${duplicates.join('、')}`);
+                },
+              },
+            ]}
           >
-            <Select
+            {isEdit ? (
+              <Input value={editingResource?.resources.map(resourceName).join('、') || ''} disabled />
+            ) : <Select
               mode="multiple"
               placeholder="搜索资源名称(如 HIS / PACS / EMR)"
               showSearch
@@ -509,20 +540,22 @@ const ResourceForm = () => {
               onSearch={setResourceSearch}
               optionLabelProp="label"
               maxTagCount="responsive"
+              onChange={(codes: string[]) => handleResourceChange(codes)}
             >
               {filteredGroups.map((g) => (
                 <Select.OptGroup key={g.group} label={g.group}>
                   {g.items.map((i) => (
-                    <Select.Option key={i.code} value={i.code} label={i.code}>
+                    <Select.Option key={i.code} value={i.code} label={i.code} disabled={registeredResourceCodes.has(i.code)}>
                       <Space>
                         <Tag color="blue">{i.code}</Tag>
                         <Text>{i.name}</Text>
+                        {registeredResourceCodes.has(i.code) && <Tag>已注册</Tag>}
                       </Space>
                     </Select.Option>
                   ))}
                 </Select.OptGroup>
               ))}
-            </Select>
+            </Select>}
           </Form.Item>
 
           <Row gutter={16}>
@@ -531,10 +564,20 @@ const ResourceForm = () => {
                 name="owner"
                 label="资源负责人"
                 className={aiFieldClass('owner')}
-                extra="必填,可从已有用户选择或手动输入"
-                rules={[{ required: true, message: '请输入资源负责人' }]}
+                rules={[{ required: true, message: '请选择资源负责人' }]}
               >
-                <Input placeholder="如:张志远" maxLength={20} />
+                <Select
+                  placeholder="请选择资源负责人"
+                  showSearch
+                  optionFilterProp="label"
+                  options={ownerUsers.filter((user) => user.status === '正常').map((user) => ({
+                    value: user.id,
+                    label: `${user.name} / ${user.employeeId} / ${user.department}`,
+                    name: user.name,
+                  }))}
+                  value={ownerUsers.find((user) => user.name === watchedOwner)?.id}
+                  onChange={handleOwnerChange}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -542,7 +585,6 @@ const ResourceForm = () => {
                 name="contact"
                 label="联系方式"
                 className={aiFieldClass('contact')}
-                extra="手机号或座机号"
                 rules={[
                   { required: true, message: '请输入联系方式' },
                   { pattern: /^[0-9\-+\s]{7,20}$/, message: '请输入合法联系方式' },
@@ -553,51 +595,52 @@ const ResourceForm = () => {
             </Col>
           </Row>
 
-          <Form.Item
-            name="protocol"
-            label="对接方式"
-            className={aiFieldClass('protocol')}
-            extra="不同对接方式动态展示对应子字段(枚举字段已下拉化)"
-            rules={[{ required: true, message: '请选择对接方式' }]}
-          >
-            <Select
-              onChange={(v: ProtocolType) => handleProtocolSelect(v)}
-              options={(['HL7', 'FHIR', 'DICOM', 'DB', 'MQ'] as ProtocolType[]).map((p) => ({
-                value: p,
-                label: (
-                  <Space>
-                    <Tag color={PROTOCOL_COLOR[p]} icon={<ApiOutlined />}>
-                      {PROTOCOL_LABEL[p]}
-                    </Tag>
-                  </Space>
-                ),
-              }))}
-            />
-          </Form.Item>
-
-          <Card type="inner" title={`${PROTOCOL_LABEL[protocol]} 子字段`} style={{ marginBottom: 16 }}>
-            <Row gutter={16}>
-              {PROTOCOL_FIELDS[protocol].map((f) => (
-                <Col span={12} key={f.name}>
-                  <Form.Item
-                    name={f.name}
-                    label={f.label}
-                    className={aiFieldClass(f.name)}
-                    extra={f.extra}
-                    rules={[{ required: f.required !== false, message: `请填写 ${f.label}` }]}
-                  >
-                    {f.type === 'select' && f.options ? (
-                      <Select placeholder={`请选择 ${f.label}`} options={f.options} />
-                    ) : f.type === 'password' ? (
-                      <Input.Password placeholder={`请输入 ${f.label}`} />
-                    ) : (
-                      <Input placeholder={`请输入 ${f.label}`} />
-                    )}
-                  </Form.Item>
-                </Col>
-              ))}
-            </Row>
-          </Card>
+          {selectedResources.map((code) => {
+            const currentProtocol = (form.getFieldValue(['resourceConfigs', code, 'protocol']) || 'HL7') as ProtocolType;
+            return (
+              <Card
+                key={code}
+                type="inner"
+                title={<Space><Tag color="blue">{code}</Tag><Text>{resourceName(code)}</Text></Space>}
+                style={{ marginBottom: 16 }}
+              >
+                <Form.Item
+                  name={['resourceConfigs', code, 'protocol']}
+                  label="对接方式"
+                  rules={[{ required: true, message: '请选择对接方式' }]}
+                >
+                  <Select
+                    onChange={(value: ProtocolType) => handleResourceProtocolChange(code, value)}
+                    options={(['HL7', 'FHIR', 'DICOM', 'DB', 'MQ'] as ProtocolType[]).map((p) => ({
+                      value: p,
+                      label: <Tag color={PROTOCOL_COLOR[p]} icon={<ApiOutlined />}>{PROTOCOL_LABEL[p]}</Tag>,
+                    }))}
+                  />
+                </Form.Item>
+                <Typography.Title level={5}>{PROTOCOL_LABEL[currentProtocol]} 接入信息</Typography.Title>
+                <Row gutter={16}>
+                  {PROTOCOL_FIELDS[currentProtocol].map((f) => (
+                    <Col span={12} key={f.name}>
+                      <Form.Item
+                        name={['resourceConfigs', code, f.name]}
+                        label={f.label}
+                        extra={f.extra}
+                        rules={[{ required: f.required !== false, message: `请填写 ${f.label}` }]}
+                      >
+                        {f.type === 'select' && f.options ? (
+                          <Select placeholder={`请选择 ${f.label}`} options={f.options} />
+                        ) : f.type === 'password' ? (
+                          <Input.Password placeholder={`请输入 ${f.label}`} />
+                        ) : (
+                          <Input placeholder={`请输入 ${f.label}`} />
+                        )}
+                      </Form.Item>
+                    </Col>
+                  ))}
+                </Row>
+              </Card>
+            );
+          })}
 
           {testState !== 'idle' && (
             <Alert
@@ -645,8 +688,5 @@ const ResourceForm = () => {
     </>
   );
 };
-
-// Modal 引用
-import { Modal } from 'antd';
 
 export default ResourceForm;

@@ -5,8 +5,9 @@ import PageHeader from '../../components/PageHeader';
 import { departmentOptions } from '../../mock/departments';
 import { systemRoles } from './constants';
 import { initialCenterUsers, type CenterUser } from './UserList';
+import { mockUsers } from '../../mock/users';
 
-type UserFormValues = Pick<CenterUser, 'name' | 'employeeId' | 'password' | 'department' | 'phone' | 'roles' | 'dataScope' | 'status'>;
+type UserFormValues = Pick<CenterUser, 'name' | 'employeeId' | 'password' | 'department' | 'phone' | 'email' | 'roles' | 'dataScope' | 'status'>;
 
 const loadUsers = (): CenterUser[] => {
   const saved = sessionStorage.getItem('user-center-users');
@@ -15,6 +16,7 @@ const loadUsers = (): CenterUser[] => {
     const { role, ...rest } = user;
     return {
       ...rest,
+      email: rest.email || mockUsers.find((account) => account.id === user.id)?.email || '',
       password: rest.password || initialCenterUsers.find((initialUser) => initialUser.id === user.id)?.password || '123456',
       roles: rest.roles?.length ? rest.roles : role ? [role] : [],
     };
@@ -153,6 +155,22 @@ const UserFormPage = () => {
                 inputMode="numeric"
                 onChange={(event) => form.setFieldValue('phone', event.target.value.replace(/\D/g, '').slice(0, 11))}
               />
+            </Form.Item>
+            <Form.Item
+              name="email"
+              label="邮箱"
+              validateTrigger="onBlur"
+              rules={[
+                { required: true, whitespace: true, message: '请输入邮箱地址' },
+                { type: 'email', message: '请输入正确的邮箱格式' },
+                {
+                  validator: (_, value) => !value || !users.some((user) => user.email?.toLowerCase() === String(value).trim().toLowerCase() && user.id !== id)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error('该邮箱已被其他用户使用')),
+                },
+              ]}
+            >
+              <Input placeholder="请输入工作邮箱" maxLength={254} />
             </Form.Item>
             <Form.Item
               name="dataScope"

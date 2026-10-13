@@ -277,13 +277,26 @@ const ResourceList = () => {
     { title: "联系方式", dataIndex: "contact", width: 140 },
     {
       title: "对接方式",
-      dataIndex: "protocol",
-      width: 140,
-      render: (p: ProtocolType) => (
-        <Tag color={PROTOCOL_COLOR[p]} icon={<ApiOutlined />}>
-          {PROTOCOL_LABEL[p]}
-        </Tag>
-      ),
+      dataIndex: "resources",
+      width: 280,
+      render: (_: string[], it) => {
+        const protocols = it.resourceProtocols;
+        return (
+          <Space direction="vertical" size={4}>
+            {it.resources.map((code) => {
+              const p = protocols?.[code]?.protocol || it.protocol;
+              return (
+                <Space key={code} size={6}>
+                  <Text type="secondary">{code}</Text>
+                  <Tag color={PROTOCOL_COLOR[p]} icon={<ApiOutlined />}>
+                    {PROTOCOL_LABEL[p]}
+                  </Tag>
+                </Space>
+              );
+            })}
+          </Space>
+        );
+      },
     },
     { title: "最后编辑时间", dataIndex: "updatedAt", width: 180 },
     {
@@ -323,36 +336,24 @@ const ResourceList = () => {
     {
       title: "资源列表",
       dataIndex: "resources",
-      width: 260,
-      render: (rs: string[]) => (
-        <Tooltip
-          title={
-            <Space size={4} wrap>
-              {rs.map((c) => (
-                <Tag key={c} color="blue">
-                  {c} - {resourceName(c)}
-                </Tag>
-              ))}
-            </Space>
-          }
-        >
-          <Space size={4} wrap>
-            {rs.slice(0, 3).map((r) => (
-              <Tag key={r} color="blue">
-                {r}
-              </Tag>
-            ))}
-            {rs.length > 3 && <Tag>+{rs.length - 3}</Tag>}
-          </Space>
-        </Tooltip>
-      ),
+      width: 150,
+      render: (_rs: string[], it) => {
+        return {
+          children: <Tooltip title={resourceName(it.resourceCode || "")}>
+            <Tag color="blue">{it.resourceCode || "-"}</Tag>
+          </Tooltip>,
+          props: {
+            rowSpan: 1,
+          },
+        };
+      },
     },
-    { title: "资源负责人", dataIndex: "owner", width: 120 },
-    { title: "联系方式", dataIndex: "contact", width: 140 },
+    { title: "资源负责人", dataIndex: "owner", width: 160 },
+    { title: "联系方式", dataIndex: "contact", width: 190 },
     {
       title: "对接方式",
       dataIndex: "protocol",
-      width: 160,
+      width: 220,
       render: (p: ProtocolType, it) => (
         <Tooltip title="点击值标签在台账详情页就地查看对接方式子字段(此处仅展示枚举)">
           <Tag
@@ -370,12 +371,12 @@ const ResourceList = () => {
     {
       title: "创建人",
       dataIndex: "creator",
-      width: 130,
+      width: 170,
       render: (c?: string) => <Tag color="default">{creatorLabel(c)}</Tag>,
     },
     {
       title: "操作",
-      width: 200,
+      width: 220,
       fixed: "right",
       render: (_, it) => (
         <Space size={4}>
@@ -406,6 +407,16 @@ const ResourceList = () => {
   ];
 
   const currentColumns = tab === "all" ? resourceColumns : draftColumns;
+  const tableData = useMemo(() => {
+    if (tab !== "all") return filtered;
+    return filtered.flatMap((item) =>
+      item.resources.map((resourceCode) => ({
+        ...item,
+        resourceCode,
+        rowKey: `${item.id}-${resourceCode}`,
+      })),
+    );
+  }, [filtered, tab]);
   const totalText =
     tab === "all"
       ? `共 ${filtered.length} 条`
@@ -426,7 +437,6 @@ const ResourceList = () => {
     <>
       <PageHeader
         title="资源管理"
-        subTitle="维护院内可被智能体调用的系统资源台账,登记对接方式与负责人"
         breadcrumb={[
           { path: "/app/resource-center", breadcrumbName: "医院资源管理中心" },
           {
@@ -509,10 +519,10 @@ const ResourceList = () => {
             ),
             children: (
               <Table<ResourceItem>
-                rowKey="id"
+                rowKey={t.key === "all" ? "rowKey" : "id"}
                 columns={currentColumns}
-                dataSource={filtered}
-                scroll={{ x: t.key === "all" ? 1080 : 1080 }}
+                dataSource={t.key === "all" ? tableData : filtered}
+                scroll={{ x: t.key === "all" ? 1110 : 1080 }}
                 pagination={{
                   pageSize: 10,
                   showTotal: (tot) => `共 ${tot} 条`,

@@ -45,6 +45,8 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import { departmentOptions } from '../../../mock/departments';
+import { initialCenterUsers, type CenterUser } from '../../user-center/UserList';
+import { mockUsers } from '../../../mock/users';
 import PageHeader from '../../../components/PageHeader';
 import {
   ROLE_ADMIN,
@@ -156,6 +158,37 @@ const SmartRegistrationForm = () => {
   } = useSmartDraft();
 
   const [form] = Form.useForm();
+
+  // Use the same persisted account list as User Center so contact options react to
+  // account changes made in that module.
+  const [contactUsers, setContactUsers] = useState<CenterUser[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('user-center-users');
+      return saved ? JSON.parse(saved) as CenterUser[] : initialCenterUsers;
+    } catch {
+      return initialCenterUsers;
+    }
+  });
+  useEffect(() => {
+    const syncUsers = () => {
+      try {
+        const saved = sessionStorage.getItem('user-center-users');
+        setContactUsers(saved ? JSON.parse(saved) as CenterUser[] : initialCenterUsers);
+      } catch {
+        setContactUsers(initialCenterUsers);
+      }
+    };
+    window.addEventListener('storage', syncUsers);
+    window.addEventListener('user-center-users-updated', syncUsers);
+    return () => {
+      window.removeEventListener('storage', syncUsers);
+      window.removeEventListener('user-center-users-updated', syncUsers);
+    };
+  }, []);
+  const activeContactUsers = useMemo(
+    () => contactUsers.filter((user) => user.status === '正常'),
+    [contactUsers],
+  );
 
   const [submitting, setSubmitting] = useState(false);
   const [tested, setTested] = useState(false);
@@ -1347,12 +1380,26 @@ const SmartRegistrationForm = () => {
                   <Form.Item
                     name="contactName"
                     label="技术联系人"
-                    rules={[
-                      { required: true, message: '请填写技术联系人' },
-                      { min: 2, max: 10, message: '2–10 字' },
-                    ]}
+                    rules={[{ required: true, message: '请选择技术联系人' }]}
                   >
-                    <Input placeholder="2–10 字" maxLength={10} showCount />
+                    <Select
+                      showSearch
+                      optionFilterProp="label"
+                      placeholder="请选择用户中心账号"
+                      options={activeContactUsers.map((user) => ({
+                        value: user.id,
+                        label: `${user.name} / ${user.employeeId} / ${user.department}`,
+                      }))}
+                      onChange={(userId: string) => {
+                        const user = activeContactUsers.find((item) => item.id === userId);
+                        if (!user) return;
+                        form.setFieldsValue({
+                          contactName: user.name,
+                          contactPhone: user.phone.replace(/\*/g, ''),
+          contactEmail: mockUsers.find((account) => account.id === user.id)?.email || '',
+                        });
+                      }}
+                    />
                   </Form.Item>
                 </AIPrefillWrapper>
               </Col>

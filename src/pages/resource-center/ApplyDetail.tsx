@@ -69,6 +69,11 @@ const ApplyDetail = () => {
   const it: ApplyItem | undefined = applies.find((a) => a.id === id);
   const { pushWelcomeGreeting, consumeWelcome } = useSmartDraft();
   const resource = resources.find((r) => r.id === it?.resourceId);
+  const resourceAccess = resource && it?.resourceCode
+    ? resource.resourceProtocols?.[it.resourceCode]
+    : undefined;
+  const accessProtocol = resourceAccess?.protocol || resource?.protocol;
+  const accessConfig = resourceAccess?.protocolConfig || resource?.protocolConfig;
 
   useEffect(() => {
     if (!it) return undefined;
@@ -84,8 +89,8 @@ const ApplyDetail = () => {
       resourceName: resourceDisplayName,
       owner: resource?.owner || '',
       contact: resource?.contact || '',
-      protocol: resource ? PROTOCOL_LABEL[resource.protocol as ProtocolType] : '',
-      technicalFields: resource?.protocolConfig.fields.map((field) => `${field.label}：${field.value}`).join('；') || '',
+      protocol: accessProtocol ? PROTOCOL_LABEL[accessProtocol as ProtocolType] : '',
+      technicalFields: accessConfig?.fields.map((field) => `${field.label}：${field.value}`).join('；') || '',
       agentId: it.agentId,
       agentName: it.agentName,
       department: it.department,
@@ -238,14 +243,14 @@ const ApplyDetail = () => {
             <Descriptions.Item label="资源 ID">{resource.id}</Descriptions.Item>
             <Descriptions.Item label="资源列表">
               <Space size={4} wrap>
-                {resource.resources.map((r) => <Tag key={r} color="blue">{r}</Tag>)}
+                {(it.resourceCode ? [it.resourceCode] : resource.resources).map((r) => <Tag key={r} color="blue">{r}</Tag>)}
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="资源负责人">{resource.owner}</Descriptions.Item>
             <Descriptions.Item label="联系方式">{resource.contact}</Descriptions.Item>
             <Descriptions.Item label="对接方式" span={2}>
-              <Tag color={PROTOCOL_COLOR[resource.protocol as ProtocolType]}>
-                {PROTOCOL_LABEL[resource.protocol as ProtocolType]}
+              <Tag color={PROTOCOL_COLOR[(accessProtocol || resource.protocol) as ProtocolType]}>
+                {PROTOCOL_LABEL[(accessProtocol || resource.protocol) as ProtocolType]}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="生效时间" span={2}>{it.approvedAt}</Descriptions.Item>

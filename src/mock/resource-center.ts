@@ -159,6 +159,12 @@ export interface ProtocolConfig {
   fields: { label: string; value: string }[];
 }
 
+/** 单个系统独立的对接方式与参数 */
+export interface ResourceProtocolConfig {
+  protocol: ProtocolType;
+  protocolConfig: ProtocolConfig;
+}
+
 export interface ResourceItem {
   /** 资源 ID(R-0001 起) */
   id: string;
@@ -172,6 +178,11 @@ export interface ResourceItem {
   protocol: ProtocolType;
   /** 子字段 */
   protocolConfig: ProtocolConfig;
+  /** 每个系统单独配置的对接方式；缺省时兼容旧版整条记录统一配置 */
+  resourceProtocols?: Record<string, ResourceProtocolConfig>;
+  /** 列表展开行使用 */
+  resourceCode?: string;
+  rowKey?: string;
   /** 状态:registered | draft | deleted */
   status: 'registered' | 'draft' | 'deleted';
   /** 注册时间 / 最后编辑时间 */
@@ -403,6 +414,11 @@ export interface ApplyItem {
   description: string; // 功能描述
   resourceId: string; // 申请资源 ID
   resourceName: string; // 申请资源名称(15 字)
+  /** 单独申请的系统代码；旧申请可能缺省并代表整条资源记录 */
+  resourceCode?: string;
+  /** 该资源的负责人账号，提交后按此账号分派审核 */
+  reviewerAccount?: string;
+  reviewerName?: string;
   /** 权限申请理由（草稿清单与审核详情展示） */
   reason?: string;
   status: ApplyStatus;

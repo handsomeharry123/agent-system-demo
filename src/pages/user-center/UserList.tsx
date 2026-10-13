@@ -20,6 +20,7 @@ export interface CenterUser {
   password: string;
   department: string;
   phone: string;
+  email: string;
   roles: UserRole[];
   dataScope: '全院数据' | '本科室数据';
   status: AccountStatus;
@@ -37,6 +38,7 @@ export const initialCenterUsers: CenterUser[] = mockUsers.slice(0, 12).map((user
     password: user.password || '123456',
     department: user.department,
     phone: user.phone.replace(/\*/g, String((index + 3) % 10)),
+    email: user.email || '',
     roles,
     dataScope: roles.some((role) => role !== '科室管理员') ? '全院数据' : '本科室数据',
     status: user.status === '已停用' ? '停用' : '正常',
@@ -102,6 +104,7 @@ const UserList = () => {
     setUsers((current) => {
       const next = current.map((user) => (effectiveIds.includes(user.id) ? { ...user, status } : user));
       sessionStorage.setItem('user-center-users', JSON.stringify(next));
+      window.dispatchEvent(new Event('user-center-users-updated'));
       return next;
     });
     setSelectedRowKeys([]);
@@ -143,6 +146,7 @@ const UserList = () => {
         setUsers((current) => {
           const next = current.filter((user) => user.id !== record.id);
           sessionStorage.setItem('user-center-users', JSON.stringify(next));
+          window.dispatchEvent(new Event('user-center-users-updated'));
           return next;
         });
         setSelectedRowKeys((current) => current.filter((key) => key !== record.id));
