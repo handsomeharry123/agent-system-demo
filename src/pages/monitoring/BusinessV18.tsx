@@ -232,14 +232,14 @@ const BusinessV18 = () => {
         <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={6}>
             <Card bordered={false} styles={{ body: { padding: 18, height: 170 } }}>
-              <MetricLabel name="智能体累计服务患者人数" variant="kpi" />
+              <MetricLabel name="智能体累计服务人数" variant="kpi" />
               <Text strong style={{ display: 'block', fontSize: 34, color: '#1677FF', marginTop: 14 }}>{kpi.totalPatients.toLocaleString()}</Text>
               <Text type="secondary">人 · 患者主索引跨渠道去重</Text>
             </Card>
           </Col>
           <Col span={6}>
             <Card bordered={false} styles={{ body: { padding: 18, height: 170 } }}>
-              <MetricLabel name="智能体当日服务患者人数" variant="kpi" />
+              <MetricLabel name="智能体当日服务人数" variant="kpi" />
               <Space align="baseline" style={{ marginTop: 14 }}>
                 <Text strong style={{ fontSize: 34, color: '#1677FF' }}>{kpi.todayPatients.toLocaleString()}</Text>
                 <Text type="success"><RiseOutlined /> 8.6%</Text>
@@ -248,8 +248,8 @@ const BusinessV18 = () => {
             </Card>
           </Col>
           <Col span={12}>
-            <Card bordered={false} title={<MetricLabel name="服务患者人数趋势" />} extra={
-              <TrendRangeSwitch value={patientRange} onChange={setPatientRange} label="服务患者人数趋势时间范围" />
+            <Card bordered={false} title={<MetricLabel name="服务人数趋势" />} extra={
+              <TrendRangeSwitch value={patientRange} onChange={setPatientRange} label="服务人数趋势时间范围" />
             } styles={{ body: { padding: 10, height: 122 } }} style={{ height: 170 }}>
               <Line {...chartBase} height={115} data={getTrendWindow(trendDataByMetric.patients, patientRange)} xField="date" yField="value" smooth color="#13C2C2" axis={getTrendAxis(patientRange)} />
             </Card>
