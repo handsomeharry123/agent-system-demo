@@ -29,7 +29,7 @@ import {
 import {
   ArrowLeftOutlined, CloudUploadOutlined,
   QuestionCircleOutlined, BookOutlined, CheckOutlined, SearchOutlined,
-  MinusOutlined, PlusOutlined,
+  MinusOutlined, PlusOutlined, DeleteOutlined,
 } from '@ant-design/icons';
 import PageHeader from '../../components/PageHeader';
 import { PermissionDenied } from '../../components/PageStates';
@@ -50,6 +50,7 @@ const operatorOptions = [
 
 const ALL_AGENTS = 'all';
 const DEFAULT_NOTIFICATION_CONTENT = `智能体【{agent_name}】在{time_window}内出现异常：
+告警等级：{alert_level}
 指标：{metric}
 当前值：{current_value}
 阈值：{threshold}`;
@@ -162,6 +163,12 @@ const typeToCategory: Record<AlertRuleType, string> = {
 
 // 「指标」下拉分组顺序（与 PRD 4 大类一致）
 const METRIC_GROUPS = ['业务监控', '状态监控', '成本监控', '安全监控'] as const;
+const alertLevelOptions = [
+  { label: '高级', value: '高级' },
+  { label: '中级', value: '中级' },
+  { label: '低级', value: '低级' },
+];
+const defaultCondition = { level: '中级', metric: undefined, operator: '>', threshold: undefined, unit: '%' };
 
 const RuleForm = () => {
   const navigate = useNavigate();
@@ -177,10 +184,7 @@ const RuleForm = () => {
   const [drawerTab, setDrawerTab] = useState<string>('all');
   const [drawerKeyword, setDrawerKeyword] = useState('');
   const [drawerSelectedId, setDrawerSelectedId] = useState<string | undefined>();
-  const previewMetric = Form.useWatch('metric', form);
-  const previewOperator = Form.useWatch('operator', form);
-  const previewThreshold = Form.useWatch('threshold', form);
-  const previewUnit = Form.useWatch('unit', form);
+  const conditions = Form.useWatch('conditions', form) || [defaultCondition];
 
   useEffect(() => {
     if (isEditing && params.id) {
@@ -196,10 +200,7 @@ const RuleForm = () => {
           notificationIntervalMinutes: rule.notificationIntervalMinutes ?? 30,
           alertConsecutiveCycles: rule.alertConsecutiveCycles || 1,
           notificationContent: rule.notificationContent || DEFAULT_NOTIFICATION_CONTENT,
-          metric: rule.triggerCondition.metric,
-          operator: rule.triggerCondition.operator,
-          threshold: rule.triggerCondition.threshold,
-          unit: rule.triggerCondition.thresholdUnit,
+          conditions: (rule.triggerConditions?.length ? rule.triggerConditions : [rule.triggerCondition]).map((condition) => ({ ...defaultCondition, ...condition, unit: condition.thresholdUnit })),
         });
       }
     }
@@ -218,7 +219,7 @@ const RuleForm = () => {
   // 其余 3 大类兜底可选；已选中的指标若不在上述分组也回显
   const metricOptions = useMemo(() => {
     const currentGroup = AlertRuleTypeToMetricGroup[selectedType];
-    const currentValue: string | undefined = form.getFieldValue('metric');
+    const currentValue: string | undefined = form.getFieldValue(['conditions', 0, 'metric']);
     const seen = new Set<string>();
     const groups: { label: string; options: { value: string; label: string; data: MetricOption }[] }[] = [];
 
@@ -257,7 +258,15 @@ const RuleForm = () => {
 
   if (!isAdmin) return <PermissionDenied message="告警规则管理仅面向 IT 管理员" />;
 
-  const previewText = `当 ${previewMetric || '指标'} ${previewOperator || '>'} ${previewThreshold ?? '阈值'}${previewUnit || ''} 时触发告警`;
+  const getConditionPreview = (condition: any) => {
+    const level = condition?.level || defaultCondition.level;
+    const levelMeaning: Record<string, string> = {
+      高级: '需优先处理，建议立即响应',
+      中级: '需及时关注，按常规流程处理',
+      低级: '用于提醒关注，可按计划处理',
+    };
+    return `当 ${condition?.metric || '指标'} ${condition?.operator || '>'} ${condition?.threshold ?? '阈值'}${condition?.unit || ''} 时触发${level}告警（${levelMeaning[level] || levelMeaning.中级}）`;
+  };
 
   // 点击【确认带入】 → 写入表单
   const handleConfirmImportTemplate = () => {
@@ -295,10 +304,7 @@ const RuleForm = () => {
     form.setFieldsValue({
       name: tpl.name,
       type: tplType,
-      metric: matchedMetric,
-      operator,
-      threshold,
-      unit,
+      conditions: [{ ...defaultCondition, metric: matchedMetric, operator, threshold, unit }],
       notificationContent: tpl.outputPromptTemplate || DEFAULT_NOTIFICATION_CONTENT,
     });
     message.success(`已带入模板：${tpl.name}`);
@@ -329,14 +335,16 @@ const RuleForm = () => {
       // 持久化到 mock（演示用：直接 push 到 mock 数组，让列表页 / 详情页可立即看到）
       const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
       const newId = `rule-v18-${Date.now()}`;
-      const triggerCondition = {
-        metric: values.metric,
-        operator: values.operator,
-        threshold: values.threshold,
-        thresholdUnit: values.unit,
+      const triggerConditions = (values.conditions || []).map((condition: any) => ({
+        level: condition.level,
+        metric: condition.metric,
+        operator: condition.operator,
+        threshold: condition.threshold,
+        thresholdUnit: condition.unit,
         sustainDuration: '实时',
-        description: `${values.metric} ${values.operator} ${values.threshold}${values.unit || ''}`,
-      };
+        description: `${condition.metric} ${condition.operator} ${condition.threshold}${condition.unit || ''}`,
+      }));
+      const triggerCondition = triggerConditions[0];
       const newRule: AlertRuleV18 = {
         id: isEditing && params.id ? params.id : newId,
         name: values.name,
@@ -347,12 +355,14 @@ const RuleForm = () => {
         alertConsecutiveCycles: values.alertConsecutiveCycles,
         notificationContent: values.notificationContent,
         triggerCondition,
+        triggerConditions,
         triggerAction: 'warn',
         ruleContentId: selectedContentId,
         ruleConfig: {
           rule_name: values.name,
           trigger_time: now,
           trigger_condition: triggerCondition,
+          trigger_conditions: triggerConditions,
           trigger_action: 'warn',
           output_prompt: values.notificationContent || content?.outputPromptTemplate || '',
         },
@@ -406,7 +416,7 @@ const RuleForm = () => {
         <Form
           form={form} layout="vertical" requiredMark="optional"
           initialValues={{
-            type: 'business', operator: '>', unit: '%',
+            type: 'business', conditions: [defaultCondition],
             monitorTargets: [ALL_AGENTS], executionIntervalMinutes: 5,
             notificationIntervalMinutes: 30, alertConsecutiveCycles: 1,
             notificationContent: DEFAULT_NOTIFICATION_CONTENT,
@@ -458,51 +468,52 @@ const RuleForm = () => {
 
             {/* ② 触发条件 */}
             <Card id="sec-trigger" bordered={false} style={{ marginBottom: 16 }} title="② 触发条件">
-              <Row gutter={16}>
-                <Col span={8}>
-                  <Form.Item name="metric" label="指标" rules={[{ required: true, message: '请选择指标' }]}>
-                    <Select
-                      showSearch
-                      placeholder="按规则类型筛选，可跨大类搜索"
-                      optionFilterProp="label"
-                      options={metricOptions}
-                      onChange={(value, option) => {
-                        // 选中后自动带入推荐单位 / 默认阈值（仅在用户尚未手动改过单位 / 阈值时）
-                        const meta = (option as any)?.data as MetricOption | undefined;
-                        if (!meta) return;
-                        const cur = form.getFieldsValue(['unit', 'threshold']);
-                        form.setFieldsValue({
-                          unit: meta.unit ?? cur.unit,
-                          threshold: meta.defaultThreshold ?? cur.threshold,
-                        });
-                      }}
-                    />
-                  </Form.Item>
-                </Col>
-                <Col span={4}>
-                  <Form.Item name="operator" label="运算符" rules={[{ required: true, message: '请选择' }]}>
-                    <Select options={operatorOptions} />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="threshold" label="阈值" rules={[{ required: true, message: '请输入阈值' }]}>
-                    <InputNumber style={{ width: '100%' }} placeholder="如：90" />
-                  </Form.Item>
-                </Col>
-                <Col span={6}>
-                  <Form.Item name="unit" label="单位">
-                    <Input placeholder="如：% / ms / 元" />
-                  </Form.Item>
-                </Col>
-              </Row>
-              <Form.Item label="条件预览">
-                <Card size="small" style={{ background: '#F0F5FF', borderColor: '#ADC6FF' }}>
-                  <Space>
-                    <Tag color="blue">实时预览</Tag>
-                    <Text>{previewText}</Text>
+              <Form.List name="conditions">
+                {(fields, { add, remove }) => (
+                  <Space direction="vertical" size={12} style={{ width: '100%' }}>
+                    {fields.map((field, index) => (
+                      <Card key={field.key} size="small" title={`触发条件 ${index + 1}`} extra={fields.length > 1 && <Button type="text" danger icon={<DeleteOutlined />} aria-label={`删除触发条件 ${index + 1}`} onClick={() => remove(field.name)} />}>
+                        <Row gutter={16}>
+                          <Col span={6}>
+                            <Form.Item name={[field.name, 'metric']} label="指标" rules={[{ required: true, message: '请选择指标' }]}>
+                              <Select showSearch placeholder="按规则类型筛选，可跨大类搜索" optionFilterProp="label" options={metricOptions}
+                                onChange={(value, option) => {
+                                  const meta = (option as any)?.data as MetricOption | undefined;
+                                  if (!meta) return;
+                                  const current = form.getFieldValue(['conditions', field.name]) || {};
+                                  form.setFieldValue(['conditions', field.name], { ...current, metric: value, unit: meta.unit ?? current.unit, threshold: meta.defaultThreshold ?? current.threshold });
+                                }}
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item name={[field.name, 'level']} label="告警等级" rules={[{ required: true, message: '请选择告警等级' }]}>
+                              <Select options={alertLevelOptions} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={4}>
+                            <Form.Item name={[field.name, 'operator']} label="运算符" rules={[{ required: true, message: '请选择' }]}>
+                              <Select options={operatorOptions} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={5}>
+                            <Form.Item name={[field.name, 'threshold']} label="阈值" rules={[{ required: true, message: '请输入阈值' }]}>
+                              <InputNumber style={{ width: '100%' }} placeholder="如：90" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={5}>
+                            <Form.Item name={[field.name, 'unit']} label="单位（可选）"><Input placeholder="如：% / ms / 元" /></Form.Item>
+                          </Col>
+                        </Row>
+                        <div style={{ padding: '10px 12px', background: '#F0F5FF', border: '1px solid #ADC6FF', borderRadius: 6 }}>
+                          <Space><Tag color="blue">实时预览</Tag><Text>{getConditionPreview(conditions[index])}</Text></Space>
+                        </div>
+                      </Card>
+                    ))}
+                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({ ...defaultCondition })} block>添加触发条件</Button>
                   </Space>
-                </Card>
-              </Form.Item>
+                )}
+              </Form.List>
             </Card>
 
             <Card id="sec-notification" bordered={false} style={{ marginBottom: 16 }} title="③ 监控与通知配置">
@@ -527,7 +538,7 @@ const RuleForm = () => {
                   </Form.Item>
                 </Col>
               </Row>
-              <Form.Item name="notificationContent" label={fieldLabelWithHelp('通知内容', '支持变量：{agent_name}、{time_window}、{metric}、{current_value}、{threshold}')} rules={[{ required: true, whitespace: true, message: '请输入通知内容' }]}>
+              <Form.Item name="notificationContent" label={fieldLabelWithHelp('通知内容', '支持变量：{agent_name}、{time_window}、{alert_level}（触发条件对应的告警等级）、{metric}、{current_value}、{threshold}')} rules={[{ required: true, whitespace: true, message: '请输入通知内容' }]}>
                 <Input.TextArea rows={6} maxLength={500} showCount placeholder="请输入告警命中后发送的通知内容" />
               </Form.Item>
             </Card>

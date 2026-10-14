@@ -15,6 +15,7 @@ import Register from './pages/portal/Register';
 
 // Pages - App (Platform)
 import HomePage from './pages/home';
+import DashboardMapConfig from './pages/system-config/DashboardMapConfig';
 import Workbench from './pages/home/Workbench';
 import Dashboard from './pages/home/Dashboard';
 import AutoTaskForm from './pages/home/AutoTaskForm';
@@ -444,6 +445,7 @@ const routes: RouteObject[] = [
           { path: 'models', element: <SystemModelList /> },
           { path: 'models/create', element: <SystemModelForm /> },
           { path: 'models/:id/edit', element: <SystemModelForm /> },
+          { path: 'map', element: <DashboardMapConfig /> },
           { path: 'evaluation-platforms', element: <EvaluationPlatformList /> },
           { path: 'evaluation-platforms/create', element: <EvaluationPlatformForm /> },
           { path: 'evaluation-platforms/:id/edit', element: <EvaluationPlatformForm /> },

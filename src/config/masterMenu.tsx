@@ -277,6 +277,7 @@ export const masterMenu: MasterModule[] = [
     children: [
       { key: 'system-config:dictionaries', name: '数据字典', path: '/app/system-config/dictionaries', defaultVisible: true },
       { key: 'system-config:models', name: '模型配置', path: '/app/system-config/models', defaultVisible: true },
+      { key: 'system-config:map', name: '数据大屏地图配置', path: '/app/system-config/map', defaultVisible: true },
       { key: 'system-config:evaluation-platforms', name: '第三方评测平台接入', path: '/app/system-config/evaluation-platforms', defaultVisible: true, defaultRoleVisible: 'itAdmin' },
     ],
   },

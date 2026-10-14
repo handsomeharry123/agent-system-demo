@@ -5,12 +5,10 @@ import {
   Card,
   Col,
   Row,
-  Select,
   Space,
   Tag,
   Tooltip,
   Typography,
-  message,
 } from "antd";
 import {
   ApartmentOutlined,
@@ -21,7 +19,6 @@ import {
   ExclamationCircleFilled,
   FullscreenExitOutlined,
   FullscreenOutlined,
-  ReloadOutlined,
   EnvironmentFilled,
   RobotOutlined,
   SafetyCertificateOutlined,
@@ -29,6 +26,7 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDemoSettings } from "../../hooks/useDemoSettings";
+import AgentMapCanvas from "./AgentMapCanvas";
 import "./Dashboard.css";
 
 const { Text, Title } = Typography;
@@ -268,79 +266,6 @@ const resources = [
   ["UIS", "超声信息系统", 9, true],
   ["EIS", "内镜信息系统", 6, false],
   ["PIS", "病理信息系统", 8, true],
-] as const;
-
-const deploymentPoints = [
-  {
-    id: "AGT-2025-002",
-    name: "智能导诊助手",
-    version: "v2.1.3",
-    department: "导诊台",
-    status: "运行中",
-    x: 16,
-    y: 57,
-    popover: "right",
-  },
-  {
-    id: "AGT-2025-005",
-    name: "预问诊智能体",
-    version: "v3.2.0",
-    department: "耳鼻喉科",
-    status: "运行中",
-    x: 34,
-    y: 20,
-    popover: "right",
-  },
-  {
-    id: "AGT-2025-006",
-    name: "病历生成智能体",
-    version: "v1.8.5",
-    department: "心血管内科",
-    status: "运行中",
-    x: 70,
-    y: 18,
-    popover: "right",
-  },
-  {
-    id: "AGT-2025-008",
-    name: "分诊智能体",
-    version: "v2.4.1",
-    department: "急诊科",
-    status: "降级",
-    x: 44,
-    y: 51,
-    popover: "left",
-  },
-  {
-    id: "AGT-2025-012",
-    name: "随访智能体",
-    version: "v1.6.2",
-    department: "普外科",
-    status: "运行中",
-    x: 74,
-    y: 68,
-    popover: "right",
-  },
-  {
-    id: "AGT-2025-014",
-    name: "肺功能智能体",
-    version: "v2.0.4",
-    department: "呼吸内科",
-    status: "运行中",
-    x: 63,
-    y: 39,
-    popover: "right",
-  },
-  {
-    id: "AGT-2025-015",
-    name: "影像解读智能体",
-    version: "v4.1.0",
-    department: "医学影像科",
-    status: "故障",
-    x: 27,
-    y: 78,
-    popover: "left",
-  },
 ] as const;
 
 function KpiCard({
@@ -691,53 +616,13 @@ function ResourceTopology({ isAdmin }: { isAdmin: boolean }) {
 
 function AgentDistributionMap() {
   const navigate = useNavigate();
-  return (
-    <div className="hospital-agent-map" aria-label="医院智能体分布地图">
-      <div className="hospital-campus" aria-hidden="true">
-        <i className="campus-building campus-building--a" />
-        <i className="campus-building campus-building--b" />
-        <i className="campus-building campus-building--c" />
-        <i className="campus-building campus-building--d" />
-        <i className="campus-building campus-building--e" />
-        <i className="campus-building campus-building--f" />
-        <i className="campus-road campus-road--a" />
-        <i className="campus-road campus-road--b" />
-      </div>
-      <div className="hospital-map-caption">
-        <EnvironmentFilled /> 院区数字孪生地图 <span>· 7 个部署点位</span>
-      </div>
-      {deploymentPoints.map((point) => (
-        <button
-          key={point.id}
-          type="button"
-          className={`agent-map-point agent-map-point--popover-${point.popover}`}
-          style={{ left: `${point.x}%`, top: `${point.y}%` }}
-          onClick={() => navigate(`/app/ledger/detail/${point.id}`)}
-          aria-label={`查看${point.name}360画像`}
-        >
-          <span className="agent-map-pin">
-            <RobotOutlined />
-          </span>
-          <span className="agent-map-pulse" />
-          <span className="agent-map-popover">
-            <b>
-              {point.name}
-              <em>{point.version}</em>
-              <span>{point.status}</span>
-            </b>
-            <span>科室：{point.department}</span>
-          </span>
-        </button>
-      ))}
-    </div>
-  );
+  return <AgentMapCanvas onSelect={id => navigate(`/app/ledger/detail/${id}`)} />;
 }
 
 export default function Dashboard() {
   const { demoRole } = useDemoSettings();
   const isAdmin = demoRole === "信息科管理员";
   const metrics = isAdmin ? adminMetrics : deptMetrics;
-  const [range, setRange] = useState("30d");
   const [fullscreen, setFullscreen] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const [screenFit, setScreenFit] = useState({ scale: 1, height: 968 });
@@ -801,22 +686,6 @@ export default function Dashboard() {
             <i className="dashboard-title-wing dashboard-title-wing--right" />
           </div>
           <Space wrap size={8} className="dashboard-header-actions">
-            <Select
-              value={range}
-              onChange={setRange}
-              style={{ width: 100 }}
-              options={[
-                { value: "today", label: "今日" },
-                { value: "7d", label: "近7天" },
-                { value: "30d", label: "近30天" },
-              ]}
-            />
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => message.success("大屏数据已刷新")}
-            >
-              刷新
-            </Button>
             <Button
               icon={
                 fullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />

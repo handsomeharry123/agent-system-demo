@@ -197,6 +197,8 @@ export interface TriggerContent {
   trigger_time: string;
   /** 3. 触发条件 */
   trigger_condition: TriggerCondition;
+  /** 多级触发条件（兼容保留 trigger_condition 作为首条条件） */
+  trigger_conditions?: Array<TriggerCondition & { level?: string }>;
   /** 4. 触发动作 */
   trigger_action: TriggerActionKind;
   /** 5. 输出提示词（可配模板，事件页按变量替换） */
@@ -306,6 +308,8 @@ export interface AlertRuleV18 {
   notificationContent?: string;
   /** 触发条件（结构化 + 可折叠） */
   triggerCondition: TriggerCondition;
+  /** 多级触发条件列表 */
+  triggerConditions?: Array<TriggerCondition & { level?: string }>;
   /** 触发动作 */
   triggerAction: TriggerActionKind;
   /** 规则内容（来源：内置「告警规则内容库」四大类） */
