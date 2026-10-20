@@ -117,16 +117,15 @@ const NeedDetail = () => {
 
   const doMatch = () => {
     const top = matchAgents(need);
-    patchNeed(need.id, { matchResult: top.length ? buildMatchResult(top, nowStr(0)) : undefined });
+    patchNeed(need.id, { matchResult: buildMatchResult(top, nowStr(0)) });
     if (top.length) message.success(`已完成智能化匹配，最高匹配度 ${top[0].score}%`);
-    else message.info('暂无匹配智能体');
+    else message.info('当前无可匹配的智能体');
   };
 
   return (
     <div style={{ padding: 0 }}>
       <PageHeader
         title={need.title || '未命名需求'}
-        subTitle="需求详情"
         showBack
         onBack={() => navigate(-1)}
         extra={
@@ -205,26 +204,26 @@ const NeedDetail = () => {
               rowKey="agentId"
               size="small"
               pagination={false}
-              dataSource={need.matchResult.top}
+              dataSource={Array.from({ length: 3 }, (_, index) => need.matchResult!.top[index] || null)}
               columns={[
                 { title: '排名', key: 'rank', width: 60, render: (_v, _r, i) => i + 1 },
-                { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 130 },
+                { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 130, render: (v) => v || '-' },
                 {
                   title: '智能体名称',
                   dataIndex: 'agentName',
                   key: 'agentName',
-                  render: (name: string, r) => (
+                  render: (name: string, r) => name ? (
                     <Button type="link" style={{ padding: 0, height: 'auto', textAlign: 'left' }} onClick={() => goAgent360(r)}>
                       {name}
                     </Button>
-                  ),
+                  ) : '-',
                 },
-                { title: '匹配度', dataIndex: 'score', key: 'score', width: 100, render: (s: number) => <Tag color="blue">{s}%</Tag> },
+                { title: '匹配度', dataIndex: 'score', key: 'score', width: 100, render: (s: number) => typeof s === 'number' ? <Tag color="blue">{s}%</Tag> : '-' },
               ]}
             />
           </>
         ) : (
-          <Empty description="暂无匹配智能体，可点击右上角「重新匹配」" />
+          <Empty description="当前无可匹配的智能体" />
         )}
       </Card>
     </div>

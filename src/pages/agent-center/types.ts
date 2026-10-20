@@ -44,6 +44,8 @@ export interface AccessRecord {
   modelDeploymentMode?: ModelDeploymentMode;
   modelConfigs?: ModelConfig[];
   department: string;
+  projectApplicationId?: string;
+  investmentAmount?: number;
   clinicalStage: string;
   source: '自研' | '第三方' | '合作研发';
   supplier: string;

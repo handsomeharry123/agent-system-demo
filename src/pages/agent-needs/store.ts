@@ -29,7 +29,7 @@ export const nowStr = (offsetDays = 0): string => {
 // ──────────────────────────────────────────────────────────────────────
 const withMatch = (n: BuildNeed): BuildNeed => {
   const top = matchAgents(n);
-  return { ...n, matchResult: top.length ? buildMatchResult(top, nowStr(0)) : undefined };
+  return { ...n, matchResult: buildMatchResult(top, nowStr(0)) };
 };
 
 const initialNeeds: BuildNeed[] = [

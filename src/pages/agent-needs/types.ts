@@ -132,14 +132,7 @@ export const urgencyColorMap: Record<UrgencyLevel, string> = {
 };
 
 // ──────────────────────────────────────────────────────────────────────
-// 智能化匹配（纯函数）
-//   与平台已纳管智能体（mockAgents）做相似度评估，输出 TOP3。
-//   维度（PRD 附录）：
-//     1. 诊疗环节一致性（agent.type ↔ need.clinicalStage 语义映射）  +40
-//     2. 功能描述语义相似（关键词/子串重叠）                          最多 +30
-//     3. 所需资源交集（业务系统 / 模型）                              最多 +10
-//     4. 提出科室 / 服务对象匹配                                      +20
-//   分数封顶 100。全 0 时返回空数组 → 触发「暂无匹配智能体」兜底。
+// 智能化匹配：仅根据功能描述计算语义相似度，返回匹配值大于 0 的 TOP3。
 // ──────────────────────────────────────────────────────────────────────
 
 /** 诊疗环节 → 智能体类型（AgentType）的语义映射，用于「诊疗环节一致性」打分 */
@@ -183,21 +176,9 @@ const descSimilarityScore = (needDesc: string, agentDesc: string): number => {
  * 执行匹配，返回按匹配度降序的 TOP3（分数 > 0 者）。
  * 平台内无任何匹配（全 0%）时返回空数组。
  */
-export const matchAgents = (need: Pick<BuildNeed, 'clinicalStage' | 'functionDesc' | 'resources' | 'department'>): MatchItem[] => {
-  const targetTypes = stageToAgentTypes[need.clinicalStage] || [];
+export const matchAgents = (need: Pick<BuildNeed, 'functionDesc'>): MatchItem[] => {
   const scored = mockAgents.map((agent, idx) => {
-    let score = 0;
-    // 1. 诊疗环节一致性
-    if (targetTypes.includes(agent.type)) score += 40;
-    // 2. 功能描述语义相似
-    score += descSimilarityScore(need.functionDesc, agent.description || '');
-    // 3. 所需资源交集：模型 → 命中 modelSource；业务系统 → 命中部署/接入
-    if (need.resources.includes('模型') && agent.modelSource) score += 6;
-    if (need.resources.includes('业务系统') && (agent.apiEndpoint || agent.techArch)) score += 4;
-    // 4. 提出科室匹配
-    if (need.department && agent.department === need.department) score += 20;
-
-    score = Math.min(100, score);
+    const score = descSimilarityScore(need.functionDesc, agent.description || '');
     return {
       agentCode: `AG-${String(idx + 1).padStart(4, '0')}`,
       agentName: agent.name,

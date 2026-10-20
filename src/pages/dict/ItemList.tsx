@@ -366,7 +366,6 @@ const ItemList = () => {
     <div style={{ padding: 24, background: '#F5F5F5', minHeight: '100%' }}>
       <PageHeader
         title={`${category.name} · 字典项管理`}
-        subTitle={`字典编码 ${category.code} ｜ ${category.source} ｜ 共 ${items.length} 项`}
         showBack
         onBack={() => navigate('/app/dict')}
         breadcrumb={[

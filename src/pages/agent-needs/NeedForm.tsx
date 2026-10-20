@@ -237,7 +237,7 @@ const NeedForm = () => {
       const top = matchAgents(draftRecord);
       const rec: BuildNeed = {
         ...draftRecord,
-        matchResult: top.length ? buildMatchResult(top, nowStr(0)) : undefined,
+        matchResult: buildMatchResult(top, nowStr(0)),
       };
       upsertNeed(rec);
       setConfirmOpen(false);
@@ -287,19 +287,16 @@ const NeedForm = () => {
   // 智能化匹配预览（不落库）
   const handlePreviewMatch = async () => {
     try {
-      const values = await form.validateFields(['clinicalStage', 'functionDesc']);
+      const values = await form.validateFields(['functionDesc']);
       const top = matchAgents({
-        clinicalStage: values.clinicalStage!,
         functionDesc: values.functionDesc || form.getFieldValue('functionDesc') || '',
-        resources: form.getFieldValue('resources') || [],
-        department: form.getFieldValue('department') || '',
       });
       setPreviewTop(top);
       // 编辑态可顺带把预览结果落库
       if (isEdit) {
-        patchNeed(editing!.id, { matchResult: top.length ? buildMatchResult(top, nowStr(0)) : undefined });
+        patchNeed(editing!.id, { matchResult: buildMatchResult(top, nowStr(0)) });
       }
-      if (!top.length) message.info('暂无匹配智能体');
+      if (!top.length) message.info('当前无可匹配的智能体');
     } catch {
       message.warning('请先选择诊疗环节并填写功能描述');
     }
@@ -321,11 +318,6 @@ const NeedForm = () => {
     <div style={{ padding: 0 }}>
       <PageHeader
         title={isSubmittedEdit ? '编辑需求' : isEdit ? '编辑需求草稿' : '生成需求'}
-        subTitle={
-          isSubmittedEdit
-            ? '修改已提交需求信息，保存后仍保留在需求管理列表'
-            : '按字段说明手动填写建设需求，可暂存为草稿或直接提交'
-        }
         showBack
         onBack={() => navigate(-1)}
       />
@@ -355,7 +347,6 @@ const NeedForm = () => {
               { required: true, message: '请输入需求标题' },
               { max: 30, message: '需求标题不超过 30 字' },
             ]}
-            extra="一句话概括需求，≤30 字，如「门诊智能预问诊助手」，避免与已有需求重复"
           >
             <Input placeholder="请输入需求标题" maxLength={30} showCount />
           </Form.Item>
@@ -373,7 +364,6 @@ const NeedForm = () => {
               { min: 50, message: '提出原因不少于 50 字' },
               { max: 300, message: '提出原因不超过 300 字' },
             ]}
-            extra="简述业务背景与痛点，说明「为什么要建」，50-300 字"
           >
             <TextArea placeholder="请输入提出原因（50-300 字）" autoSize={{ minRows: 3, maxRows: 6 }} maxLength={300} showCount />
           </Form.Item>
@@ -396,7 +386,6 @@ const NeedForm = () => {
             name="contactPhone"
             validateTrigger={['onBlur']}
             rules={[{ required: true, validator: phoneValidator }]}
-            extra="11 位手机号"
           >
             <Input placeholder="请输入 11 位手机号" maxLength={11} style={{ maxWidth: 320 }} />
           </Form.Item>
@@ -435,7 +424,6 @@ const NeedForm = () => {
               { required: true, message: '请输入功能描述' },
               { max: 500, message: '功能描述不超过 500 字' },
             ]}
-            extra="重点说明智能体工作内容、服务对象、输入信息、输出结果；≤500 字"
           >
             <TextArea
               placeholder="参考示例：面向门诊患者开展预问诊服务，自动采集主诉、现病史、既往史等信息，形成标准化问诊摘要"
@@ -445,11 +433,11 @@ const NeedForm = () => {
             />
           </Form.Item>
 
-          <Form.Item className={aiFieldClass('resources')} label="所需资源" name="resources" extra="可多选：业务系统、模型">
+          <Form.Item className={aiFieldClass('resources')} label="所需资源" name="resources">
             <Checkbox.Group options={resourceOptions} />
           </Form.Item>
 
-          <Form.Item className={aiFieldClass('urgency')} label="需求紧急程度" name="urgency" rules={[{ required: true, message: '请选择需求紧急程度' }]} extra="提出人建议值，最终由 IT 管理员核定">
+          <Form.Item className={aiFieldClass('urgency')} label="需求紧急程度" name="urgency" rules={[{ required: true, message: '请选择需求紧急程度' }]}>
             <Radio.Group options={urgencyOptions} optionType="button" buttonStyle="solid" />
           </Form.Item>
 
@@ -469,9 +457,9 @@ const NeedForm = () => {
                     dataSource={previewTop}
                     columns={[
                       { title: '排名', key: 'rank', width: 56, render: (_v, _r, i) => i + 1 },
-                      { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 120 },
-                      { title: '智能体名称', dataIndex: 'agentName', key: 'agentName' },
-                      { title: '匹配度', dataIndex: 'score', key: 'score', width: 84, render: (s: number) => <Tag color="blue">{s}%</Tag> },
+                      { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 120, render: (v) => v || '-' },
+                      { title: '智能体名称', dataIndex: 'agentName', key: 'agentName', render: (v) => v || '-' },
+                      { title: '匹配度', dataIndex: 'score', key: 'score', width: 84, render: (s: number) => typeof s === 'number' ? <Tag color="blue">{s}%</Tag> : '-' },
                     ]}
                   />
                 ) : (
@@ -488,7 +476,7 @@ const NeedForm = () => {
               <Button type="primary" onClick={() => setConfirmOpen(true)}>
                 {isSubmittedEdit ? '保存修改' : '提交'}
               </Button>
-              <Button type="text" onClick={() => navigate(-1)}>
+              <Button onClick={() => navigate(-1)} style={{ color: '#595959', borderColor: '#d9d9d9', background: '#fff' }}>
                 取消
               </Button>
             </Space>

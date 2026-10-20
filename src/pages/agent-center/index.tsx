@@ -839,7 +839,6 @@ const AgentCenterContent = () => {
     <div style={{ padding: 0 }}>
       <PageHeader
         title="注册管理"
-        subTitle="按注册状态分页管理全部注册记录"
         extra={
           <Space>
             {activeStatus === '审核通过' && (

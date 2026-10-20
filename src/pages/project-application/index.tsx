@@ -45,6 +45,7 @@ import PageHeader from '../../components/PageHeader';
 import AgentLifecycleProgress, { type AgentLifecycleStage } from '../../components/AgentLifecycleProgress';
 import ApprovalTimeline, { type ApprovalTimelineItem } from '../../components/ApprovalTimeline';
 import { departmentOptions } from '../../mock/departments';
+import { mockUsers } from '../../mock/users';
 import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
 import {
@@ -69,6 +70,7 @@ interface ProjectRecord {
   name: string;
   department: string;
   superiorDepartment: string;
+  reviewerId?: string;
   track: string;
   leader: string;
   contact: string;
@@ -308,6 +310,13 @@ const tracks = ['便民赛道', '助医赛道', '辅政赛道', '促研赛道', 
 const supportOptions = ['资金支持', '算力支持', '数据要素支持', '项目推广', '技术指导支持', '其他'];
 const technologyOptions = ['计算机视觉', '智能语音', '多模态', '边缘计算', '数字孪生', '自然语言处理', '知识图谱', '机器学习', '隐私计算', '高性能计算', '其他'];
 const modelOptions = ['GPT模型', 'Claude模型', 'LLaMa模型', 'Gemini模型', 'Deepseek模型', 'Qwen模型', '豆包模型', 'Kimi模型', 'Grok模型', '其他'];
+const departmentOptionsByClinic: Record<string, string[]> = {
+  信息中心: ['数智发展处'],
+};
+const departmentOptionsByName: Record<string, string[]> = {
+  数智发展处: ['信息中心'], 科研处: ['临床研究中心'], 临床研究中心: ['临床研究中心'], 医务处: departmentOptions.map((option) => option.value),
+};
+const superiorDepartmentOptions = ['数智发展处', '科研处', '临床研究中心', '医务处'].map((value) => ({ label: value, value }));
 const indicatorDimensions: Array<{
   key: IndicatorDimensionKey;
   title: string;
@@ -360,6 +369,7 @@ export default function ProjectApplication() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const isAdmin = currentUser?.roles.includes('信息科管理员') ?? false;
+  const isAssignedReviewer = (item: ProjectRecord) => item.reviewerId === currentUser?.id || item.reviewer === currentUser?.name;
   const { pushWelcomeGreeting, consumeWelcome } = useSmartDraft();
   const [records, setRecords] = useState(readRecords);
   const [keyword, setKeyword] = useState('');
@@ -376,16 +386,16 @@ export default function ProjectApplication() {
   const pendingRecords = useMemo(
     () => records.filter((item) =>
       item.status === '待审核' &&
-      (isAdmin || item.applicant === currentUser?.name || item.applicant === 'admin')
+      (isAdmin || isAssignedReviewer(item) || item.applicant === currentUser?.name || item.applicant === 'admin')
     ),
-    [currentUser?.name, isAdmin, records],
+    [currentUser?.id, currentUser?.name, isAdmin, records],
   );
   const reviewingRecords = useMemo(
     () => records.filter((item) =>
       item.status === '审核中' &&
-      (isAdmin || item.applicant === currentUser?.name || item.applicant === 'admin')
+      (isAdmin || isAssignedReviewer(item) || item.applicant === currentUser?.name || item.applicant === 'admin')
     ),
-    [currentUser?.name, isAdmin, records],
+    [currentUser?.id, currentUser?.name, isAdmin, records],
   );
   const revokedRecords = useMemo(
     () => records.filter((item) =>
@@ -736,10 +746,10 @@ export default function ProjectApplication() {
               { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
             );
           }
-          if ((row.status === '待审核' || row.status === '审核中') && isAdmin) {
+          if ((row.status === '待审核' && (isAdmin || isAssignedReviewer(row))) || (row.status === '审核中' && isAdmin)) {
             moreItems.push({ key: 'audit', label: '审核' });
           }
-          if (row.status === '待审核' && !isAdmin) {
+          if (row.status === '待审核' && !isAdmin && !isAssignedReviewer(row)) {
             moreItems.push({ key: 'revoke', label: '撤销', danger: true });
           }
           if (moreItems.length === 0) {
@@ -774,16 +784,16 @@ export default function ProjectApplication() {
           {detailButton}
           {(row.status === '草稿' || row.status === '撤销修改') && <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/app/project-application/edit/${row.id}`)}>编辑</Button>}
           {(row.status === '草稿' || row.status === '撤销修改') && <Button type="link" danger size="small" icon={<DeleteOutlined />} onClick={() => remove(row)}>删除</Button>}
-          {row.status === '待审核' && isAdmin && <Button type="link" size="small" onClick={() => { updateStatus(row, '审核中'); navigate(`/app/project-application/audit/${row.id}`); }}>审核</Button>}
+          {row.status === '待审核' && (isAdmin || isAssignedReviewer(row)) && <Button type="link" size="small" onClick={() => { updateStatus(row, '审核中'); navigate(`/app/project-application/audit/${row.id}`); }}>审核</Button>}
           {row.status === '审核中' && isAdmin && <Button type="link" size="small" onClick={() => navigate(`/app/project-application/audit/${row.id}`)}>审核</Button>}
-          {row.status === '待审核' && !isAdmin && <Button type="link" danger size="small" onClick={() => updateStatus(row, '撤销修改')}>撤销</Button>}
+          {row.status === '待审核' && !isAdmin && !isAssignedReviewer(row) && <Button type="link" danger size="small" onClick={() => updateStatus(row, '撤销修改')}>撤销</Button>}
         </Space>;
       },
     },
   ];
 
   return <Space direction="vertical" size={16} style={{ width: '100%' }}>
-    <PageHeader title="立项申报管理中心" subTitle="统一管理智能体项目的立项申报与审批流程" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/app/project-application/create')}>立项申报</Button>} />
+    <PageHeader title="立项申报管理中心" extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/app/project-application/create')}>立项申报</Button>} />
     <Card bordered={false}>
       <Space wrap style={{ marginBottom: 18 }}>
         <Input allowClear prefix={<SearchOutlined />} placeholder="搜索项目名称" style={{ width: 280 }} value={keyword} onChange={(e) => setKeyword(e.target.value)} />
@@ -806,6 +816,9 @@ export function ProjectApplicationForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const reviewerOptions = mockUsers
+    .filter((user) => user.status === '在职')
+    .map((user) => ({ label: `${user.name}（${user.employeeId}）· ${user.department}`, value: user.id }));
   const editing = getRecord(id);
   const [form] = Form.useForm<ProjectFormValues>();
   const { pushWelcomeGreeting, consumeWelcome, addMessage } = useSmartDraft();
@@ -815,6 +828,7 @@ export function ProjectApplicationForm() {
 
   const initialValues: Partial<ProjectFormValues> = editing ? {
     ...editing,
+    reviewer: editing.reviewerId || mockUsers.find((user) => user.name === editing.reviewer)?.id,
     assessmentIndicators: editing.assessmentIndicators
       ? normalizeAssessmentIndicators(editing.assessmentIndicators)
       : {
@@ -833,6 +847,22 @@ export function ProjectApplicationForm() {
   };
   const applicationFiles = Form.useWatch('applicationFiles', form) || [];
   const evidenceFiles = Form.useWatch('evidenceFiles', form) || [];
+  const selectedDepartment = Form.useWatch('department', form);
+  const selectedSuperiorDepartment = Form.useWatch('superiorDepartment', form);
+  const allowedSuperiorDepartments = selectedDepartment
+    ? [...new Set(departmentOptionsByClinic[selectedDepartment] || superiorDepartmentOptions.map((option) => option.value))]
+    : superiorDepartmentOptions.map((option) => option.value);
+  const filteredClinicOptions = selectedSuperiorDepartment
+    ? (departmentOptionsByName[selectedSuperiorDepartment] || departmentOptions.map((option) => option.value))
+    : departmentOptions.map((option) => option.value);
+  const clinicOptions = [...new Set([
+    ...filteredClinicOptions,
+    ...(editing?.department && selectedDepartment === editing.department ? [editing.department] : []),
+  ])].map((value) => ({ label: value, value }));
+  const superiorOptions = [...new Set([
+    ...allowedSuperiorDepartments,
+    ...(editing?.superiorDepartment && selectedSuperiorDepartment === editing.superiorDepartment ? [editing.superiorDepartment] : []),
+  ])].map((value) => ({ label: value, value }));
   const materialConfig: Record<ProjectMaterialKind, { label: string; max: number; required: boolean }> = {
     application: { label: '项目申报书', max: 1, required: true },
     evidence: { label: '其他证明材料', max: 5, required: false },
@@ -1004,6 +1034,8 @@ export function ProjectApplicationForm() {
         name: values.name || '未命名立项申报',
         department: values.department || '',
         superiorDepartment: values.superiorDepartment || '',
+        reviewerId: values.reviewer || '',
+        reviewer: mockUsers.find((user) => user.id === values.reviewer)?.name || '',
         track: values.track || '',
         leader: values.leader || '',
         contact: values.contact || '',
@@ -1054,7 +1086,6 @@ export function ProjectApplicationForm() {
       showBack
       onBack={() => navigate(-1)}
       title={editing ? '编辑立项申报' : '立项申报'}
-      subTitle="填写申报材料、项目基本信息、项目内容信息与经费预算后提交审核"
       breadcrumb={[
         { path: '/app/project-application', breadcrumbName: '立项申报管理中心' },
         { path: '', breadcrumbName: editing ? '编辑立项申报' : '立项申报' },
@@ -1141,7 +1172,6 @@ export function ProjectApplicationForm() {
               >
                 模板下载
               </Button>
-              <Text type="secondary" style={{ fontSize: 12 }}>支持 PDF、DOC、DOCX · 单文件不超过 30M</Text>
             </Space>
           </Card>
 
@@ -1149,8 +1179,18 @@ export function ProjectApplicationForm() {
             <Row gutter={16}>
               <Col xs={24} lg={12}><Form.Item className={aiClass('name')} label={aiLabel('name', '项目名称')} name="name" rules={[required, { min: 2, max: 50 }]}><Input showCount maxLength={50} placeholder="请输入 2-50 个字符的项目名称" /></Form.Item></Col>
               <Col xs={24} lg={12}><Form.Item className={aiClass('track')} label={aiLabel('track', '申报赛道')} name="track" rules={[required]}><Radio.Group className="project-option-buttons" options={tracks} optionType="button" buttonStyle="solid" /></Form.Item></Col>
-              <Col xs={24} sm={12}><Form.Item className={aiClass('department')} label={aiLabel('department', '申报科室')} name="department" rules={[required]}><Select showSearch options={departmentOptions} placeholder="请选择申报科室" /></Form.Item></Col>
-              <Col xs={24} sm={12}><Form.Item className={aiClass('superiorDepartment')} label={aiLabel('superiorDepartment', '上级部门')} name="superiorDepartment" rules={[required]}><Select options={['数智发展处', '科研处', '临床研究中心', '医务处'].map((v) => ({ label: v, value: v }))} placeholder="请选择上级部门" /></Form.Item></Col>
+              <Col xs={24} sm={12}><Form.Item className={aiClass('department')} label={aiLabel('department', '申报科室')} name="department" rules={[required]}><Select showSearch options={clinicOptions} placeholder="请选择申报科室" onChange={(value) => {
+                const mappedDepartments = departmentOptionsByClinic[value];
+                const currentSuperior = form.getFieldValue('superiorDepartment');
+                if (mappedDepartments?.length === 1) {
+                  form.setFieldValue('superiorDepartment', mappedDepartments[0]);
+                  setAiPrefillFields((current) => { const next = new Set(current); next.delete('superiorDepartment'); return next; });
+                } else if (!mappedDepartments?.includes(currentSuperior)) {
+                  form.setFieldValue('superiorDepartment', undefined);
+                }
+              }} /></Form.Item></Col>
+              <Col xs={24} sm={12}><Form.Item className={aiClass('superiorDepartment')} label={aiLabel('superiorDepartment', '上级部门')} name="superiorDepartment" rules={[required]}><Select options={superiorOptions} placeholder="请选择上级部门" /></Form.Item></Col>
+              <Col xs={24} sm={12}><Form.Item className={aiClass('reviewer')} label={aiLabel('reviewer', '审核人')} name="reviewer" rules={[required]}><Select showSearch optionFilterProp="label" options={reviewerOptions} placeholder="请选择负责后续立项审核的人员" /></Form.Item></Col>
               <Col xs={24} sm={8}><Form.Item className={aiClass('leader')} label={aiLabel('leader', '项目负责人')} name="leader" rules={[required, { min: 2, max: 10 }]}><Input showCount maxLength={10} placeholder="请输入姓名" /></Form.Item></Col>
               <Col xs={24} sm={8}><Form.Item className={aiClass('contact')} label={aiLabel('contact', '项目联系人')} name="contact" rules={[required, { min: 2, max: 10 }]}><Input showCount maxLength={10} placeholder="请输入姓名" /></Form.Item></Col>
               <Col xs={24} sm={8}><Form.Item className={aiClass('phone')} label={aiLabel('phone', '联系方式')} name="phone" rules={[required, { pattern: /^1\d{10}$/, message: '请输入正确的11位手机号' }]}><Input maxLength={11} placeholder="11 位手机号" /></Form.Item></Col>
@@ -1404,6 +1444,8 @@ export function ProjectApplicationDetail() {
 export function ProjectApplicationAudit() {
   const { id } = useParams(); const navigate = useNavigate(); const record = getRecord(id);
   const { currentUser } = useAuth();
+  const isAssignedReviewer = Boolean(record && (record.reviewerId === currentUser?.id || record.reviewer === currentUser?.name));
+  const canReview = Boolean(currentUser?.roles.includes('信息科管理员') || isAssignedReviewer);
   const aiPreAudit = useMemo(() => {
     if (!record) {
       return { conclusion: '立项通过' as const, note: '' };
@@ -1468,6 +1510,7 @@ export function ProjectApplicationAudit() {
   }, [aiPreAudit.conclusion, consumeWelcome, id, navigate, pushWelcomeGreeting]);
 
   if (!record) return <Card><Text type="secondary">未找到该立项申报记录</Text></Card>;
+  if (!canReview) return <Card><Text type="secondary">该项目已指定其他审核人，请联系项目负责人。</Text><Button style={{ marginTop: 16 }} onClick={() => navigate(-1)}>返回</Button></Card>;
   const submitAudit = () => {
     if (!conclusion) { message.error('请选择审核结论'); return; }
     Modal.confirm({

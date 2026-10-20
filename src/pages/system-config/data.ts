@@ -18,4 +18,10 @@ export const itemsFor=(code:string):DictionaryItem[] => (samples[code]||[['examp
 export const models:ModelConfig[]=[
  {id:'1',name:'DeepSeek-R1',version:'V3.1',deployment:'本地化部署',apiUrl:'https://llm.hospital.local/v1',apiKey:'sk-hospital-demo',provider:'王明',phone:'13800138000',remark:'院内临床推理模型',connected:true},
  {id:'2',name:'通义千问',version:'Qwen3-235B',deployment:'云端部署',apiUrl:'https://dashscope.aliyuncs.com/api/v1',apiKey:'sk-cloud-demo',provider:'李明',phone:'13900139000',remark:'通用文本任务',connected:true},
+ {id:'3',name:'豆包',version:'Doubao-1.5-Pro',deployment:'云端部署',apiUrl:'https://ark.cn-beijing.volces.com/api/v3',apiKey:'ark-doubao-demo',provider:'火山引擎',phone:'13800138001',remark:'通用对话与内容生成',connected:true},
+ {id:'4',name:'DeepSeek-V3',version:'V3.1',deployment:'云端部署',apiUrl:'https://api.deepseek.com/v1',apiKey:'sk-deepseek-demo',provider:'DeepSeek',phone:'13800138002',remark:'通用对话与代码生成',connected:true},
+ {id:'5',name:'文心一言',version:'ERNIE-4.5',deployment:'云端部署',apiUrl:'https://qianfan.baidubce.com/v2',apiKey:'qianfan-ernie-demo',provider:'百度智能云',phone:'13800138003',remark:'中文理解与内容生成',connected:true},
+ {id:'6',name:'Kimi',version:'Kimi-K2',deployment:'云端部署',apiUrl:'https://api.moonshot.cn/v1',apiKey:'sk-kimi-demo',provider:'月之暗面',phone:'13800138004',remark:'长文本理解与分析',connected:true},
+ {id:'7',name:'智谱 GLM',version:'GLM-4.5',deployment:'云端部署',apiUrl:'https://open.bigmodel.cn/api/paas/v4',apiKey:'glm-zhipu-demo',provider:'智谱AI',phone:'13800138005',remark:'推理、工具调用与代码任务',connected:true},
+ {id:'8',name:'腾讯混元',version:'混元-T1',deployment:'云端部署',apiUrl:'https://api.hunyuan.cloud.tencent.com/v1',apiKey:'hunyuan-tencent-demo',provider:'腾讯云',phone:'13800138006',remark:'中文对话与复杂推理',connected:true},
 ];

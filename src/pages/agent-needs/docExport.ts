@@ -21,15 +21,15 @@ const stageText = (n: BuildNeed) =>
 
 /** 生成标准化需求文档 HTML（body 内片段） */
 export const buildNeedDocHtml = (need: BuildNeed): string => {
-  const matchRows =
-    need.matchResult && need.matchResult.top.length > 0
-      ? need.matchResult.top
-          .map(
-            (m, i) =>
-              `<tr><td>${i + 1}</td><td>${esc(m.agentCode)}</td><td>${esc(m.agentName)}</td><td>${m.score}%</td></tr>`,
-          )
-          .join('')
-      : `<tr><td colspan="4" style="text-align:center;color:#999;">暂无匹配智能体</td></tr>`;
+  const matchedAgents = need.matchResult?.top || [];
+  const matchRows = matchedAgents.length
+    ? Array.from({ length: 3 }, (_, i) => {
+        const m = matchedAgents[i];
+        return m
+          ? `<tr><td>${i + 1}</td><td>${esc(m.agentCode)}</td><td>${esc(m.agentName)}</td><td>${m.score}%</td></tr>`
+          : `<tr><td>${i + 1}</td><td>-</td><td>-</td><td>-</td></tr>`;
+      }).join('')
+    : `<tr><td colspan="4" style="text-align:center;color:#999;">当前无可匹配的智能体</td></tr>`;
 
   return `
   <div class="need-doc" style="font-family:'Microsoft YaHei','PingFang SC',sans-serif;color:#1F1F1F;width:720px;margin:0 auto;padding:32px 40px;background:#fff;box-sizing:border-box;">
@@ -54,7 +54,8 @@ export const buildNeedDocHtml = (need: BuildNeed): string => {
     <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">三、功能描述</h2>
     <p style="font-size:14px;line-height:1.9;margin:0;white-space:pre-wrap;">${esc(need.functionDesc || '—')}</p>
 
-    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 12px;">四、智能化匹配结果（TOP3）</h2>
+    <h2 style="font-size:16px;border-left:4px solid #1677FF;padding-left:8px;margin:24px 0 6px;">四、智能化匹配结果（TOP3）</h2>
+    <p style="font-size:12px;color:#888;margin:0 0 12px;">匹配逻辑说明：根据本需求的功能描述与平台已纳管智能体进行匹配，按匹配度由高到低展示前三名。</p>
     <table style="width:100%;border-collapse:collapse;font-size:14px;" border="1" cellpadding="8" cellspacing="0" bordercolor="#E5E5E5">
       <thead><tr style="background:#FAFAFA;"><th style="width:48px;">排名</th><th>智能体编号</th><th>智能体名称</th><th style="width:90px;">匹配度</th></tr></thead>
       <tbody>${matchRows}</tbody>

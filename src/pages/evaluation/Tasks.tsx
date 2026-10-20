@@ -909,7 +909,6 @@ const Tasks = () => {
     <div style={{ padding: 24, background: '#F5F5F5', minHeight: '100%' }}>
       <PageHeader
         title="评测任务管理"
-        subTitle="管理全部智能体准入评测任务，按状态分 Tab 展示"
         extra={[
           isAdmin ? (
             <Button

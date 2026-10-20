@@ -211,12 +211,12 @@ const AgentNeedsContent = () => {
   // ── 智能化匹配 ──
   const doMatch = (n: BuildNeed) => {
     const top = matchAgents(n);
-    const result = top.length ? buildMatchResult(top, nowStr(0)) : undefined;
+    const result = buildMatchResult(top, nowStr(0));
     patchNeed(n.id, { matchResult: result });
     // 弹窗展示最新结果（用刚算出来的 result）
     setMatchModal({ ...n, matchResult: result });
     if (top.length) message.success(`已完成智能化匹配，最高匹配度 ${top[0].score}%`);
-    else message.info('暂无匹配智能体');
+    else message.info('当前无可匹配的智能体');
   };
 
   const doDelete = () => {
@@ -249,7 +249,8 @@ const AgentNeedsContent = () => {
   };
 
   const matchCell = (n: BuildNeed) => {
-    if (!n.matchResult || n.matchResult.top.length === 0) return <Text type="secondary">—</Text>;
+    if (!n.matchResult) return <Text type="secondary">—</Text>;
+    if (n.matchResult.top.length === 0) return <Text type="secondary">当前无可匹配的智能体</Text>;
     return (
       <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setMatchModal(n)}>
         <Tag color="blue">最高 {n.matchResult.topScore}%</Tag>
@@ -431,7 +432,6 @@ const AgentNeedsContent = () => {
     <div style={{ padding: 0 }}>
       <PageHeader
         title="智能体建设需求管理"
-        subTitle="录入标准化建设需求，并与平台已纳管智能体智能化匹配 TOP3，避免重复建设"
         extra={
           <Button type="primary" icon={<PlusOutlined />} onClick={goCreate}>
             生成需求
@@ -538,15 +538,15 @@ const AgentNeedsContent = () => {
             rowKey="agentId"
             size="small"
             pagination={false}
-            dataSource={matchModal.matchResult.top}
+            dataSource={Array.from({ length: 3 }, (_, index) => matchModal.matchResult!.top[index] || null)}
             columns={[
               { title: '排名', key: 'rank', width: 60, render: (_v, _r, i) => i + 1 },
-              { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 120 },
+              { title: '智能体编号', dataIndex: 'agentCode', key: 'agentCode', width: 120, render: (v) => v || '-' },
               {
                 title: '智能体名称',
                 dataIndex: 'agentName',
                 key: 'agentName',
-                render: (name: string, r) => (
+                render: (name: string, r) => name ? (
                   <Button
                     type="link"
                     style={{ padding: 0, height: 'auto', textAlign: 'left' }}
@@ -556,19 +556,19 @@ const AgentNeedsContent = () => {
                   >
                     {name}
                   </Button>
-                ),
+                ) : '-',
               },
               {
                 title: '匹配度',
                 dataIndex: 'score',
                 key: 'score',
                 width: 90,
-                render: (s: number) => <Tag color="blue">{s}%</Tag>,
+                render: (s: number) => typeof s === 'number' ? <Tag color="blue">{s}%</Tag> : '-',
               },
             ]}
           />
         ) : (
-          <Empty description="暂无匹配智能体" />
+          <Empty description="当前无可匹配的智能体" />
         )}
       </Modal>
 

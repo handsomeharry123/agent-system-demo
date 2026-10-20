@@ -12,7 +12,7 @@
  * 入口：/app/agent-center/smart-register
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import {
   Alert,
@@ -88,6 +88,27 @@ const CATEGORY_LABEL: Record<Category, string> = {
 const CATEGORY_ORDER: Category[] = ['product', 'tech', 'other'];
 const REQUIRED_CATEGORY: Category[] = ['product', 'tech'];
 const CATEGORY_MAX: Record<Category, number> = { product: 1, tech: 1, other: 5 };
+const PROJECT_APPLICATION_STORAGE_KEY = 'project-application-demo-v1';
+const NO_PROJECT = '__no_project__';
+type ApprovedProject = { id: string; name: string; totalBudget: number; status: string };
+
+const readApprovedProjects = (): ApprovedProject[] => {
+  try {
+    const projects = JSON.parse(localStorage.getItem(PROJECT_APPLICATION_STORAGE_KEY) || '[]') as ApprovedProject[];
+    const approved = projects.filter((project) => project.status === '立项通过');
+    const duplicateNameCounts = new Map<string, number>();
+    return approved.map((project) => {
+      const occurrence = duplicateNameCounts.get(project.name) || 0;
+      duplicateNameCounts.set(project.name, occurrence + 1);
+      if (occurrence === 0) return project;
+      const suffixes = ['应用示范项目', '推广建设项目', '能力提升项目', '专项建设项目'];
+      const suffix = suffixes[(occurrence - 1) % suffixes.length];
+      return { ...project, name: `${project.name.replace(/项目$/, '')}${suffix}` };
+    });
+  } catch {
+    return [];
+  }
+};
 
 const isFilled = (v: unknown) => (typeof v === 'string' ? v.trim().length > 0 : !!v);
 
@@ -120,7 +141,9 @@ const isRequiredRegistrationInfoComplete = (v: Record<string, any>) => {
     String(v.contactName).trim().length <= 10 &&
     /^1[3-9]\d{9}$/.test(v.contactPhone || '') &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.contactEmail || '') &&
-    isFilled(v.accessMode);
+    isFilled(v.accessMode) &&
+    isFilled(v.projectApplicationId) &&
+    (v.projectApplicationId !== NO_PROJECT || (typeof v.investmentAmount === 'number' && v.investmentAmount > 0));
   if (!commonOk) return false;
   if (v.accessMode === 'API') return isFilled(v.apiEndpoint);
   if (v.accessMode === 'SDK' || v.accessMode === 'OTel') {
@@ -131,6 +154,7 @@ const isRequiredRegistrationInfoComplete = (v: Record<string, any>) => {
 
 const SmartRegistrationForm = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const role = currentUser?.roles[0] || ROLE_ADMIN;
   const isDeptAdmin = role === ROLE_DEPT;
@@ -158,6 +182,15 @@ const SmartRegistrationForm = () => {
   } = useSmartDraft();
 
   const [form] = Form.useForm();
+  const approvedProjects = useMemo(readApprovedProjects, []);
+  const selectedProjectId = Form.useWatch('projectApplicationId', form);
+  const selectedProject = approvedProjects.find((project) => project.id === selectedProjectId);
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    const project = approvedProjects.find((item) => item.id === projectId);
+    if (!project) return;
+    form.setFieldsValue({ projectApplicationId: project.id, investmentAmount: project.totalBudget });
+  }, [approvedProjects, form, searchParams]);
 
   // Use the same persisted account list as User Center so contact options react to
   // account changes made in that module.
@@ -887,6 +920,8 @@ const SmartRegistrationForm = () => {
       contactEmail: v.contactEmail || '',
       type: v.type || '其他',
       description: v.description || '',
+      projectApplicationId: v.projectApplicationId === NO_PROJECT ? undefined : v.projectApplicationId,
+      investmentAmount: Number(v.investmentAmount || 0),
       applicant: loginName,
       applicantRole: role,
       attachments: fileList.map((f) => ({
@@ -992,6 +1027,11 @@ const SmartRegistrationForm = () => {
         layout="vertical"
         preserve={false}
         onValuesChange={(changed) => {
+          if (Object.prototype.hasOwnProperty.call(changed, 'projectApplicationId')) {
+            const projectId = changed.projectApplicationId;
+            const project = approvedProjects.find((item) => item.id === projectId);
+            form.setFieldValue('investmentAmount', project ? project.totalBudget : undefined);
+          }
           // §3.1 P1.3: 用户主动改过 clinicalStage / department 后,不再被语义联动覆盖
           const keys = Object.keys(changed || {});
           if (keys.some((k) => k === 'clinicalStage' || k === 'department')) {
@@ -1184,6 +1224,42 @@ const SmartRegistrationForm = () => {
               <Col span={12}>
                 <Form.Item label="智能体发布日期" name="releaseDate" rules={[{ required: true, message: '请选择智能体发布日期' }]}>
                   <DatePicker format="YYYY-MM-DD" disabledDate={(date) => date.isAfter(dayjs(), 'day')} placeholder="请选择日期" style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name="projectApplicationId" label="关联项目" rules={[{ required: true, message: '请选择关联项目或暂不关联项目' }]}>
+                  <Select
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="请选择已立项通过的项目"
+                    options={[
+                      { value: NO_PROJECT, label: '暂不关联项目' },
+                      ...approvedProjects.map((project) => ({
+                        value: project.id,
+                        label: project.name,
+                      })),
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="investmentAmount"
+                  label="投资金额（万元）"
+                  rules={[
+                    { required: !selectedProject, message: '请输入投资金额' },
+                    { type: 'number', min: 0.01, message: '投资金额必须大于 0' },
+                  ]}
+                >
+                  <InputNumber
+                    min={0.01}
+                    precision={2}
+                    step={1}
+                    style={{ width: '100%' }}
+                    placeholder={selectedProject ? '已按关联项目自动带入' : '请输入大于 0 的投资金额'}
+                    disabled={Boolean(selectedProject)}
+                    addonAfter="万元"
+                  />
                 </Form.Item>
               </Col>
               <Col span={24}>

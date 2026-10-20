@@ -191,7 +191,7 @@ const logRows = [
   { key: 'l5', user: '钱文博', role: '信息科管理员', org: '信息中心', module: '用户中心', type: '停用', desc: '用户停用离岗人员账号 sunyue，并回收关联角色权限', result: '成功', ip: '10.24.8.22', time: '2026-07-27 17:40:55' },
 ];
 
-const Header = ({ title, description, extra }: { title: string; description: string; extra?: React.ReactNode }) => (
+const Header = ({ title, description, extra }: { title: string; description?: string; extra?: React.ReactNode }) => (
   <PageHeader title={title} subTitle={description} extra={extra} />
 );
 
@@ -1090,6 +1090,7 @@ function LegacyProjectAudit() {
 }
 
 type ProjectAuditRow = typeof initialProjects[number] & {
+  linkedProject?: string;
   dailyPatients: number;
   growthRate: number;
   taskSuccessRate: number;
@@ -1108,6 +1109,14 @@ type ProjectAuditRow = typeof initialProjects[number] & {
 };
 
 const projectAuditRows: ProjectAuditRow[] = initialProjects.slice(0, 6).map((project, index) => {
+  const linkedProjects = [
+    '心衰患者全程管理与院后随访项目',
+    '多模态医学影像辅助诊断建设项目',
+    undefined,
+    '门诊病历质控与智能生成项目',
+    undefined,
+    '病理切片数字化辅助诊断项目',
+  ];
   const dailyPatients = [326, 218, 486, 172, 395, 143][index];
   const investment = [180, 320, 95, 150, 210, 265][index];
   const calls = [128420, 92610, 176400, 64380, 118900, 52700][index];
@@ -1116,6 +1125,7 @@ const projectAuditRows: ProjectAuditRow[] = initialProjects.slice(0, 6).map((pro
   const riskInterceptCount = [128, 91, 176, 64, 118, 52][index];
   return {
     ...project,
+    linkedProject: linkedProjects[index],
     dailyPatients,
     growthRate: [28.6, 21.3, 35.8, 18.2, 31.5, 16.9][index],
     taskSuccessRate: [98.7, 97.4, 99.1, 96.8, 98.2, 95.9][index],
@@ -1249,8 +1259,9 @@ function ProjectAudit() {
   const investmentRatioRate = rate;
   const sortable = (key: keyof ProjectAuditRow) => (a: ProjectAuditRow, b: ProjectAuditRow) => Number(a[key]) - Number(b[key]);
   const columns: ColumnsType<ProjectAuditRow> = [
-    { title: '项目名称', dataIndex: 'name', fixed: 'left', width: 220, ellipsis: true },
-    { title: '申报科室', dataIndex: 'dept', width: 105 }, { title: '申报赛道', dataIndex: 'track', width: 105 },
+    { title: '智能体名称', dataIndex: 'name', fixed: 'left', width: 220, ellipsis: true },
+    { title: '所属科室', dataIndex: 'dept', width: 105 },
+    { title: '关联项目', dataIndex: 'linkedProject', width: 180, ellipsis: true, render: (value) => value || '-' },
     { title: <span style={{ whiteSpace: 'nowrap' }}>日均服务人数</span>, dataIndex: 'dailyPatients', width: 190, sorter: sortable('dailyPatients'), render: (v) => `${v} 人` },
     { title: '日均服务人数增长率', dataIndex: 'growthRate', width: 205, sorter: sortable('growthRate'), render: rate },
     { title: '任务执行成功率', dataIndex: 'taskSuccessRate', width: 150, sorter: sortable('taskSuccessRate'), render: rate },
@@ -1278,8 +1289,8 @@ function ProjectAudit() {
       message.warning('请先选择需要导出的项目');
       return;
     }
-    const headers = ['项目名称', '申报科室', '申报赛道', '日均服务人数', '日均服务人数增长率', '医生采纳率', '投资金额(万元)', 'Token消耗量', 'Token使用金额(元)', '投入产出比', '风险行为拦截次数', '安全可控率', '附件材料数量'];
-    const values = exportRows.map((row) => [row.name, row.dept, row.track, row.dailyPatients, rate(row.growthRate), rate(row.doctorAdoptionRate), row.investment, row.tokenConsumption, row.tokenCost.toFixed(2), rate(row.investmentRatio), row.riskInterceptCount, rate(row.safetyRate), row.materials.length]);
+    const headers = ['智能体名称', '所属科室', '关联项目', '日均服务人数', '日均服务人数增长率', '医生采纳率', '投资金额(万元)', 'Token消耗量', 'Token使用金额(元)', '投入产出比', '风险行为拦截次数', '安全可控率', '附件材料数量'];
+    const values = exportRows.map((row) => [row.name, row.dept, row.linkedProject || '-', row.dailyPatients, rate(row.growthRate), rate(row.doctorAdoptionRate), row.investment, row.tokenConsumption, row.tokenCost.toFixed(2), rate(row.investmentRatio), row.riskInterceptCount, rate(row.safetyRate), row.materials.length]);
     const csv = [headers, ...values].map((line) => line.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n');
     const extension = format === 'excel' ? 'xls' : 'csv';
     downloadTextFile(`项目审计数据.${extension}`, `\uFEFF${csv}`);
@@ -1304,7 +1315,7 @@ function ProjectAudit() {
     },
   ];
   return <div>
-    <Header title="项目审计" description="从服务效率、服务质量、服务效益和服务安全维度审计项目运行成效。" extra={<Button icon={<ReloadOutlined />} onClick={() => message.success('各维度数据已更新到最新')}>刷新</Button>} />
+    <Header title="项目审计" extra={<Button icon={<ReloadOutlined />} onClick={() => message.success('各维度数据已更新到最新')}>刷新</Button>} />
     <div className="audit-stat-grid economic-stat-grid project-stat-grid">
       {metrics.map((metric, index) => (
         <Card
@@ -1329,7 +1340,7 @@ function ProjectAudit() {
     </div>
     <Toolbar>
       <div className="project-audit-toolbar">
-        <Space wrap><Text strong>筛选项</Text><Select allowClear placeholder="申报科室" value={department} onChange={setDepartment} style={{ width: 180 }} options={[...new Set(projectAuditRows.map((x) => x.dept))].map((value) => ({ label: value, value }))} /><Select allowClear placeholder="申报赛道" value={track} onChange={setTrack} style={{ width: 180 }} options={[...new Set(projectAuditRows.map((x) => x.track))].map((value) => ({ label: value, value }))} /><Button onClick={() => { setDepartment(undefined); setTrack(undefined); }}>重置</Button><Text type="secondary">点击指标表头可切换升序或降序</Text></Space>
+        <Space wrap><Text strong>筛选项</Text><Select allowClear placeholder="申报科室" value={department} onChange={setDepartment} style={{ width: 180 }} options={[...new Set(projectAuditRows.map((x) => x.dept))].map((value) => ({ label: value, value }))} /><Select allowClear placeholder="申报赛道" value={track} onChange={setTrack} style={{ width: 180 }} options={[...new Set(projectAuditRows.map((x) => x.track))].map((value) => ({ label: value, value }))} /><Button onClick={() => { setDepartment(undefined); setTrack(undefined); }}>重置</Button></Space>
         <Space>
           <Dropdown menu={{ items: [{ key: 'excel', label: '导出 Excel' }, { key: 'csv', label: '导出 CSV' }], onClick: ({ key }) => exportSelected(key as 'excel' | 'csv') }}>
             <Button icon={<DownloadOutlined />}>批量导出 <DownOutlined /></Button>
