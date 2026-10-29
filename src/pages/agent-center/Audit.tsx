@@ -53,6 +53,7 @@ import {
   patchAccessRecord,
   useAccessRecords,
 } from './store';
+import { findProjectApplicationId, getProjectApplicationById } from '../project-application';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -129,6 +130,12 @@ const Audit = () => {
 
   const records = useAccessRecords();
   const record = records.find((r) => r.id === id);
+
+  // 关联项目：优先取注册时选择的立项项目，未显式关联时按名称/科室匹配（与详情页一致）
+  const projectApplicationId = record
+    ? record.projectApplicationId || findProjectApplicationId(record.name, record.department)
+    : undefined;
+  const relatedProject = projectApplicationId ? getProjectApplicationById(projectApplicationId) : undefined;
 
   const [confirmForm] = Form.useForm();
 
@@ -779,6 +786,23 @@ const Audit = () => {
             ))}
             <Descriptions.Item label="功能描述" span={2}>
               <Paragraph style={{ marginBottom: 0 }}>{record.description}</Paragraph>
+            </Descriptions.Item>
+            <Descriptions.Item label="关联项目" span={2}>
+              {relatedProject && projectApplicationId ? (
+                <Space>
+                  <Button
+                    type="link"
+                    size="small"
+                    style={{ padding: 0, height: 'auto' }}
+                    onClick={() => navigate(`/app/project-application/detail/${encodeURIComponent(projectApplicationId)}`)}
+                  >
+                    {relatedProject.name}
+                  </Button>
+                  <Text type="secondary">（{projectApplicationId}）</Text>
+                </Space>
+              ) : (
+                <Text type="secondary">暂不关联项目</Text>
+              )}
             </Descriptions.Item>
           </Descriptions>
         </Card>

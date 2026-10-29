@@ -3,6 +3,7 @@ import { Button, Card, Form, Input, Modal, Select, Space, message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import { departmentOptions } from '../../mock/departments';
+import { superiorDepartmentNames } from '../system-config/data';
 import { systemRoles } from './constants';
 import { initialCenterUsers, type CenterUser } from './UserList';
 import { mockUsers } from '../../mock/users';
@@ -34,7 +35,7 @@ const UserFormPage = () => {
   const editingUser = id ? users.find((user) => user.id === id) : undefined;
   const isEditing = Boolean(id);
   const organizationOptions = useMemo(() => {
-    const values = new Set(['院领导', '信息中心', ...departmentOptions.map((option) => option.value)]);
+    const values = new Set(['院领导', ...departmentOptions.map((option) => option.value), ...superiorDepartmentNames]);
     return Array.from(values).map((value) => ({ label: value, value }));
   }, []);
 

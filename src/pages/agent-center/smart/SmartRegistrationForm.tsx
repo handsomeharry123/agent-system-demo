@@ -46,7 +46,6 @@ import {
 } from '@ant-design/icons';
 import { departmentOptions } from '../../../mock/departments';
 import { initialCenterUsers, type CenterUser } from '../../user-center/UserList';
-import { mockUsers } from '../../../mock/users';
 import PageHeader from '../../../components/PageHeader';
 import {
   ROLE_ADMIN,
@@ -338,7 +337,6 @@ const SmartRegistrationForm = () => {
       {
         actions: [
           { key: 'upload', label: '📎 上传材料', event: 'agent-register-trigger-upload', enabled: true },
-          { key: 'voice', label: '🎤 语音描述', event: 'agent-register-trigger-voice', enabled: true },
         ],
       },
     );
@@ -1469,10 +1467,11 @@ const SmartRegistrationForm = () => {
                       onChange={(userId: string) => {
                         const user = activeContactUsers.find((item) => item.id === userId);
                         if (!user) return;
+                        // 手机号/邮箱唯一事实源 = 用户中心账号数据，选中即代入，字段禁用不可改
                         form.setFieldsValue({
                           contactName: user.name,
-                          contactPhone: user.phone.replace(/\*/g, ''),
-          contactEmail: mockUsers.find((account) => account.id === user.id)?.email || '',
+                          contactPhone: user.phone,
+                          contactEmail: user.email,
                         });
                       }}
                     />
@@ -1488,11 +1487,11 @@ const SmartRegistrationForm = () => {
                     name="contactPhone"
                     label="手机号"
                     rules={[
-                      { required: true, message: '请输入手机号' },
-                      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号' },
+                      { required: true, message: '请选择技术联系人后自动带入' },
+                      { pattern: /^1[3-9]\d{9}$/, message: '用户中心手机号格式不正确' },
                     ]}
                   >
-                    <Input placeholder="11 位手机号" maxLength={11} />
+                    <Input placeholder="选择技术联系人后自动带入" maxLength={11} disabled />
                   </Form.Item>
                 </AIPrefillWrapper>
               </Col>
@@ -1501,11 +1500,11 @@ const SmartRegistrationForm = () => {
                   name="contactEmail"
                   label="邮箱"
                   rules={[
-                    { required: true, message: '请输入邮箱地址' },
-                    { type: 'email', message: '请输入合法的邮箱地址' },
+                    { required: true, message: '请选择技术联系人后自动带入' },
+                    { type: 'email', message: '用户中心邮箱格式不正确' },
                   ]}
                 >
-                  <Input placeholder="请输入邮箱地址" />
+                  <Input placeholder="选择技术联系人后自动带入" disabled />
                 </Form.Item>
               </Col>
             </Row>

@@ -1,6 +1,7 @@
 import { GlobalWorkerOptions, getDocument } from 'pdfjs-dist';
 import PdfWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&inline';
 import type { DetectedField } from '../agent-center/smart/types';
+import { superiorDepartmentNames } from '../system-config/data';
 
 // 将 worker 打进应用 bundle，以 Blob URL 启动。线上 CDN 对独立的 .mjs worker
 // 支持不一致时，使用 ?url 会触发 PDF.js 的 fake worker 回退，并再次动态导入
@@ -59,7 +60,7 @@ const departments = [
   '耳鼻喉科', '皮肤科', '康复科', '中医科', '肿瘤科', '老年医学科',
 ];
 const tracks = ['便民赛道', '助医赛道', '辅政赛道', '促研赛道', '其他'];
-const superiorDepartments = ['数智发展处', '科研处', '临床研究中心', '医务处'];
+const superiorDepartments = superiorDepartmentNames;
 const supports = ['资金支持', '算力支持', '数据要素支持', '项目推广', '技术指导支持', '其他'];
 const technologies = ['计算机视觉', '智能语音', '多模态', '边缘计算', '数字孪生', '自然语言处理', '知识图谱', '机器学习', '隐私计算', '高性能计算', '其他'];
 const models = ['GPT模型', 'Claude模型', 'LLaMa模型', 'Gemini模型', 'Deepseek模型', 'Qwen模型', '豆包模型', 'Kimi模型', 'Grok模型', '其他'];

@@ -32,7 +32,7 @@ import ApprovalTimeline, { type ApprovalTimelineItem } from '../../components/Ap
 import { useAccessRecords } from './store';
 import { useSmartDraft } from './smart/store.tsx';
 import { useAuth } from '../../hooks/useAuth';
-import { findProjectApplicationId } from '../project-application';
+import { findProjectApplicationId, getProjectApplicationById } from '../project-application';
 import { ledgerAgents } from '../../mock/ledger';
 import { initialPujiangTasks } from '../evaluation/pujiang/data';
 import { ROLE_ADMIN, ROLE_DEPT } from './types';
@@ -55,6 +55,10 @@ const Detail = () => {
   const projectApplicationId = record
     ? findProjectApplicationId(record.name, record.department)
     : undefined;
+  // 关联项目：注册时显式选择的立项优先，否则回退到按名称匹配的来源立项
+  const relatedProject = getProjectApplicationById(
+    record?.projectApplicationId || projectApplicationId,
+  );
   const relatedSafetyTask = record
     ? mockEvaluationTasks.find((item) =>
         item.agentCode === record.agentCode || item.agentName === record.name,
@@ -523,6 +527,21 @@ const Detail = () => {
                 {model.deploymentMode || '--'}
               </Descriptions.Item>,
             ])}
+            <Descriptions.Item label="关联项目" span={2}>
+              {relatedProject ? (
+                <Typography.Link
+                  onClick={() =>
+                    navigate(
+                      `/app/project-application/detail/${encodeURIComponent(relatedProject.id)}`,
+                    )
+                  }
+                >
+                  {relatedProject.name}
+                </Typography.Link>
+              ) : (
+                '--'
+              )}
+            </Descriptions.Item>
             <Descriptions.Item label="功能描述" span={2}>
               <Paragraph style={{ marginBottom: 0 }}>{record.description}</Paragraph>
             </Descriptions.Item>

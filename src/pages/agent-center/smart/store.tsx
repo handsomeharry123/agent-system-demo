@@ -41,6 +41,7 @@ export type WelcomePageKey =
   | 'project-application-pending' // 立项申报管理中心「待审核」Tab
   | 'project-application-reviewing' // 立项申报管理中心「审核中」Tab
   | 'project-application-revoked' // 立项申报管理中心「撤销修改」Tab
+  | 'project-application-returned' // 立项申报管理中心「退回修改」Tab
   | 'project-application-rejected' // 立项申报管理中心「立项不通过」Tab
   | 'project-application-passed' // 立项申报管理中心「立项通过」Tab
   | 'resource-center-all'      // 医院资源管理中心「所有资源」Tab
@@ -131,8 +132,10 @@ const deptSituationBubble =
   '今日审核中 X 个、准入通过 X 个、退回修改 X 个。在气泡里点对应状态即可直接进入处理～';
 const registerWindowCopy =
   '你好！我是医小管。点击【新建注册】，把产品说明书 / 技术规格书发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮你自动识别并填表～';
+const smartRegisterWindowCopy =
+  '你好！我是医小管。点击【新建注册】，把产品说明书 / 技术规格书发给我（支持 PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字描述，我来帮你自动识别并填表～';
 const smartRegisterBubbleCopy =
-  '您想要接入什么智能体？把产品说明书、技术规格说明书发给我（支持PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字、语音描述，我来帮您登记注册信息~';
+  '您想要接入什么智能体？把产品说明书、技术规格说明书发给我（支持PDF、DOC、DOCX、XLSX、csv、jpg、jpeg、png、链接等任意文件格式），或文字描述，我来帮您登记注册信息~';
 
 /**
  * PRD §3.1.1 欢迎语表（窗口内 + 机器人旁气泡同步展示）
@@ -182,6 +185,20 @@ const WELCOME_GREETINGS: Record<WelcomePageKey, Record<WelcomeRole, WelcomeCopy>
     admin: {
       bubble: '您好，我是医小管。目前立项申报撤销修改X项，需要查看相关详情信息',
       window: '您好，我是医小管。目前立项申报撤销修改X项，需要查看相关详情信息',
+    },
+  },
+  'project-application-returned': {
+    dept: {
+      bubble: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
+      window: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
+    },
+    provider: {
+      bubble: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
+      window: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
+    },
+    admin: {
+      bubble: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
+      window: '您好，我是医小管。目前立项申报退回修改X项，请根据退回原因完善申报信息后重新提交，需要查看相关详情信息吗？',
     },
   },
   'project-application-rejected': {
@@ -840,15 +857,15 @@ const WELCOME_GREETINGS: Record<WelcomePageKey, Record<WelcomeRole, WelcomeCopy>
   'smart-register': {
     dept: {
       bubble: smartRegisterBubbleCopy,
-      window: registerWindowCopy,
+      window: smartRegisterWindowCopy,
     },
     provider: {
       bubble: smartRegisterBubbleCopy,
-      window: registerWindowCopy,
+      window: smartRegisterWindowCopy,
     },
     admin: {
       bubble: smartRegisterBubbleCopy,
-      window: registerWindowCopy,
+      window: smartRegisterWindowCopy,
     },
   },
   'agent-center-detail': {
@@ -1290,7 +1307,7 @@ export const SmartDraftProvider = ({
         evaluationSummary: extras?.evaluationSummary,
         // §3.2.1 智能预审气泡：调用方若显式传 previewProblems, 用之; 否则消费草稿
         //   - 草稿在下一次重审时会被刷新, 实现「气泡内容随表单实时同步」的目标
-        //   - 新建注册页初始欢迎气泡按 PRD §3.1.1 仅展示态势文案 + 上传/语音直接操作;
+        //   - 新建注册页初始欢迎气泡按 PRD §3.1.1 仅展示态势文案 + 上传直接操作;
         //     实时预审问题进入对话窗口和字段定位,不嵌入机器人旁欢迎气泡。
         previewProblems:
           shouldAttachPreview
@@ -1309,7 +1326,8 @@ export const SmartDraftProvider = ({
           pageKey === 'resource-apply-draft' || pageKey === 'resource-apply-reviewing' ||
           pageKey === 'resource-apply-pending' || pageKey === 'resource-apply-revoked' ||
           pageKey === 'project-application-pending' || pageKey === 'project-application-reviewing' ||
-          pageKey === 'project-application-revoked' || pageKey === 'project-application-rejected' ||
+          pageKey === 'project-application-revoked' || pageKey === 'project-application-returned' ||
+          pageKey === 'project-application-rejected' ||
           pageKey === 'project-application-passed' || pageKey === 'project-application-detail' ||
           pageKey === 'project-application-audit' || pageKey === 'audit-project-all' ||
           pageKey === 'audit-project-application' ||
@@ -1383,7 +1401,7 @@ export const SmartDraftProvider = ({
           return prev;
         }
         if (prev.pageKey === 'smart-register') {
-          // PRD §3.1.1:新建注册页机器人旁气泡保留欢迎语 +【上传】【语音描述】,
+          // PRD §3.1.1:新建注册页机器人旁气泡保留欢迎语 +【上传】,
           // §3.2.1 的实时预审问题只进入对话窗口/字段定位,不覆盖入口气泡。
           return { ...prev, previewProblems: undefined };
         }

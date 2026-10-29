@@ -1055,6 +1055,15 @@ type EvaluationAuditTable = {
   emptyText?: string;
 };
 
+type EvaluationPendingTable = {
+  rows: EvaluationPendingAgent[];
+};
+
+type EvaluationConfirmTable = {
+  agents: Array<{ code: string; name: string; version: string; riskLevel: string }>;
+  level?: SampleLevel;
+};
+
 type AccessStep =
   | 'collectMaterial'
   | 'agentName'
@@ -1284,6 +1293,7 @@ type AccessAuditAgent = {
   endpoint: string;
   apiKeyMasked: string;
   applicant: string;
+  submitTime: string;
   precheck: '建议通过' | '建议退回修改';
   precheckSummary: string;
   checks: { label: string; ok: boolean; desc: string }[];
@@ -1365,6 +1375,8 @@ const HomePage = () => {
     accessAuditTable?: AccessAuditTable;
     accessAuditConfirmation?: AccessAuditConfirmation;
     evaluationAuditTable?: EvaluationAuditTable;
+    evaluationPendingTable?: EvaluationPendingTable;
+    evaluationConfirmTable?: EvaluationConfirmTable;
     alertRuleDraft?: AlertRuleDraft;
     dashboardMetrics?: HomeDashboardMetric[];
     requirementSummary?: RequirementSlots;
@@ -2414,6 +2426,7 @@ const HomePage = () => {
       role: 'assistant',
       content: buildEvaluationOpening(),
       module: '新建评测',
+      evaluationPendingTable: buildEvaluationPendingTable(),
       quickActions: ['第一个，标准评测', '这批都评一下，标准评测', '影像报告解读助手，深度评测'],
       time: nowStr(),
     };
@@ -2826,6 +2839,7 @@ const HomePage = () => {
           role: 'assistant',
           content: buildEvaluationOpening(),
           module: '新建评测',
+          evaluationPendingTable: buildEvaluationPendingTable(),
           quickActions: ['第一个，标准评测', '这批都评一下，标准评测', '影像报告解读助手，深度评测'],
           time: nowStr(),
         });
@@ -3378,6 +3392,8 @@ ${ACCESS_SCENE.closing}`,
             link: index === next.replies.length - 1 ? next.link : undefined,
             actionLinks: index === next.replies.length - 1 ? next.actionLinks : undefined,
             evaluationProgress: index === next.replies.length - 1 ? next.evaluationProgress : undefined,
+            evaluationPendingTable: index === next.replies.length - 1 ? next.evaluationPendingTable : undefined,
+            evaluationConfirmTable: index === next.replies.length - 1 ? next.evaluationConfirmTable : undefined,
             quickActions: index === next.replies.length - 1 ? next.quickActions : undefined,
             time: nowStr(),
           })),
@@ -3403,6 +3419,7 @@ ${ACCESS_SCENE.closing}`,
             content: next.reply,
             module: '新建评测',
             link: next.link,
+            evaluationPendingTable: next.evaluationPendingTable,
             quickActions: next.quickActions,
             time: nowStr(),
           },
@@ -3629,6 +3646,7 @@ ${ACCESS_SCENE.closing}`,
             role: 'assistant' as const,
             content: buildEvaluationOpening(),
             module: '新建评测',
+            evaluationPendingTable: buildEvaluationPendingTable(),
             quickActions: ['第一个，标准评测', '这批都评一下，标准评测', '影像报告解读助手，深度评测'],
             time: nowStr(),
           },
@@ -4509,7 +4527,7 @@ const MessageBubble = ({
 }) => {
   const isUser = msg.role === 'user';
   const hasDashboardMetrics = !isUser && Array.isArray(msg.dashboardMetrics) && msg.dashboardMetrics.length > 0;
-  const isWideAssistantContent = !isUser && Boolean(msg.accessAuditTable || msg.accessAuditConfirmation || msg.evaluationAuditTable || msg.accessSummary || msg.requirementSummary || msg.alertRuleDraft);
+  const isWideAssistantContent = !isUser && Boolean(msg.accessAuditTable || msg.accessAuditConfirmation || msg.evaluationAuditTable || msg.evaluationPendingTable || msg.evaluationConfirmTable || msg.accessSummary || msg.requirementSummary || msg.alertRuleDraft);
   const shouldShowStandaloneMetrics = hasDashboardMetrics;
   return (
     <div
@@ -4726,6 +4744,12 @@ const MessageBubble = ({
               navigate={navigate}
               onQuickAction={onQuickAction}
             />
+          )}
+          {!isUser && msg.evaluationPendingTable && (
+            <EvaluationPendingTableView table={msg.evaluationPendingTable} />
+          )}
+          {!isUser && msg.evaluationConfirmTable && (
+            <EvaluationConfirmTableView table={msg.evaluationConfirmTable} />
           )}
           {!isUser && msg.evaluationProgress && (
             <EvaluationProgressCard progress={msg.evaluationProgress} />
@@ -5613,6 +5637,174 @@ const accessAuditRouteByCode: Record<string, string> = {
   '0201-0004': '/app/agent-center/audit/acc-009',
 };
 
+const evaluationRiskTagColor = (riskLevel: string): string => {
+  if (riskLevel === '高风险') return 'red';
+  if (riskLevel === '中等风险') return 'orange';
+  return 'green';
+};
+
+const evaluationLevelTagColor = (level?: string): string => {
+  if (level === '深度评测') return 'purple';
+  if (level === '标准评测') return 'blue';
+  if (level === '快速评测') return 'cyan';
+  return 'default';
+};
+
+const EvaluationPendingTableView = ({ table }: { table: EvaluationPendingTable }) => (
+  <div
+    style={{
+      marginTop: 10,
+      border: '1px solid #E5E7EB',
+      background: '#FFFFFF',
+      borderRadius: 8,
+      overflow: 'hidden',
+    }}
+    data-testid="home-v1-evaluation-pending-table"
+  >
+    <div style={{ padding: '8px 10px', borderBottom: '1px solid #F0F0F0' }}>
+      <Text strong style={{ fontSize: 12 }}>
+        待评测清单（{table.rows.length}）
+      </Text>
+      <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+        评测档位：快速 30% / 标准 60% / 深度 100%
+      </Text>
+    </div>
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: '#FAFAFA', color: '#595959' }}>
+            <th style={monitorThStyle}>序号</th>
+            <th style={monitorThStyle}>智能体编号</th>
+            <th style={monitorThStyle}>智能体名称</th>
+            <th style={monitorThStyle}>所属科室</th>
+            <th style={monitorThStyle}>版本</th>
+            <th style={monitorThStyle}>风险等级</th>
+            <th style={monitorThStyle}>评测档位</th>
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, index) => (
+            <tr key={row.id}>
+              <td style={monitorTdStyle}>{index + 1}</td>
+              <td style={monitorTdStyle}>{row.code}</td>
+              <td style={{ ...monitorTdStyle, minWidth: 160 }}>{row.name}</td>
+              <td style={monitorTdStyle}>{row.department}</td>
+              <td style={monitorTdStyle}>{row.version}</td>
+              <td style={monitorTdStyle}>
+                <Tag color={evaluationRiskTagColor(row.riskLevel)} style={{ marginInlineEnd: 0 }}>
+                  {row.riskLevel}
+                </Tag>
+              </td>
+              <td style={monitorTdStyle}>
+                <Tag color="default" style={{ marginInlineEnd: 0 }}>
+                  待选择
+                </Tag>
+                {row.riskLevel === '高风险' && (
+                  <div style={{ color: '#CF1322', fontSize: 11, marginTop: 2 }}>高度关注，建议深度评测</div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+const EvaluationConfirmTableView = ({ table }: { table: EvaluationConfirmTable }) => {
+  const confirmRowStyle: React.CSSProperties = {
+    padding: '8px 10px',
+    borderBottom: '1px solid #F0F0F0',
+    verticalAlign: 'top',
+    fontSize: 12,
+  };
+  const labelStyle: React.CSSProperties = {
+    ...confirmRowStyle,
+    width: 120,
+    background: '#FAFAFA',
+    color: '#595959',
+    whiteSpace: 'nowrap',
+  };
+  return (
+    <div
+      style={{
+        marginTop: 10,
+        border: '1px solid #D9E8FF',
+        background: '#F7FBFF',
+        borderRadius: 8,
+        overflow: 'hidden',
+      }}
+      data-testid="home-v1-evaluation-confirm-table"
+    >
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid #E5E7EB' }}>
+        <Text strong style={{ fontSize: 12 }}>
+          评测配置确认
+        </Text>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <tbody>
+          <tr>
+            <td style={labelStyle}>评测智能体</td>
+            <td style={confirmRowStyle}>
+              {table.agents.length ? (
+                table.agents.map((agent) => (
+                  <div key={agent.code} style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={{ fontSize: 12 }}>
+                      {agent.code} {agent.name} {agent.version}
+                    </Text>
+                    <Tag color={evaluationRiskTagColor(agent.riskLevel)} style={{ marginInlineEnd: 0 }}>
+                      {agent.riskLevel}
+                    </Tag>
+                  </div>
+                ))
+              ) : (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  待选择
+                </Text>
+              )}
+            </td>
+          </tr>
+          <tr>
+            <td style={labelStyle}>评测标准</td>
+            <td style={confirmRowStyle}>{EVALUATION_SCENE.standard}</td>
+          </tr>
+          <tr>
+            <td style={labelStyle}>固定评测维度</td>
+            <td style={confirmRowStyle}>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {EVALUATION_SCENE.dimensions.split(' / ').map((dimension) => (
+                  <Tag key={dimension} color="blue" style={{ marginInlineEnd: 0 }}>
+                    {dimension}
+                  </Tag>
+                ))}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={labelStyle}>评测档位</td>
+            <td style={confirmRowStyle}>
+              {table.level ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Tag color={evaluationLevelTagColor(table.level)} style={{ marginInlineEnd: 0 }}>
+                    五维度统一 · {table.level}
+                  </Tag>
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    抽题 {sampleLevelPercent[table.level]}%
+                  </Text>
+                </div>
+              ) : (
+                <Tag color="default" style={{ marginInlineEnd: 0 }}>
+                  待选择
+                </Tag>
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
 const EvaluationAuditTableView = ({
   table,
   navigate,
@@ -5842,22 +6034,26 @@ const AccessAuditTableView = ({
         </Text>
       </div>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1320, fontSize: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1950, fontSize: 12 }}>
           <thead>
             <tr style={{ background: '#FAFAFA', color: '#595959' }}>
               <th style={monitorThStyle}>选择</th>
+              <th style={monitorThStyle}>序号</th>
+              <th style={monitorThStyle}>智能体编号</th>
               <th style={monitorThStyle}>智能体名称</th>
-              <th style={monitorThStyle}>预审结论</th>
+              <th style={monitorThStyle}>预审建议</th>
               <th style={monitorThStyle}>所属科室</th>
-              <th style={monitorThStyle}>诊断环节</th>
+              <th style={monitorThStyle}>诊疗环节</th>
               <th style={monitorThStyle}>智能体来源</th>
               <th style={monitorThStyle}>供应商名称</th>
               <th style={monitorThStyle}>核心功能</th>
               <th style={monitorThStyle}>智能体版本</th>
+              <th style={monitorThStyle}>提交审核时间</th>
+              <th style={monitorThStyle}>操作</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <tr key={row.code}>
                 <td style={monitorTdStyle}>
                   <Checkbox
@@ -5872,14 +6068,19 @@ const AccessAuditTableView = ({
                     aria-label={`选择${row.name}`}
                   />
                 </td>
+                <td style={monitorTdStyle}>{index + 1}</td>
+                <td style={monitorTdStyle}>
+                  <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => openAuditPage(row)}>
+                    {row.code}
+                  </Button>
+                </td>
                 <td style={{ ...monitorTdStyle, minWidth: 190 }}>
                   <Button type="link" size="small" style={{ padding: 0, height: 'auto', whiteSpace: 'normal', textAlign: 'left' }} onClick={() => openAuditPage(row)}>
                     {row.name}
                   </Button>
-                  <div style={{ color: '#8C8C8C', fontSize: 11 }}>{row.code}</div>
                 </td>
                 <td style={{ ...monitorTdStyle, minWidth: 150 }}>
-                  <Tag color={row.precheck === '建议通过' ? 'green' : 'orange'} style={{ marginInlineEnd: 0 }}>
+                  <Tag color={row.precheck === '建议通过' ? 'green' : 'red'} style={{ marginInlineEnd: 0 }}>
                     {row.precheck}
                   </Tag>
                   <div style={{ color: '#8C8C8C', fontSize: 11, marginTop: 2 }}>{row.precheckSummary}</div>
@@ -5890,6 +6091,12 @@ const AccessAuditTableView = ({
                 <td style={monitorTdStyle}>{row.vendor}</td>
                 <td style={{ ...monitorTdStyle, minWidth: 320 }}>{row.description}</td>
                 <td style={monitorTdStyle}>{row.version}</td>
+                <td style={{ ...monitorTdStyle, whiteSpace: 'nowrap', color: '#8C8C8C' }}>{row.submitTime}</td>
+                <td style={monitorTdStyle}>
+                  <Button type="link" size="small" style={{ padding: 0, height: 'auto' }} onClick={() => openAuditPage(row)}>
+                    查看详情
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -6260,6 +6467,7 @@ const accessAuditPendingAgents: AccessAuditAgent[] = [
     endpoint: 'https://api.xxhealth.com/dm-followup/v2',
     apiKeyMasked: '********',
     applicant: '内分泌科 李秀英',
+    submitTime: '2026-10-24 09:32:00',
     precheck: '建议通过',
     precheckSummary: '信息完整、材料齐备、联通测试通过、无重名、合规',
     checks: [
@@ -6285,6 +6493,7 @@ const accessAuditPendingAgents: AccessAuditAgent[] = [
     endpoint: 'med-followup-sdk@1.0.0',
     apiKeyMasked: '********',
     applicant: '全科医学科 赵医生',
+    submitTime: '2026-10-23 14:18:00',
     precheck: '建议通过',
     precheckSummary: '五维均达标',
     checks: [
@@ -6310,6 +6519,7 @@ const accessAuditPendingAgents: AccessAuditAgent[] = [
     endpoint: 'https://api.childcare-ai.com/medication/v1',
     apiKeyMasked: '********',
     applicant: '儿科 张医生',
+    submitTime: '2026-10-21 16:05:00',
     precheck: '建议退回修改',
     precheckSummary: '技术规格书缺失、联通测试未通过',
     checks: [
@@ -7938,10 +8148,24 @@ const EVALUATION_SCENE = {
 };
 
 function buildEvaluationOpening(): string {
-  return `你好！我是医小管，我来帮您新建智能体安全评测任务（约 4 步、2–3 分钟）。目前待评测 ${evaluationPendingAgents.length} 个智能体，请问要给哪个、选哪档评测？（快速 30% / 标准 60% / 深度 100%）
+  return `你好！我是医小管，我来帮您新建智能体安全评测任务（约 4 步、2–3 分钟）。目前待评测 ${evaluationPendingAgents.length} 个智能体，清单如下，请选择要评测的智能体与评测档位。`;
+}
 
-【待评测清单】
-${evaluationPendingAgents.map((agent, index) => `${index + 1}. 编号：${agent.code}；名称：${agent.name}；版本：${agent.version}；评测档位：待选择${agent.riskLevel === '高风险' ? '（高度关注，建议深度评测）' : ''}`).join('\n')}`;
+function buildEvaluationPendingTable(): EvaluationPendingTable {
+  return { rows: evaluationPendingAgents };
+}
+
+function buildEvaluationConfirmTable(slots: EvaluationSlots): EvaluationConfirmTable {
+  const agents = slots.agents?.length ? slots.agents : slots.agent ? [slots.agent] : [];
+  return {
+    agents: agents.map((agent) => ({
+      code: agent.code,
+      name: agent.name,
+      version: agent.version,
+      riskLevel: agent.riskLevel,
+    })),
+    level: slots.levels?.['输入安全'],
+  };
 }
 
 function locateEvaluationAgent(text: string): EvaluationPendingAgent | undefined {
@@ -8035,25 +8259,10 @@ function patchDimensionLevels(
   return previous;
 }
 
-function formatEvaluationLevels(levels?: Record<EvalDimension, SampleLevel>): string {
-  if (!levels) return '待选择';
-  const level = levels['输入安全'];
-  return `五维度统一：${sampleLevelLabel(level)}
-维度：${EVALUATION_SCENE.dimensions}`;
-}
-
 function buildEvaluationConfirm(slots: EvaluationSlots): string {
   const agents = slots.agents?.length ? slots.agents : slots.agent ? [slots.agent] : [];
-  return `【评测配置确认消息】
-
-- 智能体：
-${agents.length ? agents.map((agent) => `  - ${agent.code} ${agent.name} ${agent.version}；风险等级：${agent.riskLevel}`).join('\n') : '  - 待选择'}
-- 评测标准：${EVALUATION_SCENE.standard}
-- 固定五维度：${EVALUATION_SCENE.dimensions}
-- 评测档位：
-${formatEvaluationLevels(slots.levels)}
-
-确认新建并自动开始评测吗？可回复「确认新建」；要改档位或换智能体也可以直接说。`;
+  const level = slots.levels?.['输入安全'];
+  return `评测配置已就绪${agents.length ? '' : '（智能体待选择）'}${level ? '' : '（档位待选择）'}。确认后即自动新建并开始评测；要改档位或换智能体也可以直接说。`;
 }
 
 function createEvaluationTask(slots: EvaluationSlots, creator?: string): EvaluationSlots {
@@ -8181,6 +8390,8 @@ function getEvaluationNext(
   link?: { to: string; text: string };
   actionLinks?: Array<{ to: string; text: string; download?: boolean }>;
   evaluationProgress?: EvaluationProgressSummary;
+  evaluationPendingTable?: EvaluationPendingTable;
+  evaluationConfirmTable?: EvaluationConfirmTable;
   quickActions?: string[];
 } {
   const normalized = text.trim();
@@ -8289,6 +8500,7 @@ function getEvaluationNext(
       return {
         flow: { ...flow, step: 'n2', slots: nextSlots },
         replies: [buildEvaluationConfirm(nextSlots)],
+        evaluationConfirmTable: buildEvaluationConfirmTable(nextSlots),
         quickActions: ['确认新建', '改档位为深度评测', '换智能体'],
       };
     }
@@ -8305,7 +8517,8 @@ function getEvaluationNext(
         const nextSlots = { ...slots, levels };
         return {
           flow: { ...flow, step: 'n2', slots: nextSlots },
-          replies: [`已更新评测档位：\n${formatEvaluationLevels(levels)}\n\n本版本不支持分维度分别设置，五维度使用同一档位。确认就自动新建并开始评测。`],
+          replies: ['已更新评测档位，最新配置如下。本版本不支持分维度分别设置，五维度使用同一档位；确认就自动新建并开始评测。'],
+          evaluationConfirmTable: buildEvaluationConfirmTable(nextSlots),
           quickActions: ['确认新建', '五维度统一深度评测'],
         };
       }
@@ -8321,6 +8534,7 @@ function getEvaluationNext(
       return {
         flow,
         replies: [buildEvaluationConfirm(slots)],
+        evaluationConfirmTable: buildEvaluationConfirmTable(slots),
         quickActions: ['确认新建', '改档位', '换智能体'],
       };
     }
@@ -8339,6 +8553,7 @@ function getEvaluationDoneReply(
   flow: EvaluationFlow;
   reply: string;
   link?: { to: string; text: string };
+  evaluationPendingTable?: EvaluationPendingTable;
   quickActions?: string[];
 } {
   const normalized = text.trim();
@@ -8362,6 +8577,7 @@ function getEvaluationDoneReply(
     return {
       flow: { ...flow, step: 'n1', slots: {} },
       reply: buildEvaluationOpening(),
+      evaluationPendingTable: buildEvaluationPendingTable(),
       quickActions: ['第一个，标准评测', '第二个，深度评测', '第三个，快速评测'],
     };
   }

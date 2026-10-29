@@ -36,6 +36,7 @@ import {
   FileWordOutlined,
   MoreOutlined,
   PlusOutlined,
+  RollbackOutlined,
   SaveOutlined,
   SearchOutlined,
   SendOutlined,
@@ -45,6 +46,7 @@ import PageHeader from '../../components/PageHeader';
 import AgentLifecycleProgress, { type AgentLifecycleStage } from '../../components/AgentLifecycleProgress';
 import ApprovalTimeline, { type ApprovalTimelineItem } from '../../components/ApprovalTimeline';
 import { departmentOptions } from '../../mock/departments';
+import { superiorDepartmentNames } from '../system-config/data';
 import { mockUsers } from '../../mock/users';
 import { useAuth } from '../../hooks/useAuth';
 import { useSmartDraft } from '../agent-center/smart/store';
@@ -63,7 +65,7 @@ const PROJECT_APPLICATION_TEMPLATE_NAME = '市一人工智能体工程建设方�
 const PROJECT_APPLICATION_TEMPLATE_URL = encodeURI(`/${PROJECT_APPLICATION_TEMPLATE_NAME}`);
 const PROJECT_APPLICATION_TEMPLATE_PREVIEW_URL = encodeURI('/市一人工智能体工程建设方案申报书预览.html');
 
-type ProjectStatus = '草稿' | '待审核' | '审核中' | '撤销修改' | '立项不通过' | '立项通过';
+type ProjectStatus = '草稿' | '待审核' | '审核中' | '撤销修改' | '退回修改' | '立项不通过' | '立项通过';
 
 interface ProjectRecord {
   id: string;
@@ -91,6 +93,8 @@ interface ProjectRecord {
   updateTime: string;
   submitTime?: string;
   revokeTime?: string;
+  /** 审核人执行「退回修改」的时间。 */
+  returnTime?: string;
   finishTime?: string;
   reviewStartTime?: string;
   reviewer?: string;
@@ -128,6 +132,11 @@ const seedData: ProjectRecord[] = [
   { id: 'PA-2026-006', name: '慢病健康教育数字人项目', department: '内分泌科', superiorDepartment: '科研处', track: '便民赛道', leader: '孙悦', contact: '赵敏', phone: '13344556677', supports: ['资金支持', '项目推广'], overview: '为慢病患者提供个性化健康教育。', painPoints: '健康教育内容同质化，患者依从性不足。', technologies: ['智能语音', '数字孪生'], models: ['Kimi模型'], deliverables: '健康教育数字人 1 个。', indicators: '患者健康知识知晓率提升 25%。', totalBudget: 42, fundingDetail: '其它渠道资助 42 万元', spendingDetail: '软硬件购置 28 万元；研发设计 14 万元', status: '立项不通过', applicant: '孙悦', updateTime: '2026-07-16 09:40:00', finishTime: '2026-07-16 09:40:00', reviewNote: '现阶段数据来源与运营方案不够清晰，建议完善后重新申报。', files: ['慢病健康教育数字人项目申报书.pdf'] },
   { id: 'PA-2026-007', name: '急诊危重症智能预警项目', department: '急诊科', superiorDepartment: '医务处', track: '助医赛道', leader: '王建国', contact: '李敏', phone: '13866778899', supports: ['数据要素支持', '算力支持'], overview: '融合生命体征、检验结果和病历信息，建设急诊危重症风险实时预警智能体。', painPoints: '急诊患者病情变化快，多源数据分散，人工识别高风险患者存在滞后。', technologies: ['机器学习', '知识图谱'], models: ['Deepseek模型'], deliverables: '危重症预警智能体 1 个、急诊风险知识库 1 套。', indicators: '高风险患者提前预警时间不少于 30 分钟，预警准确率达到 90%。', totalBudget: 45, fundingDetail: '医院资助 30 万元；其它渠道资助 15 万元', spendingDetail: '算力租赁 12 万元；系统集成 13 万元；研发设计 20 万元', status: '待审核', applicant: 'admin', updateTime: '2026-07-28 09:20:00', submitTime: '2026-07-28 09:20:00', files: ['急诊危重症智能预警项目申报书.pdf'] },
   { id: 'PA-2026-008', name: '药学处方智能审核项目', department: '药剂科', superiorDepartment: '医务处', track: '助医赛道', leader: '张伟', contact: '吴桐', phone: '13755667788', supports: ['技术指导支持', '数据要素支持'], overview: '基于院内处方与用药规则，建设覆盖门急诊处方的智能审核与风险提示能力。', painPoints: '处方审核规则多、人工复核压力大，潜在用药风险难以及时发现。', technologies: ['自然语言处理', '知识图谱'], models: ['Qwen模型'], deliverables: '处方审核智能体 1 个、合理用药规则库 1 套。', indicators: '高风险处方识别率达到 95%，人工审核耗时降低 35%。', totalBudget: 52, fundingDetail: '医院资助 52 万元', spendingDetail: '软件购置 18 万元；系统集成 14 万元；研发设计 20 万元', status: '立项通过', applicant: 'admin', updateTime: '2026-07-28 10:40:00', submitTime: '2026-07-27 16:15:00', reviewStartTime: '2026-07-28 10:40:00', reviewer: '信息科管理员', files: ['药学处方智能审核项目申报书.pdf', '合理用药规则说明.pdf'], lifecycleStage: '安全性评测' },
+  { id: 'PA-2026-009', name: '门诊智能陪诊指引项目', department: '门诊部', superiorDepartment: '医务处', track: '便民赛道', leader: '赵敏', contact: '赵敏', phone: '13622334455', supports: ['资金支持', '项目推广'], overview: '面向门诊患者提供科室位置指引、就诊流程讲解与候诊提醒服务。', painPoints: '患者对院内就诊流程不熟悉，跨科室就诊问路多、往返多。', technologies: ['智能语音', '自然语言处理'], models: ['豆包模型'], deliverables: '门诊陪诊指引智能体 1 个。', indicators: '患者院内问询量降低 30%。', totalBudget: 30, fundingDetail: '医院资助 30 万元', spendingDetail: '软件购置 10 万元；研发设计 20 万元', status: '退回修改', applicant: '赵敏', updateTime: '2026-07-26 14:20:00', submitTime: '2026-07-25 09:30:00', reviewStartTime: '2026-07-26 10:00:00', returnTime: '2026-07-26 14:20:00', reviewer: '信息科管理员', reviewNote: '项目与门诊智能导诊优化项目功能存在重叠，请补充差异化定位说明及与院内导诊系统的数据对接方案后重新提交。', files: ['门诊智能陪诊指引项目申报书.pdf'], approvalHistory: [
+    { title: '提交审核', time: '2026-07-25 09:30:00', operator: '赵敏', status: 'finish' },
+    { title: '审核中', time: '2026-07-26 10:00:00', operator: '信息科管理员', status: 'finish' },
+    { title: '退回修改', time: '2026-07-26 14:20:00', operator: '信息科管理员', description: '项目与门诊智能导诊优化项目功能存在重叠，请补充差异化定位说明及与院内导诊系统的数据对接方案后重新提交。', status: 'error' },
+  ] },
 ];
 
 const readRecords = (): ProjectRecord[] => {
@@ -170,6 +179,8 @@ export const findProjectApplicationId = (agentName: string, department?: string)
   );
   return (sameDepartment ?? candidates[0])?.id;
 };
+/** 按立项申报 ID 反查项目记录；供接入中心详情页展示「关联项目」等场景使用。 */
+export const getProjectApplicationById = (id?: string) => (id ? getRecord(id) : undefined);
 const saveRecord = (record: ProjectRecord) => {
   const rows = readRecords();
   const index = rows.findIndex((item) => item.id === record.id);
@@ -186,6 +197,9 @@ const getProjectApprovalTimeline = (record: ProjectRecord): ApprovalTimelineItem
     if (item.title === '审核中') {
       return { ...item, timeLabel: '开始审核时间', operatorLabel: '审核人' };
     }
+    if (item.title === '退回修改') {
+      return { ...item, timeLabel: '退回时间', operatorLabel: '审核人', descriptionLabel: '退回原因说明' };
+    }
     if (item.title === '立项通过' || item.title === '立项不通过') {
       return { ...item, timeLabel: '审核完成时间', operatorLabel: '审核人', descriptionLabel: '具体说明' };
     }
@@ -196,12 +210,21 @@ const getProjectApprovalTimeline = (record: ProjectRecord): ApprovalTimelineItem
   if (record.submitTime) {
     items.push({ title: '提交审核', time: record.submitTime, operator: record.applicant, status: 'finish' });
   }
-  if (record.status === '审核中' || record.status === '立项通过' || record.status === '立项不通过') {
+  if (record.status === '审核中' || record.status === '退回修改' || record.status === '立项通过' || record.status === '立项不通过') {
     items.push({
       title: '审核中',
       time: record.reviewStartTime || (record.status === '审核中' ? record.updateTime : record.submitTime),
       operator: record.reviewer || '信息科管理员',
       status: record.status === '审核中' ? 'process' : 'finish',
+    });
+  }
+  if (record.status === '退回修改') {
+    items.push({
+      title: '退回修改',
+      time: record.returnTime || record.updateTime,
+      operator: record.reviewer || '信息科管理员',
+      description: record.reviewNote,
+      status: 'error',
     });
   }
   if (record.status === '立项通过' || record.status === '立项不通过') {
@@ -303,9 +326,9 @@ const downloadApplication = async (record: ProjectRecord, fileName?: string) => 
 
 const statusColor: Record<ProjectStatus, string> = {
   草稿: 'default', 待审核: 'processing', 审核中: 'cyan',
-  撤销修改: 'orange', 立项不通过: 'error', 立项通过: 'success',
+  撤销修改: 'orange', 退回修改: 'warning', 立项不通过: 'error', 立项通过: 'success',
 };
-const statuses: Array<'全部立项' | ProjectStatus> = ['全部立项', '草稿', '待审核', '审核中', '撤销修改', '立项通过', '立项不通过'];
+const statuses: Array<'全部立项' | ProjectStatus> = ['全部立项', '草稿', '待审核', '审核中', '撤销修改', '退回修改', '立项通过', '立项不通过'];
 const tracks = ['便民赛道', '助医赛道', '辅政赛道', '促研赛道', '其他'];
 const supportOptions = ['资金支持', '算力支持', '数据要素支持', '项目推广', '技术指导支持', '其他'];
 const technologyOptions = ['计算机视觉', '智能语音', '多模态', '边缘计算', '数字孪生', '自然语言处理', '知识图谱', '机器学习', '隐私计算', '高性能计算', '其他'];
@@ -316,7 +339,7 @@ const departmentOptionsByClinic: Record<string, string[]> = {
 const departmentOptionsByName: Record<string, string[]> = {
   数智发展处: ['信息中心'], 科研处: ['临床研究中心'], 临床研究中心: ['临床研究中心'], 医务处: departmentOptions.map((option) => option.value),
 };
-const superiorDepartmentOptions = ['数智发展处', '科研处', '临床研究中心', '医务处'].map((value) => ({ label: value, value }));
+const superiorDepartmentOptions = superiorDepartmentNames.map((value) => ({ label: value, value }));
 const indicatorDimensions: Array<{
   key: IndicatorDimensionKey;
   title: string;
@@ -400,6 +423,13 @@ export default function ProjectApplication() {
   const revokedRecords = useMemo(
     () => records.filter((item) =>
       item.status === '撤销修改' &&
+      (isAdmin || item.applicant === currentUser?.name || item.applicant === 'admin')
+    ),
+    [currentUser?.name, isAdmin, records],
+  );
+  const returnedRecords = useMemo(
+    () => records.filter((item) =>
+      item.status === '退回修改' &&
       (isAdmin || item.applicant === currentUser?.name || item.applicant === 'admin')
     ),
     [currentUser?.name, isAdmin, records],
@@ -495,6 +525,41 @@ export default function ProjectApplication() {
                 kind: 'navigate-detail',
                 path: `/app/project-application/detail/${record.id}`,
               }],
+            })),
+          },
+        },
+      );
+      return () => consumeWelcome();
+    }
+    if (active === '退回修改') {
+      pushWelcomeGreeting(
+        'project-application-returned',
+        isAdmin ? 'admin' : 'dept',
+        () => [returnedRecords.length],
+        {
+          miniList: {
+            toggleLabel: `查看这${returnedRecords.length}项`,
+            targetTab: '退回修改',
+            totalCount: returnedRecords.length,
+            rows: returnedRecords.map((record) => ({
+              recordId: record.id,
+              title: record.name,
+              subTitle: `申报科室：${record.department || '--'}`,
+              meta: `希望获取支持：${record.supports.join('、') || '--'}`,
+              actions: [
+                {
+                  key: `detail-returned-project-${record.id}`,
+                  label: '查看详情',
+                  kind: 'navigate-detail',
+                  path: `/app/project-application/detail/${record.id}`,
+                },
+                {
+                  key: `edit-returned-project-${record.id}`,
+                  label: '编辑',
+                  kind: 'navigate-edit',
+                  path: `/app/project-application/edit/${record.id}`,
+                },
+              ],
             })),
           },
         },
@@ -642,7 +707,7 @@ export default function ProjectApplication() {
       },
     );
     return () => consumeWelcome();
-  }, [active, consumeWelcome, isAdmin, passedRecords, pendingRecords, pushWelcomeGreeting, records, rejectedRecords, revokedRecords, reviewingRecords, visibleDrafts]);
+  }, [active, consumeWelcome, isAdmin, passedRecords, pendingRecords, pushWelcomeGreeting, records, rejectedRecords, returnedRecords, revokedRecords, reviewingRecords, visibleDrafts]);
 
   useEffect(() => {
     const onJump = (event: Event) => {
@@ -658,11 +723,11 @@ export default function ProjectApplication() {
   useEffect(() => {
     const onDraftAction = (event: Event) => {
       const detail = (event as CustomEvent<{ kind?: string; path?: string; recordId?: string }>).detail;
-      if ((active === '草稿' || active === '撤销修改') && detail?.kind === 'navigate-edit' && detail.path) {
+      if ((active === '草稿' || active === '撤销修改' || active === '退回修改') && detail?.kind === 'navigate-edit' && detail.path) {
         navigate(detail.path);
       }
       if (
-        (active === '待审核' || active === '审核中' || active === '撤销修改' || active === '立项通过' || active === '立项不通过') &&
+        (active === '待审核' || active === '审核中' || active === '撤销修改' || active === '退回修改' || active === '立项通过' || active === '立项不通过') &&
         (detail?.kind === 'navigate-detail' || detail?.kind === 'navigate-audit') &&
         detail.path
       ) {
@@ -723,10 +788,11 @@ export default function ProjectApplication() {
     { title: '项目联系人', dataIndex: 'contact', width: 110 },
     { title: '希望获取的支持', dataIndex: 'supports', width: 190, ellipsis: true, render: (v: string[]) => v.join('、') || '--' },
     ...(active === '立项不通过' || active === '立项通过' ? [{ title: '具体说明', dataIndex: 'reviewNote', width: 220, ellipsis: true }] : []),
+    ...(active === '退回修改' ? [{ title: '退回原因说明', dataIndex: 'reviewNote', width: 220, ellipsis: true }] : []),
     ...(active !== '全部立项' ? [{
-      title: active === '草稿' ? '最后编辑时间' : active === '撤销修改' ? '撤销时间' : active === '立项不通过' || active === '立项通过' ? '审核完成时间' : '提交审核时间',
+      title: active === '草稿' ? '最后编辑时间' : active === '撤销修改' ? '撤销时间' : active === '退回修改' ? '退回时间' : active === '立项不通过' || active === '立项通过' ? '审核完成时间' : '提交审核时间',
       width: 175,
-      render: (_: unknown, row: ProjectRecord) => active === '草稿' ? row.updateTime : active === '撤销修改' ? row.revokeTime : active === '立项不通过' || active === '立项通过' ? row.finishTime : row.submitTime || '--',
+      render: (_: unknown, row: ProjectRecord) => active === '草稿' ? row.updateTime : active === '撤销修改' ? row.revokeTime : active === '退回修改' ? (row.returnTime || '--') : active === '立项不通过' || active === '立项通过' ? row.finishTime : row.submitTime || '--',
     }] : []),
     { title: '立项状态', dataIndex: 'status', width: 105, render: (v: ProjectStatus) => <Tag color={statusColor[v]}>{v}</Tag> },
     {
@@ -734,7 +800,7 @@ export default function ProjectApplication() {
       render: (_, row) => {
         const detailButton = (
           <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => navigate(`/app/project-application/detail/${row.id}`)}>
-            详情
+            {active === '退回修改' ? '查看详情' : '详情'}
           </Button>
         );
 
@@ -745,6 +811,9 @@ export default function ProjectApplication() {
               { key: 'edit', label: '编辑', icon: <EditOutlined /> },
               { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
             );
+          }
+          if (row.status === '退回修改') {
+            moreItems.push({ key: 'edit', label: '编辑', icon: <EditOutlined /> });
           }
           if ((row.status === '待审核' && (isAdmin || isAssignedReviewer(row))) || (row.status === '审核中' && isAdmin)) {
             moreItems.push({ key: 'audit', label: '审核' });
@@ -783,6 +852,7 @@ export default function ProjectApplication() {
         return <Space size={4}>
           {detailButton}
           {(row.status === '草稿' || row.status === '撤销修改') && <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/app/project-application/edit/${row.id}`)}>编辑</Button>}
+          {row.status === '退回修改' && <Button type="link" size="small" icon={<EditOutlined />} onClick={() => navigate(`/app/project-application/edit/${row.id}`)}>编辑</Button>}
           {(row.status === '草稿' || row.status === '撤销修改') && <Button type="link" danger size="small" icon={<DeleteOutlined />} onClick={() => remove(row)}>删除</Button>}
           {row.status === '待审核' && (isAdmin || isAssignedReviewer(row)) && <Button type="link" size="small" onClick={() => { updateStatus(row, '审核中'); navigate(`/app/project-application/audit/${row.id}`); }}>审核</Button>}
           {row.status === '审核中' && isAdmin && <Button type="link" size="small" onClick={() => navigate(`/app/project-application/audit/${row.id}`)}>审核</Button>}
@@ -1276,7 +1346,7 @@ export function ProjectApplicationForm() {
   </div>;
 }
 
-function RecordContent({ record }: { record: ProjectRecord }) {
+function RecordContent({ record, reviewer }: { record: ProjectRecord; reviewer?: string }) {
   const [applicationPreviewOpen, setApplicationPreviewOpen] = useState(false);
   return <Space direction="vertical" size={16} style={{ width: '100%' }}>
     <Card title="立项材料" bordered={false}>
@@ -1357,7 +1427,8 @@ function RecordContent({ record }: { record: ProjectRecord }) {
       <Descriptions.Item label="项目名称" span={2}>{record.name}</Descriptions.Item><Descriptions.Item label="立项状态"><Tag color={statusColor[record.status]}>{record.status}</Tag></Descriptions.Item>
       <Descriptions.Item label="申报科室">{record.department}</Descriptions.Item><Descriptions.Item label="上级部门">{record.superiorDepartment}</Descriptions.Item><Descriptions.Item label="申报赛道">{record.track}</Descriptions.Item>
       <Descriptions.Item label="项目负责人">{record.leader}</Descriptions.Item><Descriptions.Item label="项目联系人">{record.contact}</Descriptions.Item><Descriptions.Item label="联系方式">{record.phone}</Descriptions.Item>
-      <Descriptions.Item label="希望获取的支持" span={3}>{record.supports.map((v) => <Tag key={v}>{v}</Tag>)}</Descriptions.Item>
+      {reviewer !== undefined && <Descriptions.Item label="审核人">{reviewer || '--'}</Descriptions.Item>}
+      <Descriptions.Item label="希望获取的支持" span={reviewer !== undefined ? 2 : 3}>{record.supports.map((v) => <Tag key={v}>{v}</Tag>)}</Descriptions.Item>
     </Descriptions></Card>
     <Card title="项目内容信息" bordered={false}><Descriptions column={1} labelStyle={{ width: 170, color: '#8c8c8c' }}>
       <Descriptions.Item label="项目概述"><Paragraph>{record.overview}</Paragraph></Descriptions.Item><Descriptions.Item label="项目解决的痛点问题"><Paragraph>{record.painPoints}</Paragraph></Descriptions.Item>
@@ -1455,7 +1526,7 @@ export function ProjectApplicationAudit() {
       note: `经AI预审，项目申报信息填写完整，建设目标与${record.track}定位相符；项目痛点、技术方案及交付成果描述清晰，${record.totalBudget}万元经费来源与使用明细基本匹配。建议立项通过，后续重点关注院内系统接口联调、数据安全合规及考核指标落实。`,
     };
   }, [record]);
-  const [conclusion, setConclusion] = useState<'立项通过' | '立项不通过'>(aiPreAudit.conclusion);
+  const [conclusion, setConclusion] = useState<'立项通过' | '立项不通过' | '退回修改'>(aiPreAudit.conclusion);
   const [note, setNote] = useState(record?.reviewNote || aiPreAudit.note);
   const { pushWelcomeGreeting, consumeWelcome } = useSmartDraft();
 
@@ -1524,9 +1595,33 @@ export function ProjectApplicationAudit() {
       },
     });
   };
+  const submitReturn = () => {
+    Modal.confirm({
+      title: '确认退回修改？',
+      content: `退回后，“${record.name}”将进入“退回修改”页，申报人可根据退回原因修改后重新提交。`,
+      okText: '确认退回',
+      cancelText: '取消',
+      onOk: () => {
+        const returnedAt = now();
+        const reviewer = currentUser?.name || '信息科管理员';
+        saveRecord({
+          ...record,
+          status: '退回修改',
+          reviewNote: note,
+          returnTime: returnedAt,
+          updateTime: returnedAt,
+          reviewStartTime: record.reviewStartTime || returnedAt,
+          reviewer,
+          approvalHistory: [...getProjectApprovalTimeline(record).map((item) => item.status === 'process' ? { ...item, status: 'finish' as const } : item), { title: '退回修改', time: returnedAt, operator: reviewer, description: note, status: 'error' as const }],
+        });
+        message.success('已退回，申报人可在“退回修改”页继续编辑');
+        navigate('/app/project-application?status=退回修改');
+      },
+    });
+  };
   return <Space direction="vertical" size={16} style={{ width: '100%' }}>
     <PageHeader showBack onBack={() => navigate(-1)} title="立项信息审核" subTitle="审核申报信息并给出立项结论" />
-    <RecordContent record={record} />
+    <RecordContent record={record} reviewer={record.reviewer || currentUser?.name || '--'} />
     <Card title="审核结论" bordered={false}>
       <Form layout="vertical" className="project-audit-form">
         <div className="project-ai-preaudit-field" data-ai-prefilled="true">
@@ -1537,6 +1632,7 @@ export function ProjectApplicationAudit() {
             <Radio.Group value={conclusion} onChange={(e) => setConclusion(e.target.value)}>
               <Radio value="立项通过">立项通过</Radio>
               <Radio value="立项不通过">立项不通过</Radio>
+              <Radio value="退回修改">退回修改</Radio>
             </Radio.Group>
           </Form.Item>
         </div>
@@ -1552,12 +1648,12 @@ export function ProjectApplicationAudit() {
               onChange={(e) => setNote(e.target.value)}
               maxLength={500}
               rows={5}
-              placeholder={conclusion === '立项通过' ? '请填写通过意见或后续工作要求' : '请填写不通过原因及修改建议'}
+              placeholder={conclusion === '立项通过' ? '请填写通过意见或后续工作要求' : conclusion === '退回修改' ? '请填写退回原因及修改要求' : '请填写不通过原因及修改建议'}
             />
           </Form.Item>
         </div>
       </Form>
     </Card>
-    <Card bordered={false} style={{ textAlign: 'right' }}><Space><Button onClick={() => navigate(-1)}>取消</Button><Button type={conclusion === '立项通过' ? 'primary' : 'default'} danger={conclusion === '立项不通过'} onClick={submitAudit}>{conclusion}</Button></Space></Card>
+    <Card bordered={false} style={{ textAlign: 'right' }}><Space><Button onClick={() => navigate(-1)}>取消</Button><Button type={conclusion === '立项通过' ? 'primary' : 'default'} danger={conclusion === '立项不通过'} icon={conclusion === '退回修改' ? <RollbackOutlined /> : undefined} onClick={conclusion === '退回修改' ? submitReturn : submitAudit}>{conclusion}</Button></Space></Card>
   </Space>;
 }
